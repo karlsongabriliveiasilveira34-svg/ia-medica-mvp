@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ECHOID — The Next Layer of Intelligence</title>
+  
+  <!-- Resource Hints -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net">
+
+  <!-- Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Manrope:wght@200..800&family=Sora:wght@200;300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* --------------------------------------------------
+       CSS RESET & DESIGN TOKENS
+       -------------------------------------------------- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    :root {
+      /* Dynamic Viewport & Precision Units */
+      --u: clamp(1rem, 2vw, 2rem);
+      --uw: clamp(14px, 1.2vw, 22px);
+      --h-nav: clamp(60px, 8vh, 80px);
+      --m-padding: clamp(1.25rem, 4vw, 4rem);
+
+      /* Monochromatic Color Tokens */
+      --color-bg: #030303;
+      --color-surface: rgba(18, 18, 20, 0.65);
+      --color-surface-hover: rgba(255, 255, 255, 0.06);
+      --color-border: rgba(255, 255, 255, 0.12);
+      --color-border-focus: rgba(255, 255, 255, 0.45);
+      
+      --color-text-main: #f4f4f5;
+      --color-text-muted: #a1a1aa;
+      --color-text-dim: #71717a;
+      
+      --color-accent-white: #ffffff;
+      --color-accent-subtle: #27272a;
+
+      /* Typography Tokens */
+      --font-sora: 'Sora', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-manrope: 'Manrope', sans-serif;
+
+      /* Easing Dynamics */
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-fast: 200ms;
+      --duration-normal: 400ms;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      height: 100svh;
+      overflow: hidden;
+      background-color: var(--color-bg);
+      color: var(--color-text-main);
+      font-family: var(--font-manrope);
+      line-height: 1.5;
+    }
+
+    /* --------------------------------------------------
+       BACKGROUND MEDIA & SCRIM OVERLAY
+       -------------------------------------------------- */
+    .hero-stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100svh;
+      display: grid;
+      grid-template-rows: var(--h-nav) 1fr auto;
+      overflow: hidden;
+    }
+
+    .media-container {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .media-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(0.7) contrast(1.1) grayscale(0.25);
+      transform: scale(1.02);
+      transition: filter 1s var(--ease-out-expo);
+    }
+
+    .scrim-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: 
+        linear-gradient(180deg, rgba(3,3,3,0.88) 0%, rgba(3,3,3,0.2) 30%, rgba(3,3,3,0.45) 70%, rgba(3,3,3,0.95) 100%),
+        linear-gradient(90deg, rgba(3,3,3,0.85) 0%, rgba(3,3,3,0.2) 50%, rgba(3,3,3,0.7) 100%),
+        radial-gradient(circle at 70% 40%, rgba(3,3,3,0) 0%, rgba(3,3,3,0.65) 100%);
+    }
+
+    /* --------------------------------------------------
+       NAVBAR
+       -------------------------------------------------- */
+    .navbar {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--m-padding);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(3, 3, 3, 0.4);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--color-text-main);
+    }
+
+    .brand-mark {
+      width: 18 h;
+      height: 18px;
+      border: 1.5px solid var(--color-text-main);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .brand-mark::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background-color: var(--color-text-main);
+    }
+
+    .brand-text {
+      font-family: var(--font-sora);
+      font-weight: 300;
+      font-size: clamp(1rem, 1.2vw, 1.25rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(1.5rem, 3vw, 3rem);
+      list-style: none;
+    }
+
+    .nav-link {
+      font-family: var(--font-mono);
+      font-size: clamp(0.7rem, 0.8vw, 0.8rem);
+      color: var(--color-text-muted);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color var(--duration-fast) ease;
+      position: relative;
+      padding: 0.25rem 0;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0%;
+      height: 1px;
+      background-color: var(--color-accent-white);
+      transition: width var(--duration-fast) var(--ease-out-expo);
+    }
+
+    .nav-link:hover {
+      color: var(--color-text-main);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .btn-access {
+      font-family: var(--font-mono);
+      font-size: clamp(0.7rem, 0.8vw, 0.85rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-bg);
+      background-color: var(--color-text-main);
+      padding: 0.6rem 1.4rem;
+      border: 1px solid var(--color-text-main);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out-expo);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-access:hover {
+      background-color: transparent;
+      color: var(--color-text-main);
+    }
+
+    /* Mobile Hamburger Trigger */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      z-index: 60;
+    }
+
+    .hamburger-icon {
+      width: 24px;
+      height: 16px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hamburger-icon span {
+      width: 100%;
+      height: 1.5px;
+      background-color: var(--color-text-main);
+      transition: transform var(--duration-normal) var(--ease-out-expo), opacity var(--duration-fast) ease;
+    }
+
+    /* --------------------------------------------------
+       MOBILE MENU OVERLAY
+       -------------------------------------------------- */
+    .mobile-menu-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background-color: rgba(3, 3, 3, 0.98);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--m-padding);
+      clip-path: circle(0% at calc(100% - var(--m-padding)) 40px);
+      transition: clip-path 0.6s var(--ease-out-expo);
+      pointer-events: none;
+    }
+
+    .mobile-menu-overlay.is-active {
+      clip-path: circle(150% at calc(100% - var(--m-padding)) 40px);
+      pointer-events: all;
+    }
+
+    .mobile-nav-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .mobile-nav-link {
+      font-family: var(--font-sora);
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 200;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: color var(--duration-fast) ease, transform var(--duration-fast) ease;
+    }
+
+    .mobile-nav-link:hover {
+      color: var(--color-accent-white);
+      transform: translateX(10px);
+    }
+
+    /* --------------------------------------------------
+       MAIN HERO BODY LAYOUT
+       -------------------------------------------------- */
+    .hero-body {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: center;
+      gap: clamp(2rem, 5vw, 6rem);
+      padding: 0 var(--m-padding);
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Left Copy Panel */
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: clamp(1rem, 2vw, 1.75rem);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.35rem 0.85rem;
+      border: 1px solid var(--color-border);
+      background: rgba(255, 255, 255, 0.03);
+      font-family: var(--font-mono);
+      font-size: clamp(0.65rem, 0.75vw, 0.75rem);
+      color: var(--color-text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      animation: pulseDot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    .hero-title {
+      font-family: var(--font-sora);
+      font-weight: 200;
+      font-size: clamp(2.5rem, 5.2vw, 5.5rem);
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+      color: var(--color-accent-white);
+    }
+
+    .hero-title span {
+      font-family: var(--font-manrope);
+      font-weight: 300;
+      color: var(--color-text-muted);
+      display: block;
+    }
+
+    .hero-description {
+      font-family: var(--font-manrope);
+      font-weight: 300;
+      font-size: clamp(0.95rem, 1.15vw, 1.2rem);
+      line-height: 1.6;
+      color: var(--color-text-muted);
+      max-width: 540px;
+    }
+
+    /* Right Form Panel */
+    .hero-panel {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: clamp(1.75rem, 3.5vw, 3rem);
+      position: relative;
+    }
+
+    .panel-header {
+      margin-bottom: 2rem;
+    }
+
+    .panel-subtitle {
+      font-family: var(--font-mono);
+      font-size: clamp(0.7rem, 0.8vw, 0.8rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-dim);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .panel-title {
+      font-family: var(--font-sora);
+      font-weight: 300;
+      font-size: clamp(1.25rem, 1.6vw, 1.75rem);
+      color: var(--color-accent-white);
+      letter-spacing: -0.01em;
+    }
+
+    .entry-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .form-label {
+      font-family: var(--font-mono);
+      font-size: clamp(0.65rem, 0.75vw, 0.75rem);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: none;
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.85rem 0;
+      font-family: var(--font-manrope);
+      font-size: clamp(0.9rem, 1vw, 1.05rem);
+      color: var(--color-text-main);
+      outline: none;
+      transition: border-color var(--duration-fast) var(--ease-out-expo);
+      border-radius: 0;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-bottom-color: var(--color-border-focus);
+    }
+
+    .form-input::placeholder {
+      color: var(--color-text-dim);
+    }
+
+    .form-select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0 center;
+    }
+
+    .form-select option {
+      background-color: #121214;
+      color: var(--color-text-main);
+    }
+
+    .btn-submit {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background-color: var(--color-accent-white);
+      color: var(--color-bg);
+      border: 1px solid var(--color-accent-white);
+      font-family: var(--font-mono);
+      font-size: clamp(0.75rem, 0.85vw, 0.85rem);
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out-expo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .btn-submit:hover {
+      background-color: transparent;
+      color: var(--color-accent-white);
+    }
+
+    .invite-link {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: clamp(0.65rem, 0.75vw, 0.75rem);
+      color: var(--color-text-dim);
+    }
+
+    .invite-link a {
+      color: var(--color-text-muted);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--color-text-dim);
+      transition: color var(--duration-fast) ease;
+    }
+
+    .invite-link a:hover {
+      color: var(--color-text-main);
+    }
+
+    /* --------------------------------------------------
+       LEGAL FOOTER
+       -------------------------------------------------- */
+    .legal-footer {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem var(--m-padding);
+      border-top: 1px solid var(--color-border);
+      background: rgba(3, 3, 3, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-family: var(--font-mono);
+      font-size: clamp(0.65rem, 0.75vw, 0.75rem);
+      color: var(--color-text-dim);
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .footer-link {
+      color: var(--color-text-dim);
+      text-decoration: none;
+      transition: color var(--duration-fast) ease;
+    }
+
+    .footer-link:hover {
+      color: var(--color-text-muted);
+      text-decoration: underline;
+    }
+
+    /* --------------------------------------------------
+       RESPONSIVE BREAKPOINTS
+       -------------------------------------------------- */
+    @media (max-width: 1024px) {
+      .hero-body {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        overflow-y: auto;
+        max-height: calc(100vh - var(--h-nav) - 50px);
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      .hero-title {
+        font-size: clamp(2.2rem, 7vw, 4rem);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .navbar {
+        padding: 0 1.25rem;
+      }
+
+      .hero-body {
+        padding: 1.25rem;
+      }
+
+      .legal-footer {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+        padding: 1rem;
+      }
+
+      .footer-links {
+        gap: 1rem;
+      }
+
+      .btn-access {
+        display: none;
+      }
+    }
+
+    /* Menu Toggle Hamburger Animation State */
+    .menu-toggle.is-open .hamburger-icon span:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .menu-toggle.is-open .hamburger-icon span:nth-child(2) {
+      opacity: 0;
+    }
+    .menu-toggle.is-open .hamburger-icon span:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero-stage">
+    <!-- Cinematic Full-Bleed Video Background -->
+    <div class="media-container">
+      <video class="media-video" autoplay muted loop playsinline preload="auto" poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260806_132328_5f9029c8-218f-4489-82b6-29ff2849920e.png">
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260806_133255_956f653f-5d80-4b06-abd5-0f46c98b60fa.mp4" type="video/mp4">
+      </video>
+      <div class="scrim-overlay"></div>
+    </div>
+
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <a href="#" class="brand-logo" aria-label="ECHOID Homepage">
+        <div class="brand-mark"></div>
+        <span class="brand-text">ECHOID</span>
+      </a>
+
+      <nav aria-label="Main Navigation">
+        <ul class="nav-links">
+          <li><a href="#overview" class="nav-link">Overview</a></li>
+          <li><a href="#architecture" class="nav-link">Architecture</a></li>
+          <li><a href="#voice-entry" class="nav-link">Voice Entry</a></li>
+          <li><a href="#research" class="nav-link">Research</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#voice-entry" class="btn-access">Access System</a>
+        
+        <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle Navigation Menu">
+          <div class="hamburger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <nav class="mobile-menu-overlay" id="mobileMenu" aria-hidden="true">
+      <ul class="mobile-nav-links">
+        <li><a href="#overview" class="mobile-nav-link">Overview</a></li>
+        <li><a href="#architecture" class="mobile-nav-link">Architecture</a></li>
+        <li><a href="#voice-entry" class="mobile-nav-link">Voice Entry</a></li>
+        <li><a href="#research" class="mobile-nav-link">Research</a></li>
+        <li><a href="#legal" class="mobile-nav-link">Compliance</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Hero Body Content -->
+    <main class="hero-body">
+      <!-- Left Column: Title & Subtitle -->
+      <section class="hero-copy">
+        <div class="status-badge">
+          <span class="status-dot"></span>
+          <span>VOICE ENTRY // BUILD 2026.08</span>
+        </div>
+
+        <h1 class="hero-title">
+          The Next Layer
+          <span>of Intelligence.</span>
+        </h1>
+
+        <p class="hero-description">
+          An autonomous voice-driven clinical engine engineered for sub-millisecond reasoning, zero-friction medical workflows, and HIPAA/LGPD compliant intelligence orchestration.
+        </p>
+      </section>
+
+      <!-- Right Column: Sign-up & Access Panel -->
+      <section class="hero-panel" id="voice-entry">
+        <div class="panel-header">
+          <span class="panel-subtitle">// RESTRICTED EARLY ACCESS</span>
+          <h2 class="panel-title">Request Access Token</h2>
+        </div>
+
+        <form class="entry-form" id="accessForm" onsubmit="event.preventDefault(); handleFormSubmit();">
+          <div class="form-group">
+            <label for="email" class="form-label">Professional Email</label>
+            <input type="email" id="email" class="form-input" placeholder="physician@institution.org" required autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label for="specialty" class="form-label">Clinical Specialty / Role</label>
+            <select id="specialty" class="form-select" required>
+              <option value="" disabled selected>Select Clinical Discipline</option>
+              <option value="cardiology">Cardiology & Electrophysiology</option>
+              <option value="neurology">Neurology & Intensive Care</option>
+              <option value="oncology">Oncology & Genomics</option>
+              <option value="internal">Internal Medicine / Primary Care</option>
+              <option value="administration">Hospital Administration / IT</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-submit">
+            <span>Request Access Token</span>
+            <span>&rarr;</span>
+          </button>
+        </form>
+
+        <div class="invite-link">
+          Already have an access key? <a href="#redeem" onclick="alert('Access key verification system ready.');">Redeem Token &rarr;</a>
+        </div>
+      </section>
+    </main>
+
+    <!-- Legal Footer -->
+    <footer class="legal-footer">
+      <div>
+        &copy; 2026 ECHOID SYSTEMS INC. ALL RIGHTS RESERVED.
+      </div>
+
+      <ul class="footer-links">
+        <li><a href="#" class="footer-link">PRIVACY POLICY</a></li>
+        <li><a href="#" class="footer-link">TERMS OF SERVICE</a></li>
+        <li><a href="#" class="footer-link">HIPAA / LGPD COMPLIANCE</a></li>
+      </ul>
+    </footer>
+  </div>
+
+  <!-- Pure JavaScript Interactivity -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const menuToggle = document.getElementById('menuToggle');
+      const mobileMenu = document.getElementById('mobileMenu');
+      const mobileLinks = document.querySelectorAll('.mobile-nav-link');
+
+      function toggleMenu(open) {
+        const isOpen = open !== undefined ? open : !mobileMenu.classList.contains('is-active');
+        mobileMenu.classList.toggle('is-active', isOpen);
+        menuToggle.classList.toggle('is-open', isOpen);
+        menuToggle.setAttribute('aria-expanded', isOpen);
+        mobileMenu.setAttribute('aria-hidden', !isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+      }
+
+      menuToggle.addEventListener('click', () => toggleMenu());
+
+      mobileLinks.forEach(link => {
+        link.addEventListener('click', () => toggleMenu(false));
+      });
+
+      // Keyboard Accessibility (Escape Key)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileMenu.classList.contains('is-active')) {
+          toggleMenu(false);
+        }
+      });
+    });
+
+    function handleFormSubmit() {
+      const email = document.getElementById('email').value;
+      const btn = document.querySelector('.btn-submit span');
+      if (email) {
+        btn.innerText = 'ACCESS TOKEN GENERATED ✓';
+        setTimeout(() => {
+          btn.innerText = 'REQUEST ACCESS TOKEN';
+        }, 3000);
+      }
+    }
+  </script>
+</body>
+</html>
