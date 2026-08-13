@@ -1,0 +1,17 @@
+# Ignorar arquivos de ambiente e chaves secretas (API Keys)
+.env
+*.env
+ia-clinica-rag/.env
+
+# Ignorar dependências e arquivos de build
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Ignorar arquivos de sistema e IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
