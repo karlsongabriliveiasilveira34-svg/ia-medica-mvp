@@ -2,12 +2,24 @@
   "name": "ia-medica-root",
   "version": "1.0.0",
   "private": true,
-  "description": "Atalhos para executar o projeto IA Clínica RAG a partir da pasta raiz",
+  "description": "Atalhos e dependências para o projeto IA Clínica RAG na Vercel",
+  "type": "module",
   "scripts": {
     "dev": "npm --prefix ia-clinica-rag run dev",
     "start": "npm --prefix ia-clinica-rag start",
     "db:migrate": "npm --prefix ia-clinica-rag run db:migrate",
     "ingest": "npm --prefix ia-clinica-rag run ingest",
     "generate-jwt": "npm --prefix ia-clinica-rag run generate-jwt"
+  },
+  "dependencies": {
+    "@google/genai": "^2.16.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.23.0",
+    "uuid": "^11.1.0",
+    "zod": "^4.4.3"
   }
 }

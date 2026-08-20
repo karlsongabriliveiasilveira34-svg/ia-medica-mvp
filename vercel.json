@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd ia-clinica-rag && npm install && cd frontend && npm install && npm run build",
+  "buildCommand": "npm install && cd ia-clinica-rag/frontend && npm install && npm run build",
   "outputDirectory": "ia-clinica-rag/frontend/dist",
   "rewrites": [
     {
