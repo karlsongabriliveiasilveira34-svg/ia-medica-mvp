@@ -7,6 +7,7 @@
     "dev": "npm --prefix ia-clinica-rag run dev",
     "start": "npm --prefix ia-clinica-rag start",
     "db:migrate": "npm --prefix ia-clinica-rag run db:migrate",
-    "ingest": "npm --prefix ia-clinica-rag run ingest"
+    "ingest": "npm --prefix ia-clinica-rag run ingest",
+    "generate-jwt": "npm --prefix ia-clinica-rag run generate-jwt"
   }
 }
