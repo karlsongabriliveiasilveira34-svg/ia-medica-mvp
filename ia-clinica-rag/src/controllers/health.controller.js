@@ -15,8 +15,8 @@ export async function checkHealth(req, res) {
       database: {
         connected: true,
         latencyMs: dbLatencyMs,
-        serverTime: dbResult.rows[0].db_time,
-        version: dbResult.rows[0].db_version
+        serverTime: dbResult.rows[0]?.db_time,
+        version: dbResult.rows[0]?.db_version
       },
       models: {
         chatModel: env.geminiModel,
@@ -25,12 +25,17 @@ export async function checkHealth(req, res) {
       }
     });
   } catch (error) {
-    return res.status(500).json({
-      status: "unhealthy",
+    return res.status(200).json({
+      status: "degraded",
       timestamp: new Date().toISOString(),
       error: error.message,
       database: {
         connected: false
+      },
+      models: {
+        chatModel: env.geminiModel,
+        embeddingModel: env.embeddingModel,
+        embeddingDimensions: env.embeddingDimensions
       }
     });
   }

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { apiRouter } from "./routes/api.routes.js";
 
@@ -14,21 +15,21 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Servir arquivos estáticos do frontend e pasta de conhecimento (PDFs)
+// Servir arquivos estáticos do frontend e pasta de conhecimento (se existirem localmente)
 const frontendDist = path.join(__dirname, "../frontend/dist");
 const frontendOut = path.join(__dirname, "../frontend/out");
 const knowledgeDir = path.join(__dirname, "../knowledge");
 
-app.use(express.static(frontendDist));
-app.use(express.static(frontendOut));
-app.use("/knowledge", express.static(knowledgeDir));
+if (fs.existsSync(frontendDist)) app.use(express.static(frontendDist));
+if (fs.existsSync(frontendOut)) app.use(express.static(frontendOut));
+if (fs.existsSync(knowledgeDir)) app.use("/knowledge", express.static(knowledgeDir));
 
 // Rotas da API
 app.use(apiRouter);
 
 // Handler para rotas não encontradas
 app.use((req, res, next) => {
-  if (req.accepts("html") && !req.path.startsWith("/api")) {
+  if (req.accepts("html") && !req.path.startsWith("/api") && fs.existsSync(path.join(frontendDist, "index.html"))) {
     return res.sendFile(path.join(frontendDist, "index.html"), (err) => {
       if (err) {
         res.status(404).json({ status: "error", message: "Rota não encontrada" });
