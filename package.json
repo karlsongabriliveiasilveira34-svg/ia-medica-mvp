@@ -1,0 +1,12 @@
+{
+  "name": "ia-medica-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Atalhos para executar o projeto IA Clínica RAG a partir da pasta raiz",
+  "scripts": {
+    "dev": "npm --prefix ia-clinica-rag run dev",
+    "start": "npm --prefix ia-clinica-rag start",
+    "db:migrate": "npm --prefix ia-clinica-rag run db:migrate",
+    "ingest": "npm --prefix ia-clinica-rag run ingest"
+  }
+}

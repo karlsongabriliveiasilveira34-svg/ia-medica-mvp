@@ -47,7 +47,7 @@ export function validateClaimsAndCitations({ answerText, chunks }) {
 
   // Se houverem afirmações sem suporte em condutas críticas, injetar aviso de qualificação
   if (unsupportedClaims.length > 0) {
-    validatedAnswer += `\n\n⚠️ **Nota de Rastreabilidade**: As seguintes alegações requerem confirmação adicional nas fontes oficiais:\n` +
+    validatedAnswer += `\n\n**Nota de Rastreabilidade Metodológica**: As seguintes alegações requerem confirmação adicional nas fontes oficiais:\n` +
       unsupportedClaims.map(c => `> - *"${c.trim()}"*`).join("\n");
   }
 

@@ -25,8 +25,8 @@ async function walk(directory) {
     const files = [];
 
     for (const entry of entries) {
-      // Ignorar pasta .git para economizar processamento
-      if (entry.name === ".git") continue;
+      // Ignorar pastas ocultas e dependências pesadas para otimizar tempo
+      if (entry.name.startsWith(".") || entry.name === "node_modules" || entry.name === "vendor") continue;
 
       const fullPath = path.join(directory, entry.name);
       if (entry.isDirectory()) {
@@ -72,22 +72,29 @@ export async function runIngestion() {
 
       let textContent = "";
       let pageCount = 1;
+      let extractedMetadata = {};
 
       if (ext === ".pdf") {
         const pdfData = await extractPdf(file);
         textContent = pdfData.text;
         pageCount = pdfData.pages;
+        extractedMetadata = pdfData.metadata || {};
       } else {
         textContent = buffer.toString("utf-8");
-        // Se o arquivo texto for muito pequeno (menos de 50 caracteres), ignora
         if (textContent.trim().length < 50) continue;
       }
 
+      const finalTitle = extractedMetadata.title || title;
+
       console.log("\n========================================");
       console.log(`📄 Ingerindo [${category.toUpperCase()}]: ${filename}`);
+      console.log(`📌 Título Real: "${finalTitle}"`);
+      if (extractedMetadata.publicationYear) console.log(`📅 Ano: ${extractedMetadata.publicationYear}`);
+      if (extractedMetadata.authors) console.log(`✍️ Autores: ${extractedMetadata.authors.join(", ")}`);
+      if (extractedMetadata.organization) console.log(`🏛️ Organização: ${extractedMetadata.organization}`);
 
       await ingestDocument({
-        title,
+        title: finalTitle,
         filename: relative.replace(/\\/g, "/"), // Manter relativo normalizado
         category,
         text: textContent,
@@ -95,7 +102,10 @@ export async function runIngestion() {
         metadata: {
           pages: pageCount,
           sourcePath: relative,
-          fileType: ext
+          fileType: ext,
+          authors: extractedMetadata.authors || null,
+          publicationYear: extractedMetadata.publicationYear || null,
+          organization: extractedMetadata.organization || null
         }
       });
 

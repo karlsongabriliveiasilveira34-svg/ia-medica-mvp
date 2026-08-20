@@ -30,6 +30,6 @@ export async function seedAgents() {
   console.log("✅ Semeatura dos 8 Agentes Clínicos concluída com sucesso!");
 }
 
-if (process.argv[1].endsWith("seed-agents.js")) {
+if (process.argv[1]?.endsWith("seed-agents.js")) {
   seedAgents().then(() => pool.end());
 }

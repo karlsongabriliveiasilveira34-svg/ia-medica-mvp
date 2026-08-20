@@ -5,14 +5,16 @@ export class QueryAnalyzerAgent {
   /**
    * Analisa a pergunta do usuário e extrai a intenção clínica, entidades e lacunas de informação com LOGS DETALHADOS
    */
-  static async analyzeQuery(queryText) {
+  static async analyzeQuery(queryText, historyText = "") {
     console.log(`\n🔍 [LOG QUERY ANALYZER] Analisando intenção clínica para: "${queryText}"...`);
+
+    const historySection = historyText ? `HISTÓRICO ACUMULADO DA SESSÃO:\n${historyText}\n\n` : "";
 
     const prompt = `
 Você é um especialista em Análise de Intenção e Entidades Clínicas (Clinical Query Analyzer).
-Analise a seguinte dúvida médica ou caso clínico.
+${historySection}Pergunta / Mensagem Atual: "${queryText}"
 
-Pergunta: "${queryText}"
+Analise a dúvida médica ou mensagem acima, considerando o histórico se presente.
 
 Extraia as seguintes informações e retorne ESTRITAMENTE em formato JSON:
 {

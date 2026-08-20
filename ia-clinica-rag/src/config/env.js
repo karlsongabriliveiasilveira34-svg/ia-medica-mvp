@@ -26,5 +26,9 @@ export const env = {
     "gemini-embedding-2",
 
   embeddingDimensions:
-    Number(process.env.EMBEDDING_DIMENSIONS || 768)
+    Number(process.env.EMBEDDING_DIMENSIONS || 768),
+
+  demoPassword: process.env.DEMO_PASSWORD || "clinica2026",
+
+  jwtSecret: process.env.JWT_SECRET || "ia-clinica-secret-key-2026"
 };

@@ -19,20 +19,40 @@ export async function ingestDocument({
     checksum = crypto.createHash("sha256").update(text).digest("hex");
   }
 
+  const realAuthors = metadata.authors || null;
+  let realPublicationYear = null;
+  const rawYear = metadata.publicationYear || metadata.publication_year || metadata.publicationDate;
+  if (rawYear) {
+    const parsed = parseInt(String(rawYear).split("-")[0], 10);
+    if (!isNaN(parsed)) realPublicationYear = parsed;
+  }
+  const realOrganization = metadata.sourceOrganization || metadata.organization || null;
+
   // Criar ou mapear fonte associada no catálogo 'sources'
-  let sourceId = null;
-  try {
-    const sourceRes = await query(
-      `
-        INSERT INTO sources (title, pdf_path, source_type, specialties, status)
-        VALUES ($1, $2, $3, $4, 'ACTIVE')
-        RETURNING id
-      `,
-      [title, filename, metadata.sourceType || "GUIDELINE", JSON.stringify([category])]
-    );
-    sourceId = sourceRes.rows[0]?.id || null;
-  } catch (err) {
-    console.warn("⚠️ Aviso ao registrar no catálogo de fontes:", err.message);
+  let sourceId = metadata.sourceId || metadata.source_id || null;
+  if (!sourceId) {
+    try {
+      const sourceRes = await query(
+        `
+          INSERT INTO sources (title, pdf_path, source_type, authors, organization, specialties, status, authority_level, url, canonical_url)
+          VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE', $7, $8, $8)
+          RETURNING id
+        `,
+        [
+          title,
+          filename,
+          metadata.sourceType || "GUIDELINE",
+          JSON.stringify(realAuthors || []),
+          realOrganization,
+          JSON.stringify([category]),
+          metadata.authorityLevel || 4,
+          metadata.url || null
+        ]
+      );
+      sourceId = sourceRes.rows[0]?.id || null;
+    } catch (err) {
+      console.warn("⚠️ Aviso ao registrar no catálogo de fontes:", err.message);
+    }
   }
 
   // Verificar se o documento com mesmo checksum ou filename já existe
@@ -49,9 +69,9 @@ export async function ingestDocument({
   const documentResult = await query(
     `
       INSERT INTO documents
-        (title, filename, category, checksum, source_id, metadata)
+        (title, filename, category, checksum, source_id, authors, publication_year, organization, metadata)
       VALUES
-        ($1, $2, $3, $4, $5, $6)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `,
     [
@@ -60,10 +80,14 @@ export async function ingestDocument({
       category,
       checksum,
       sourceId,
+      JSON.stringify(realAuthors || []),
+      realPublicationYear,
+      realOrganization,
       JSON.stringify({
         ...metadata,
-        publicationYear: metadata.publicationYear || new Date().getFullYear(),
-        organization: metadata.organization || "Diretriz Médica"
+        authors: realAuthors,
+        publicationYear: realPublicationYear,
+        organization: realOrganization
       })
     ]
   );
@@ -123,6 +147,9 @@ export async function ingestDocument({
           pageNumber: chunkObj.pageNumber || 1,
           section: chunkObj.section,
           subsection: chunkObj.subsection,
+          authors: realAuthors,
+          publicationYear: realPublicationYear,
+          organization: realOrganization,
           ...metadata
         })
       ]
