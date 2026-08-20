@@ -23,13 +23,17 @@ export function LoginModal({ onLoginSuccess }) {
         body: JSON.stringify({ password })
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      let data = {};
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      }
 
       if (res.ok && data.status === 'success' && data.token) {
         localStorage.setItem('demo_token', data.token);
         onLoginSuccess(data.token);
       } else {
-        setError(data.message || 'Senha incorreta. Verifique e tente novamente.');
+        setError(data.message || (res.status === 401 ? 'Senha incorreta. Verifique a senha da clínica e tente novamente.' : 'Erro de autenticação no servidor.'));
       }
     } catch (err) {
       setError('Erro de conexão ao autenticar. Tente novamente.');

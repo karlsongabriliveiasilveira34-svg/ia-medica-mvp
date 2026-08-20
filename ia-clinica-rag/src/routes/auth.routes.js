@@ -4,7 +4,7 @@ import { generateToken, verifyToken } from "../utils/token.util.js";
 
 export const authRouter = Router();
 
-authRouter.post("/api/auth/login", (req, res) => {
+const handleLogin = (req, res) => {
   const { password } = req.body || {};
 
   if (!password || typeof password !== "string") {
@@ -28,9 +28,9 @@ authRouter.post("/api/auth/login", (req, res) => {
     message: "Acesso autorizado com sucesso!",
     token
   });
-});
+};
 
-authRouter.get("/api/auth/verify", (req, res) => {
+const handleVerify = (req, res) => {
   const authHeader = req.headers.authorization || req.headers["x-demo-token"];
   if (!authHeader) {
     return res.json({ status: "success", authenticated: false });
@@ -46,4 +46,7 @@ authRouter.get("/api/auth/verify", (req, res) => {
     authenticated: !!decoded,
     user: decoded || null
   });
-});
+};
+
+authRouter.post(["/api/auth/login", "/auth/login"], handleLogin);
+authRouter.get(["/api/auth/verify", "/auth/verify"], handleVerify);

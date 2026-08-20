@@ -2,8 +2,8 @@ import { verifyToken } from "../utils/token.util.js";
 
 export function requireAuth(req, res, next) {
   // Rotas públicas que não exigem autenticação
-  const publicPaths = ["/health", "/api/auth/login", "/api/auth/verify"];
-  if (publicPaths.includes(req.path)) {
+  const publicPaths = ["/health", "/api/auth/login", "/api/auth/verify", "/auth/login", "/auth/verify"];
+  if (publicPaths.some(path => req.path.includes(path) || req.originalUrl?.includes(path))) {
     return next();
   }
 
