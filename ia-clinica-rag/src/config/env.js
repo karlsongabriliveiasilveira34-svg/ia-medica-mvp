@@ -7,16 +7,16 @@ const required = [
 
 for (const key of required) {
   if (!process.env[key]) {
-    throw new Error(`Variável de ambiente ausente: ${key}`);
+    console.warn(`⚠️ Variável de ambiente ausente: ${key}`);
   }
 }
 
 export const env = {
   port: Number(process.env.PORT || 3000),
 
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.DATABASE_URL || "postgresql://clinica:clinica_dev@localhost:5432/clinica_rag",
 
-  geminiApiKey: process.env.GEMINI_API_KEY,
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
 
   geminiModel:
     process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",

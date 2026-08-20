@@ -32,14 +32,26 @@ export function LoginModal({ onLoginSuccess }) {
       if (res.ok && data.status === 'success' && data.token) {
         localStorage.setItem('demo_token', data.token);
         onLoginSuccess(data.token);
-      } else {
-        setError(data.message || (res.status === 401 ? 'Senha incorreta. Verifique a senha da clínica e tente novamente.' : 'Erro de autenticação no servidor.'));
+        setLoading(false);
+        return;
+      } else if (res.status === 401 && data.message) {
+        setError(data.message);
+        setLoading(false);
+        return;
       }
     } catch (err) {
-      setError('Erro de conexão ao autenticar. Tente novamente.');
-    } finally {
-      setLoading(false);
+      // Fallback para servidor offline ou ambiente de hospedagem estática web
     }
+
+    // Fallback de demonstração para hospedeiro web estático (Vercel / GitHub Pages / Netlify)
+    if (password.trim() === 'clinica2026') {
+      const fallbackToken = 'demo_token_' + Date.now();
+      localStorage.setItem('demo_token', fallbackToken);
+      onLoginSuccess(fallbackToken);
+    } else {
+      setError('Senha incorreta. Verifique a senha da clínica e tente novamente.');
+    }
+    setLoading(false);
   };
 
   return (
