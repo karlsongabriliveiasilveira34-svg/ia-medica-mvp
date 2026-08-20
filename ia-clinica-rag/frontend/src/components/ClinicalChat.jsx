@@ -301,9 +301,19 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           imageDataUrl: activeImage ? activeImage.dataUrl : null
         })
       });
-      clearTimeout(timeoutId);
-
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      let data = {};
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const errorText = await res.text();
+        data = {
+          status: 'error',
+          message: res.status === 429
+            ? 'O serviço de inteligência médica está com alta demanda momentânea. Por favor, aguarde 10 segundos.'
+            : 'O serviço de consulta médica está inicializando no servidor. Por favor, tente novamente em instantes.'
+        };
+      }
 
       if (data.sessionId) {
         setCurrentSessionId(data.sessionId);

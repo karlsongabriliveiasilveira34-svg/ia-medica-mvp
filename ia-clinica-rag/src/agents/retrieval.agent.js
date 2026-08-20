@@ -63,14 +63,19 @@ export class RetrievalAgent {
     console.log(`   📐 Vetor de Consulta: Dimensões=${embedding.length}, Norma=${norm}`);
     console.log(`   🗄️ Query SQL: ORDER BY dc.embedding <=> $1 ASC LIMIT ${limit}`);
 
-    const res = await query(sql, queryParams);
-    
-    console.log(`   📊 Resultados Vetoriais Brutos Recuperados (${res.rows.length}):`);
-    res.rows.forEach((r, idx) => {
-      console.log(`      [${idx + 1}] ID: ${r.document_id} | Título: "${r.document_title}" | Similaridade Cosseno: ${r.similarity.toFixed(4)}`);
-    });
+    try {
+      const res = await query(sql, queryParams);
+      
+      console.log(`   📊 Resultados Vetoriais Brutos Recuperados (${res.rows.length}):`);
+      res.rows.forEach((r, idx) => {
+        console.log(`      [${idx + 1}] ID: ${r.document_id} | Título: "${r.document_title}" | Similaridade Cosseno: ${r.similarity?.toFixed(4) || 'N/A'}`);
+      });
 
-    return res.rows;
+      return res.rows;
+    } catch (err) {
+      console.warn("⚠️ AVISO na busca vetorial no PostgreSQL:", err.message);
+      return [];
+    }
   }
 
   /**

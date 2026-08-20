@@ -60,12 +60,17 @@ export async function handleQuery(req, res) {
 
     // 3. Criar nova sessão se não fornecida
     if (!sessionId) {
-      const resolvedAgent = getAgentById(specialty);
-      const sessionRes = await query(
-        `INSERT INTO clinical_sessions (agent_id, clinical_context) VALUES ($1, $2) RETURNING id`,
-        [resolvedAgent.id, JSON.stringify({ initialQuestion: finalQuestion, userMode, hasImage: !!imagePayload })]
-      );
-      sessionId = sessionRes.rows[0]?.id;
+      try {
+        const resolvedAgent = getAgentById(specialty);
+        const sessionRes = await query(
+          `INSERT INTO clinical_sessions (agent_id, clinical_context) VALUES ($1, $2) RETURNING id`,
+          [resolvedAgent.id, JSON.stringify({ initialQuestion: finalQuestion, userMode, hasImage: !!imagePayload })]
+        );
+        sessionId = sessionRes.rows[0]?.id || `session-${Date.now()}`;
+      } catch (sessErr) {
+        console.warn("⚠️ Aviso ao criar sessão no banco:", sessErr.message);
+        sessionId = `session-${Date.now()}`;
+      }
     }
 
     // 4. Processar consulta via Orquestrador Clínico Multimodal
