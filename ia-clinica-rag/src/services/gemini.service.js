@@ -1,9 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "../config/env.js";
 
-export const gemini = new GoogleGenAI({
-  apiKey: env.geminiApiKey
-});
+let geminiClientInstance = null;
+
+function getClient() {
+  if (!geminiClientInstance) {
+    const key = (env.geminiApiKey && env.geminiApiKey.trim()) || "AIzaSy_dummy_key_for_initialization";
+    geminiClientInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return geminiClientInstance;
+}
+
+export const gemini = {
+  models: {
+    generateContent: (params) => getClient().models.generateContent(params),
+    embedContent: (params) => getClient().models.embedContent(params)
+  }
+};
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
