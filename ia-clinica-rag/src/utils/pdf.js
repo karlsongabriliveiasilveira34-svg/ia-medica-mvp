@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const pdfPkg = require("pdf-parse");
 
 export async function extractPdf(filePathOrBuffer) {
   const buffer = Buffer.isBuffer(filePathOrBuffer)
@@ -10,6 +9,7 @@ export async function extractPdf(filePathOrBuffer) {
     : await fs.readFile(filePathOrBuffer);
 
   try {
+    const pdfPkg = require("pdf-parse");
     // pdf-parse v2.x (PDFParse class)
     if (pdfPkg.PDFParse || (pdfPkg.default && pdfPkg.default.PDFParse)) {
       const PDFClass = pdfPkg.PDFParse || pdfPkg.default.PDFParse;

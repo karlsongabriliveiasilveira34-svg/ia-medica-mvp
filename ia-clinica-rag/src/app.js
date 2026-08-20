@@ -5,6 +5,14 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { apiRouter } from "./routes/api.routes.js";
 
+// Polifyll para Web APIs exigidas por pdf-parse / canvas no Node.js 20+ (Vercel)
+if (typeof global.DOMMatrix === "undefined") {
+  global.DOMMatrix = class DOMMatrix { constructor() { this.a=1; this.b=0; this.c=0; this.d=1; this.e=0; this.f=0; } };
+}
+if (typeof global.Path2D === "undefined") {
+  global.Path2D = class Path2D {};
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
