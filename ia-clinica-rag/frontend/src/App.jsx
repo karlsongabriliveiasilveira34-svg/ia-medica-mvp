@@ -39,7 +39,7 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [activeTab, setActiveTab] = useState('landing');
+  const [activeTab, setActiveTab] = useState('chat');
   const [selectedCitation, setSelectedCitation] = useState(null);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(null);
   const [activeConsultation, setActiveConsultation] = useState(null);

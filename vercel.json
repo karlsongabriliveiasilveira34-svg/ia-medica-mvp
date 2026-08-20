@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "buildCommand": "cd ia-clinica-rag && npm install && cd frontend && npm install && npm run build",
+  "outputDirectory": "ia-clinica-rag/frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/health",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
