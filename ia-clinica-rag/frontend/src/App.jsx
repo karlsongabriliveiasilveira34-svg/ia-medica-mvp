@@ -18,11 +18,14 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
     
     if (token && typeof resource === 'string' && resource.startsWith('/api') && !resource.includes('/api/auth/login')) {
       config = config || {};
-      const headers = new Headers(config.headers || {});
-      if (!headers.has('Authorization')) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      config.headers = headers;
+      const existingHeaders = config.headers instanceof Headers 
+        ? Object.fromEntries(config.headers.entries()) 
+        : (config.headers || {});
+
+      config.headers = {
+        ...existingHeaders,
+        'Authorization': `Bearer ${token}`
+      };
     }
 
     const response = await originalFetch(resource, config);
