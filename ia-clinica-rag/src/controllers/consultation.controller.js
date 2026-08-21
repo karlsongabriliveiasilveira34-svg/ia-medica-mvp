@@ -1,5 +1,27 @@
 import { pool } from "../config/database.js";
 import { ReportGeneratorService } from "../services/report-generator.service.js";
+import { cryptoService } from "../services/crypto.service.js";
+
+// Helper para decriptar registro de consulta retornado do banco
+function hydrateConsultationRow(row) {
+  if (!row) return row;
+  const hydrated = { ...row };
+
+  if (row.patient_name_encrypted) {
+    hydrated.patient_name = cryptoService.decrypt(row.patient_name_encrypted);
+  }
+  if (row.record_number_encrypted) {
+    hydrated.record_number = cryptoService.decrypt(row.record_number_encrypted);
+  }
+  if (row.audio_transcript_encrypted) {
+    hydrated.audio_transcript = cryptoService.decrypt(row.audio_transcript_encrypted);
+  }
+  if (row.report_data_encrypted) {
+    hydrated.report_data = cryptoService.decryptJSON(row.report_data_encrypted, row.report_data);
+  }
+
+  return hydrated;
+}
 
 export async function handleGenerateReportFromReasoning(req, res) {
   try {
@@ -19,10 +41,19 @@ export async function handleGenerateReportFromReasoning(req, res) {
     const patientGender = reportData.patientInfo?.gender || "Não informado";
     const recordNumber = reportData.patientInfo?.recordNumber || `PRON-${Date.now().toString().slice(-6)}`;
 
+    // Criptografia ALE (AES-256-GCM) e Geração de Blind Indexes
+    const patientNameEncrypted = cryptoService.encrypt(patientName);
+    const patientNameBlindIndex = cryptoService.blindIndex(patientName);
+    const recordNumberEncrypted = cryptoService.encrypt(recordNumber);
+    const recordNumberBlindIndex = cryptoService.blindIndex(recordNumber);
+    const reportDataEncrypted = cryptoService.encryptJSON(reportData);
+
     const result = await pool.query(
       `INSERT INTO consultations 
-        (session_id, patient_name, patient_age, patient_gender, record_number, clinical_reasoning, report_data, status, audit_trace_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (session_id, patient_name, patient_age, patient_gender, record_number, 
+         patient_name_encrypted, patient_name_blind_index, record_number_encrypted, record_number_blind_index,
+         report_data_encrypted, clinical_reasoning, report_data, status, audit_trace_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
         sessionId || null,
@@ -30,6 +61,11 @@ export async function handleGenerateReportFromReasoning(req, res) {
         patientAge,
         patientGender,
         recordNumber,
+        patientNameEncrypted,
+        patientNameBlindIndex,
+        recordNumberEncrypted,
+        recordNumberBlindIndex,
+        reportDataEncrypted,
         JSON.stringify({ question, answer, citations, differentialDiagnoses }),
         JSON.stringify(reportData),
         'draft',
@@ -39,7 +75,7 @@ export async function handleGenerateReportFromReasoning(req, res) {
 
     return res.status(201).json({
       status: "success",
-      consultation: result.rows[0],
+      consultation: hydrateConsultationRow(result.rows[0]),
       reportData
     });
   } catch (error) {
@@ -61,17 +97,38 @@ export async function handleProcessAudio(req, res) {
       specialty: specialty || "Clínica Geral"
     });
 
+    const patientName = reportData.patientInfo?.name || "Paciente Identificado";
+    const patientAge = reportData.patientInfo?.age || 0;
+    const patientGender = reportData.patientInfo?.gender || "Não informado";
+    const recordNumber = reportData.patientInfo?.recordNumber || `PRON-${Date.now().toString().slice(-6)}`;
+
+    // Criptografia ALE (AES-256-GCM) e Geração de Blind Indexes
+    const patientNameEncrypted = cryptoService.encrypt(patientName);
+    const patientNameBlindIndex = cryptoService.blindIndex(patientName);
+    const recordNumberEncrypted = cryptoService.encrypt(recordNumber);
+    const recordNumberBlindIndex = cryptoService.blindIndex(recordNumber);
+    const audioTranscriptEncrypted = cryptoService.encrypt(transcript);
+    const reportDataEncrypted = cryptoService.encryptJSON(reportData);
+
     const result = await pool.query(
       `INSERT INTO consultations 
-        (session_id, patient_name, patient_age, patient_gender, record_number, audio_transcript, report_data, status, audit_trace_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (session_id, patient_name, patient_age, patient_gender, record_number, 
+         patient_name_encrypted, patient_name_blind_index, record_number_encrypted, record_number_blind_index,
+         audio_transcript_encrypted, report_data_encrypted, audio_transcript, report_data, status, audit_trace_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [
         sessionId || null,
-        reportData.patientInfo?.name || "Paciente Identificado",
-        reportData.patientInfo?.age || 0,
-        reportData.patientInfo?.gender || "Não informado",
-        reportData.patientInfo?.recordNumber || `PRON-${Date.now().toString().slice(-6)}`,
+        patientName,
+        patientAge,
+        patientGender,
+        recordNumber,
+        patientNameEncrypted,
+        patientNameBlindIndex,
+        recordNumberEncrypted,
+        recordNumberBlindIndex,
+        audioTranscriptEncrypted,
+        reportDataEncrypted,
         transcript,
         JSON.stringify(reportData),
         'draft',
@@ -81,7 +138,7 @@ export async function handleProcessAudio(req, res) {
 
     return res.status(201).json({
       status: "success",
-      consultation: result.rows[0],
+      consultation: hydrateConsultationRow(result.rows[0]),
       reportData
     });
   } catch (error) {
@@ -95,28 +152,44 @@ export async function handleUpdateConsultation(req, res) {
     const { id } = req.params;
     const { reportData, images, attachments, status, patientName, patientAge, patientGender, recordNumber } = req.body;
 
+    const patientNameEncrypted = patientName ? cryptoService.encrypt(patientName) : null;
+    const patientNameBlindIndex = patientName ? cryptoService.blindIndex(patientName) : null;
+    const recordNumberEncrypted = recordNumber ? cryptoService.encrypt(recordNumber) : null;
+    const recordNumberBlindIndex = recordNumber ? cryptoService.blindIndex(recordNumber) : null;
+    const reportDataEncrypted = reportData ? cryptoService.encryptJSON(reportData) : null;
+
     const result = await pool.query(
       `UPDATE consultations 
        SET report_data = COALESCE($1, report_data),
-           images = COALESCE($2, images),
-           attachments = COALESCE($3, attachments),
-           status = COALESCE($4, status),
-           patient_name = COALESCE($5, patient_name),
-           patient_age = COALESCE($6, patient_age),
-           patient_gender = COALESCE($7, patient_gender),
-           record_number = COALESCE($8, record_number),
+           report_data_encrypted = COALESCE($2, report_data_encrypted),
+           images = COALESCE($3, images),
+           attachments = COALESCE($4, attachments),
+           status = COALESCE($5, status),
+           patient_name = COALESCE($6, patient_name),
+           patient_name_encrypted = COALESCE($7, patient_name_encrypted),
+           patient_name_blind_index = COALESCE($8, patient_name_blind_index),
+           patient_age = COALESCE($9, patient_age),
+           patient_gender = COALESCE($10, patient_gender),
+           record_number = COALESCE($11, record_number),
+           record_number_encrypted = COALESCE($12, record_number_encrypted),
+           record_number_blind_index = COALESCE($13, record_number_blind_index),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
+       WHERE id = $14
        RETURNING *`,
       [
         reportData ? JSON.stringify(reportData) : null,
+        reportDataEncrypted,
         images ? JSON.stringify(images) : null,
         attachments ? JSON.stringify(attachments) : null,
         status || null,
         patientName || null,
+        patientNameEncrypted,
+        patientNameBlindIndex,
         patientAge || null,
         patientGender || null,
         recordNumber || null,
+        recordNumberEncrypted,
+        recordNumberBlindIndex,
         id
       ]
     );
@@ -127,7 +200,7 @@ export async function handleUpdateConsultation(req, res) {
 
     return res.json({
       status: "success",
-      consultation: result.rows[0]
+      consultation: hydrateConsultationRow(result.rows[0])
     });
   } catch (error) {
     console.error("Erro ao atualizar consulta:", error);
@@ -146,7 +219,7 @@ export async function handleGetConsultation(req, res) {
 
     return res.json({
       status: "success",
-      consultation: result.rows[0]
+      consultation: hydrateConsultationRow(result.rows[0])
     });
   } catch (error) {
     console.error("Erro ao buscar consulta:", error);
@@ -157,12 +230,12 @@ export async function handleGetConsultation(req, res) {
 export async function handleListConsultations(req, res) {
   try {
     const result = await pool.query(
-      "SELECT id, session_id, patient_name, record_number, status, created_at, updated_at FROM consultations ORDER BY created_at DESC LIMIT 50"
+      "SELECT id, session_id, patient_name, patient_name_encrypted, record_number, record_number_encrypted, status, created_at, updated_at FROM consultations ORDER BY created_at DESC LIMIT 50"
     );
 
     return res.json({
       status: "success",
-      consultations: result.rows
+      consultations: result.rows.map(hydrateConsultationRow)
     });
   } catch (error) {
     console.error("Erro ao listar consultas:", error);

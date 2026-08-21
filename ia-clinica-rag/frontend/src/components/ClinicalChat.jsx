@@ -5,6 +5,7 @@ import { SpecialtySelector } from './SpecialtySelector';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ReasoningConfirmModal } from './ReasoningConfirmModal';
 import { AudioConsultationRecorder } from './AudioConsultationRecorder';
+import { MedIaIcon } from './MedIaLogo';
 
 export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReportEditor }) {
   const [messages, setMessages] = useState([]);
@@ -582,15 +583,15 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
       <div className="media-thread flex-1 overflow-y-auto space-y-5 pr-1 sm:space-y-6 sm:pr-2">
         {messages.length === 0 && (
           <div className="media-empty-state my-auto py-7 px-4 sm:py-10 sm:px-8 bg-slate-900/80 border border-slate-800 rounded-[1.75rem] text-center space-y-5 shadow-xl glass-panel animate-fadeIn">
-            <div className="media-assistant-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#213f34] mx-auto flex items-center justify-center text-white shadow-sm">
-              <Stethoscope className="w-7 h-7" />
+            <div className="media-assistant-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#213f34] mx-auto flex items-center justify-center text-[#f4f1ea] shadow-md border border-[#315547]/40">
+              <MedIaIcon className="w-8 h-8 sm:w-9 sm:h-9 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
             </div>
             <div className="max-w-2xl mx-auto space-y-2">
               <h2 className="font-editorial text-2xl sm:text-3xl font-medium text-white tracking-[-0.02em]">
                 Comece pelo caso. As fontes vêm junto.
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Descreva a situação clínica como você pensaria no consultório ou no plantão. O MedIa organiza a análise sem esconder o fundamento.
+                Descreva a situação clínica como você pensaria no consultório ou no plantão. O medIa organiza a análise sem esconder o fundamento.
               </p>
             </div>
 
@@ -642,8 +643,8 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
               className={`media-message-row flex gap-2 sm:gap-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.sender === 'bot' && (
-                <div className="media-assistant-avatar w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#213f34] flex items-center justify-center text-white shrink-0 shadow-sm">
-                  <Bot className="w-5 h-5" />
+                <div className="media-assistant-avatar w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#213f34] flex items-center justify-center text-[#f4f1ea] shrink-0 shadow-sm border border-[#315547]/40">
+                  <MedIaIcon className="w-5 h-5 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
                 </div>
               )}
 

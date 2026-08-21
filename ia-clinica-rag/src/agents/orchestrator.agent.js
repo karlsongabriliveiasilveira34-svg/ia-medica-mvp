@@ -247,6 +247,8 @@ export class OrchestratorAgent {
     const chunks = await RetrievalAgent.retrieveHybrid({
       queryText: prepResult.sanitizedQuery,
       expandedQuery: prepResult.expandedQuery,
+      keywords: prepResult.keywords || [],
+      medicalTerms: prepResult.medicalTerms || [],
       topK: topK || (isDeepResearchMode ? 200 : 100),
       deepResearch: isDeepResearchMode,
       filters: agent.retrievalFilters || {}
@@ -303,8 +305,12 @@ Total de Fontes/Trechos Selecionados: ${chunks ? chunks.length : 0}
       };
     }
 
-    // 6. Formatar contexto de evidências estruturado para o LLM
-    const contextFormatted = chunks && chunks.length > 0 ? chunks.map((c, idx) => {
+    // 6. Formatar contexto de evidências estruturado para o LLM (Top 8 no padrão / Top 14 na pesquisa profunda)
+    const promptChunks = (chunks && chunks.length > 0)
+      ? chunks.slice(0, isDeepResearchMode ? 14 : 8)
+      : [];
+
+    const contextFormatted = promptChunks.length > 0 ? promptChunks.map((c, idx) => {
       const authorsStr = c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0
         ? c.document_authors.join(", ")
         : (c.authors ? (Array.isArray(c.authors) ? c.authors.join(", ") : c.authors) : "Metadado indisponível");
@@ -334,7 +340,7 @@ ${c.content}
       : "";
 
     const strictModeInstructions = agent.strictEvidenceMode
-      ? `\nMODO NOTEBOOKLM ESTRITO: Responda APENAS com informações DIRETAMENTE contidas nos DOCUMENTOS DE REFERÊNCIA RECUPERADOS abaixo. Se o acervo de trechos não contiver a resposta exata para a pergunta, responda EXPLICITAMENTE: "⚠️ Informação não encontrada na base de conhecimento médica." NUNCA utilize conhecimento externo não documentado.\n`
+      ? `\nMODO DE ALTA ANCORAGEM: Priorize os fatos e dados diretamente contidos nos DOCUMENTOS DE REFERÊNCIA abaixo. Sempre que as diretrizes abordarem o tópico, fundamente com precisão e cite [Fonte X]. Caso um detalhe específico não conste nos trechos, forneça a orientação baseada no consenso médico consolidado com o devido aviso de transparência.\n`
       : "";
 
     const intentInstruction = isFollowUp
@@ -375,7 +381,7 @@ Você é uma plataforma avançada de Apoio à Decisão Clínica Baseado em Evid�
 Sua missão é fornecer respostas clínicas de alta profundidade técnica, práticas e estritamente ancoradas em evidências rastreáveis.
 
 DIRETRIZES DE ESTILO E COMUNICAÇÃO PROFISSIONAL:
-1. PROIBIDO O USO DE EMOJIS: Não utilize emojis em títulos, subtítulos, listas, início de parparagraphs ou qualquer parte da resposta (exceto o aviso padrão de segurança de imagem se necessário). A comunicação deve ser formal, técnica e médica.
+1. PROIBIDO O USO DE EMOJIS: Não utilize emojis em títulos, subtítulos, listas, início de parágrafos ou qualquer parte da resposta (exceto o aviso padrão de segurança de imagem se necessário). A comunicação deve ser formal, técnica e médica.
 2. Priorize clareza, precisão terminológica, rigor científico e concisão.
 
 ${historyPromptSection}
@@ -403,11 +409,15 @@ Forneça a resposta estruturada em Markdown com as seguintes seções padronizad
 ## Próximas Perguntas Sugeridas
 - Forneça exatamente 3 perguntas de continuação clínica em formato de lista numerada (1., 2., 3.).
 
-REGRA DE CITAÇÃO E RASTREABILIDADE (USO COERENTE E INTEGRADO DE EVIDÊNCIAS):
-1. CITE AS FONTES [Fonte X] fornecidas nos DOCUMENTOS DE REFERÊNCIA RECUPERADOS abaixo para embasar e fundamentar as recomendações clínicas da resposta.
-2. Utilize as fontes de maneira abrangente e coerente sempre que o documento abordar a patologia, fisiopatologia, diagnóstico, exame ou conduta terapêutica relacionada.
-3. Descarte apenas citações visivelmente desconexas ou de áreas médicas incompatíveis (ex.: citar artigos de fraturas em uma dúvida de infectologia ou oncologia).
-4. Insira os marcadores [Fonte 1], [Fonte 2], etc. no corpo do texto para garantir a rastreabilidade médico-legal.
+REGRA OBRIGATÓRIA DE CITAÇÃO E MULTI-FONTES (RASTREABILIDADE MÉDICA):
+1. OBRIGATÓRIO: CITE MÚLTIPLAS FONTES DISTINTAS ([Fonte 1], [Fonte 2], [Fonte 3], etc.) distribuídas no corpo das diferentes seções da resposta.
+2. NUNCA restrinja a resposta a apenas uma fonte se houver mais de uma fonte disponível nos DOCUMENTOS DE REFERÊNCIA.
+3. Distribua as citações correlacionando cada recomendação clínica à sua respectiva fonte:
+   - Em '## Detalhamento Clínico e Fisiopatologia': cite os artigos e estudos de etiopatogenia/diagnóstico.
+   - Em '## Conduta Terapêutica e Prescrição': cite as diretrizes oficiais e ensaios clínicos com doses e tratamentos.
+   - Em '## Consenso e Divergência na Literatura': cite revisões sistemáticas, meta-análises e diretrizes de sociedades.
+   - Em '## Exame Físico e Manobras Clínicas': cite os manuais e diretrizes de propedêutica.
+4. Insira os marcadores [Fonte 1], [Fonte 2], etc. no corpo do texto para garantir a rastreabilidade médico-legal completa.
 5. É PROIBIDO escrever a seção de referências por extenso no texto (o sistema formatará e anexará automaticamente as fontes oficiais citadas).
 6. SE NENHUMA FONTE FOR FORNECIDA NO CONTEXTO: Apresente a resposta com base no consenso científico e inclua no final da '## Resposta Direta' a nota:
    "⚠️ NOTA: Não foram encontradas evidências certificadas na base interna específicas sobre este tópico. Resposta baseada em conhecimento clínico consolidado."
@@ -464,12 +474,27 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
       logStep("DIAGNOSIS_MATRIX_SKIPPED", "Recálculo de diagnósticos diferenciais suprimido por se tratar de pergunta de acompanhamento/conduta.");
     }
 
-    // 8. Extrair quais marcadores [Fonte X] foram efetivamente citados no texto após a validação de 3 perguntas
+    // 8. Extrair quais marcadores [Fonte X] foram efetivamente citados no texto
     const citedMatches = Array.from(rawAnswerText.matchAll(/\[Fonte\s+(\d+)\]/gi));
     const citedIndices = new Set(citedMatches.map(m => parseInt(m[1], 10) - 1));
 
-    // Mapear apenas os chunks que foram atestados como relevantes e citados pela IA
-    const usedChunks = (chunks || []).filter((_, idx) => citedIndices.has(idx));
+    // Mapear chunks diretamente citados
+    const directlyCitedChunks = promptChunks.filter((_, idx) => citedIndices.has(idx));
+
+    // Garantir retenção das principais evidências recuperadas de alta relevância
+    const finalEvidenceList = [...directlyCitedChunks];
+    promptChunks.forEach((c) => {
+      const isAlreadyIn = finalEvidenceList.some(
+        existing => (existing.document_id && existing.document_id === c.document_id) ||
+                    (existing.id && existing.id === c.id) ||
+                    (existing.document_title && existing.document_title === c.document_title)
+      );
+      if (!isAlreadyIn && finalEvidenceList.length < (isDeepResearchMode ? 10 : 5)) {
+        finalEvidenceList.push(c);
+      }
+    });
+
+    const usedChunks = finalEvidenceList.length > 0 ? finalEvidenceList : (chunks || []).slice(0, 4);
 
     // Renderizar determinísticamente a seção ## Fontes e Referências apenas com as fontes validadas e citadas
     const deterministicSourcesSection = (usedChunks.length > 0)
@@ -526,7 +551,7 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
 
     // 10. Calcular Métrica Quantitativa de Consenso Científico Dinâmico
     const totalSources = usedChunks.length;
-    const isTreatmentQuery = ['NOVO_CASO', 'CONTINUACAO_CASO', 'PESQUISA_EVIDENCIA'].includes(prepResult.intentType);
+    const isTreatmentQuery = ['NOVO_CASO', 'CONTINUACAO_CASO', 'PESQUISA_EVIDENCIA', 'CLINICAL_CASE', 'EVIDENCE_SEARCH'].includes(prepResult.intentType);
     
     // Análise dinâmica de acordo com a concordância das fontes recuperadas
     let primarySupportPercent = 92;
@@ -552,16 +577,18 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
     // Regra Bug C: Exibir card APENAS em consultas de conduta/tratamento E quando relevante
     const showCard = isTreatmentQuery && usedChunks.length > 0;
 
-    const consensusMatrix = showCard ? {
-      agreementPercentage: primarySupportPercent,
-      consensusLevel: primarySupportPercent >= 90 ? "Alto Consenso (Diretrizes Oficiais Padronizadas)" : (primarySupportPercent >= 70 ? "Consenso Moderado com Alternativas" : "Divergência de Conduta na Literatura"),
-      primaryPosition: "Conduta Apoiada pelas Diretrizes de Referência",
-      primarySupportPercent,
-      alternativeSupportPercent: 100 - primarySupportPercent,
-      hasRealDivergence,
+    const consensusMatrix = {
+      agreementPercentage: showCard ? primarySupportPercent : 0,
+      consensusLevel: showCard
+        ? (primarySupportPercent >= 90 ? "Alto Consenso (Diretrizes Oficiais Padronizadas)" : (primarySupportPercent >= 70 ? "Consenso Moderado com Alternativas" : "Divergência de Conduta na Literatura"))
+        : "N/A",
+      primaryPosition: showCard ? "Conduta Apoiada pelas Diretrizes de Referência" : "N/A",
+      primarySupportPercent: showCard ? primarySupportPercent : 0,
+      alternativeSupportPercent: showCard ? (100 - primarySupportPercent) : 0,
+      hasRealDivergence: showCard ? hasRealDivergence : false,
       showCard,
-      summary: `${primarySupportPercent}% das evidências e diretrizes recuperadas sustentam a conduta prioritária apresentada.`
-    } : null;
+      summary: showCard ? `${primarySupportPercent}% das evidências e diretrizes recuperadas sustentam a conduta prioritária apresentada.` : ""
+    };
 
     // Formatar citações estritamente a partir das fontes efetivamente citadas e validadas
     const citations = usedChunks.map((c, i) => {

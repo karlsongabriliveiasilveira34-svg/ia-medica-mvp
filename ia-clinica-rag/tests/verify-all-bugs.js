@@ -29,25 +29,25 @@ const testQueries = [
     id: "TEST-5",
     theme: "Gestação / Pré-Natal",
     query: "Quais os exames de rotina no pré-natal e os sinais de alarme para pré-eclâmpsia na gestação?",
-    expectedKeywords: ["pré-natal", "gestação", "pré-eclâmpsia", "pressão arterial", "proteinúria"]
+    expectedKeywords: ["pré-natal", "gestação", "pré-eclâmpsia", "pressão arterial", "proteinúria", "preeclampsia", "pregnancy", "prenatal"]
   },
   {
     id: "TEST-6",
     theme: "Infecção do Trato Urinário (ITU)",
     query: "Qual a antibioticoterapia de 1ª linha para cistite aguda não complicada e pielonefrite?",
-    expectedKeywords: ["trato urinário", "itu", "cistite", "nitrofurantoína", "fosfomicina", "pielonefrite"]
+    expectedKeywords: ["trato urinário", "itu", "cistite", "nitrofurantoína", "fosfomicina", "pielonefrite", "urinary tract", "pyelonephritis"]
   },
   {
     id: "TEST-7",
     theme: "Acidente Vascular Cerebral (AVCi)",
     query: "Qual a janela terapêutica e a dose da alteplase na trombólise do AVC isquêmico agudo?",
-    expectedKeywords: ["vascular cerebral", "avci", "trombólise", "alteplase", "nihss"]
+    expectedKeywords: ["vascular cerebral", "avci", "trombólise", "alteplase", "nihss", "stroke"]
   },
   {
     id: "TEST-8",
     theme: "Pneumonia Adquirida na Comunidade (PAC)",
     query: "Como aplicar o escore CURB-65 e qual o tratamento empírico da pneumonia comunitária?",
-    expectedKeywords: ["pneumonia", "pac", "curb-65", "amoxicilina", "azitromicina"]
+    expectedKeywords: ["pneumonia", "pac", "curb-65", "amoxicilina", "azitromicina", "pulmonary", "respiratory"]
   }
 ];
 

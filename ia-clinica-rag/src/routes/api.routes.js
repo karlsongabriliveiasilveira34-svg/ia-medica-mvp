@@ -24,9 +24,11 @@ import {
   handleListConsultations, 
   handleUploadConsultationMedia 
 } from "../controllers/consultation.controller.js";
+import { LgpdController } from "../controllers/lgpd.controller.js";
 
 import { authRouter } from "./auth.routes.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
+import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -50,6 +52,9 @@ const queryImageUpload = multer({
 });
 
 export const apiRouter = Router();
+
+// Aplicar Middleware de Sanitização de Logs (Prevenção de Vazamento de PII)
+apiRouter.use(logSanitizerMiddleware);
 
 // Endpoint de Healthcheck (Público)
 apiRouter.get("/health", checkHealth);
@@ -89,6 +94,18 @@ apiRouter.post("/api/consultations/:id/media", handleUploadConsultationMedia);
 
 // Feedback do Médico
 apiRouter.post("/api/feedback", handleSaveFeedback);
+
+// --- ROTAS DE CONFORMIDADE LGPD & PRIVACY BY DESIGN (LEI 13.709/2018) ---
+// 1. Prova e Gestão de Consentimento do Titular (Art. 7º e 8º)
+apiRouter.post("/api/lgpd/consent", LgpdController.recordConsent);
+apiRouter.get("/api/lgpd/consent/:identifier", LgpdController.getConsentStatus);
+
+// 2. Direitos do Titular (DSAR - Data Subject Access Requests - Art. 18)
+apiRouter.get("/api/lgpd/export/:sessionId", LgpdController.exportSubjectData); // Portabilidade e Acesso
+apiRouter.delete("/api/lgpd/purge/:sessionId", LgpdController.purgeSubjectData); // Direito ao Esquecimento / Expurgo
+
+// 3. Busca Segura por Blind Index (HMAC-SHA256)
+apiRouter.post("/api/lgpd/search", LgpdController.searchByBlindIndex);
 
 // Endpoints da Base de Conhecimento
 apiRouter.get("/api/documents", handleListDocuments);

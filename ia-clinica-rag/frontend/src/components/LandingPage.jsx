@@ -15,6 +15,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import { MedIaIcon } from './MedIaLogo';
 
 const cases = [
   {
@@ -324,13 +325,13 @@ export function LandingPage({ onStartChat }) {
         <h2 className="mx-auto mt-6 max-w-3xl font-editorial text-4xl leading-tight sm:text-5xl">A próxima busca clínica pode começar com uma resposta melhor organizada.</h2>
         <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-[#bbc3be]">Entre na demonstração, faça uma pergunta e confira as fontes por conta própria.</p>
         <button onClick={onStartChat} className="group mx-auto mt-9 inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#f4f1ea] px-7 text-sm font-semibold text-[#17231f] transition hover:bg-white">
-          Conhecer o MedIa <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          Conhecer o medIa <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </button>
       </section>
 
       <footer className="border-t border-white/10 bg-[#17231f] px-5 py-8 text-[#bbc3be] sm:px-8">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-4 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3"><BrandMark /><span>MedIa · Inteligência clínica com fontes à vista.</span></div>
+          <div className="flex items-center gap-3"><BrandMark /><span>medIa · Inteligência clínica com fontes à vista.</span></div>
           <p>Ferramenta de apoio. Não substitui avaliação, diagnóstico ou conduta profissional.</p>
         </div>
       </footer>
@@ -560,8 +561,8 @@ function ProductPreview({ activeCase }) {
 
 function BrandMark({ dark = false }) {
   return (
-    <span className={`flex h-8 w-8 items-center justify-center rounded-full ${dark ? 'bg-[#213f34] text-white' : 'bg-[#f4f1ea] text-[#213f34]'}`}>
-      <span className="font-editorial text-sm font-bold">M</span>
+    <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${dark ? 'bg-[#213f34] text-[#f4f1ea]' : 'bg-[#f4f1ea] text-[#213f34]'} shadow-sm`}>
+      <MedIaIcon className="h-5 w-5" strokeWidth={5} ringStrokeWidth={4} />
     </span>
   );
 }

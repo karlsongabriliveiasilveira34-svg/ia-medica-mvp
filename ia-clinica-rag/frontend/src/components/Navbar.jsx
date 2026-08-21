@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Database, FileText, MessageSquareText } from 'lucide-react';
+import { MedIaIcon } from './MedIaLogo';
 
 export function Navbar({ activeTab, setActiveTab, hasActiveReport, isAuthenticated }) {
   const isLanding = activeTab === 'landing';
@@ -16,9 +17,11 @@ export function Navbar({ activeTab, setActiveTab, hasActiveReport, isAuthenticat
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#17231f]/10 bg-[#f4f1ea]/95 text-[#17231f] backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-5 px-5 sm:px-8 lg:px-14">
-        <button onClick={() => setActiveTab('landing')} className="flex items-center gap-3" aria-label="Ir para o início">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#213f34] font-editorial text-sm font-bold text-white">M</span>
-          <span className="font-editorial text-xl font-semibold tracking-[-0.02em]">MedIa</span>
+        <button onClick={() => setActiveTab('landing')} className="flex items-center gap-2.5 group" aria-label="Ir para o início">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#213f34] text-[#f4f1ea] transition-transform group-hover:scale-105 shadow-sm">
+            <MedIaIcon className="h-6 w-6 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
+          </span>
+          <span className="font-editorial text-2xl font-semibold tracking-[-0.03em] text-[#17231f]">medIa</span>
         </button>
 
         {isLanding ? (

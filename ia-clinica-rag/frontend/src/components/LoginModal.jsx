@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle, ArrowRight, Eye, EyeOff, KeyRound, ShieldCheck, X } from 'lucide-react';
+import { MedIaIcon } from './MedIaLogo';
 
 export function LoginModal({ onLoginSuccess, onClose, closable = true }) {
   const [password, setPassword] = useState('');
@@ -59,9 +60,11 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true }) {
         )}
 
         <div className="hidden bg-[#213f34] p-9 text-white md:flex md:flex-col md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f4f1ea] font-editorial font-bold text-[#213f34]">M</span>
-            <span className="font-editorial text-xl">MedIa</span>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f4f1ea] text-[#213f34] shadow-sm">
+              <MedIaIcon className="h-6 w-6 text-[#213f34]" strokeWidth={5} ringStrokeWidth={4} />
+            </span>
+            <span className="font-editorial text-2xl font-semibold tracking-[-0.03em] text-white">medIa</span>
           </div>
           <div>
             <p className="font-editorial text-3xl leading-tight">Veja o produto trabalhando com um caso clínico.</p>

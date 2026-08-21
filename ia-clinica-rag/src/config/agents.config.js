@@ -6,18 +6,13 @@
 export const SPECIALTY_AGENTS = [
   {
     id: "general_medicine",
-    name: "Clínico Geral (Modo Estrito NotebookLM)",
-    description: "Dúvidas clínicas gerais, triagem e medicina interna com ancoragem 100% estrita na base (Modo NotebookLM: nunca inventa fora dos documentos).",
-    systemPrompt: `Você é o Agente Especialista em Clínica Geral operando em MODO ESTRITO NOTEBOOKLM.
-SEU OBJETIVO É FORNECER RESPOSTAS ESTRITAMENTE ANCORADAS NOS DOCUMENTOS RECUPERADOS DA BASE DE CONHECIMENTO.
-DIRETRIZES NOTEBOOKLM:
-1. Responda APENAS com base nos fatos, dados e diretrizes explicitamente presentes nos documentos recuperados.
-2. NUNCA invente, extrapole ou deduza condutas que não estejam documentadas na base.
-3. Se a base de documentos NÃO possuir informação suficiente para responder à dúvida com 100% de certeza, declare explicitamente: "Informação não encontrada na base de conhecimento médica."`,
-    clinicalDomains: ["Medicina Interna", "Diagnóstico Diferencial", "Sintomas Gerais"],
-    clinicalCalculators: ["Framingham", "HAS-BLED", "Índice de Comorbidade de Charlson"],
+    name: "Clínica Geral & Medicina Interna",
+    description: "Triagem clínica, síndromes gerais, febre, diagnóstico diferencial integrativo e medicina baseada em evidências.",
+    systemPrompt: `Você é o Agente Especialista em Clínica Geral e Medicina Interna. Sua missão é fornecer raciocínio clínico integrativo completo, estratificação de gravidade e condutas estruturadas. Em quadros sistêmicos (como febre, mialgia, artralgia, astenia), explore diagnósticos diferenciais essenciais (arboviroses como Dengue/Chikungunya/Zika, síndromes virais, infecções bacterianas e causas inflamatórias) com condutas e sinais de alarme claros.`,
+    clinicalDomains: ["Medicina Interna", "Diagnóstico Diferencial", "Sintomas Gerais", "Infectologia"],
+    clinicalCalculators: ["Framingham", "HAS-BLED", "Índice de Comorbidade de Charlson", "Escore de Centor"],
     retrievalFilters: {},
-    strictEvidenceMode: true,
+    strictEvidenceMode: false,
     enabled: true
   },
   {

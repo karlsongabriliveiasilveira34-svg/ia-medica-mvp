@@ -3,15 +3,23 @@ import path from "path";
 
 // Dicionário de tradução médica expandido para buscas no PubMed/NCBI e Openi API (Inglês)
 const ptToEnMap = {
-  // Cardiologia
+  // Cardiologia & Emergência
   "cardiologia": "cardiology",
   "coracao": "heart",
   "coracão": "heart",
   "infarto": "myocardial infarction",
+  "supra de st": "ST-elevation myocardial infarction STEMI",
+  "supra st": "ST-elevation myocardial infarction STEMI",
+  "stemi": "ST-elevation myocardial infarction STEMI",
+  "iamcsst": "ST-elevation myocardial infarction STEMI",
+  "iam": "myocardial infarction",
   "dor toracica": "chest pain",
   "dor torácica": "chest pain",
+  "dor no peito": "chest pain",
   "troponina": "troponin",
   "arritmia": "arrhythmia",
+  "fibrilacao atrial": "atrial fibrillation",
+  "fibrilação atrial": "atrial fibrillation",
   "hipertensao": "hypertension",
   "hipertensão": "hypertension",
   "insuficiencia cardiaca": "heart failure",
@@ -44,18 +52,41 @@ const ptToEnMap = {
   "gripe": "influenza",
   "insuficiencia respiratoria": "respiratory failure",
 
-  // Infectologia & Doenças Tropicais
+  // Infectologia & Doenças Tropicais / Arboviroses & Febre
+  "febre": "fever",
+  "febre aguda": "acute fever",
+  "artralgia": "arthralgia joint pain",
+  "dor articular": "joint pain arthralgia",
+  "dores nas juntas": "arthralgia joint pain",
+  "dor nas juntas": "arthralgia joint pain",
+  "juntas": "joints arthralgia",
+  "mialgia": "myalgia muscle pain",
+  "dor muscular": "muscle pain myalgia",
+  "dores musculares": "muscle pain myalgia",
+  "cansaco": "fatigue asthenia",
+  "cansaço": "fatigue asthenia",
+  "cansado": "fatigue asthenia",
+  "astenia": "asthenia fatigue",
+  "fadiga": "fatigue asthenia",
+  "arbovirose": "arbovirus infections dengue chikungunya",
+  "arboviroses": "arbovirus infections dengue chikungunya",
+  "exantema": "exanthema rash",
+  "rash": "exanthema rash",
+  "plaquetopenia": "thrombocytopenia",
+  "prova do laco": "tourniquet test dengue",
+  "prova do laço": "tourniquet test dengue",
+  "dengue": "dengue fever",
+  "chikungunya": "chikungunya fever",
+  "zika": "zika virus",
+  "febre amarela": "yellow fever",
   "sepse": "sepsis",
   "malaria": "malaria",
   "malária": "malaria",
   "plasmodium": "plasmodium",
   "febre tifoide": "typhoid fever",
   "febre tifóide": "typhoid fever",
-  "dengue": "dengue fever",
   "chagas": "chagas disease",
   "leishmaniose": "leishmaniasis",
-  "zika": "zika virus",
-  "chikungunya": "chikungunya",
   "leptospirose": "leptospirosis",
   "tuberculose": "tuberculosis",
   "hanseniase": "leprosy",
@@ -139,41 +170,98 @@ const ptToEnMap = {
 
 export class ExternalEvidenceService {
   /**
-   * Traduz termos em Português para Inglês para otimizar busca na API pública do NCBI PubMed
+   * Traduz termos em Português para Inglês para otimizar busca na API pública do NCBI PubMed e Cochrane
    */
-  static translateQueryForPubMed(queryText) {
-    let q = queryText.toLowerCase();
-    let terms = [];
+  static translateQueryForPubMed(queryText, extraKeywords = []) {
+    let combinedText = `${queryText} ${(extraKeywords || []).join(" ")}`.toLowerCase();
+    const matchedTokens = new Set();
 
-    for (const [pt, en] of Object.entries(ptToEnMap)) {
-      if (q.includes(pt)) {
-        terms.push(en);
+    // Priorizar termos infecciosos / diagnósticos sistêmicos específicos se presentes
+    const priorityKeywords = ["dengue", "chikungunya", "zika", "arbovirose", "arboviroses", "febre", "sepse", "infarto", "diabetes", "hipertensao", "hipertensão", "pneumonia", "avc", "itu", "infeccao"];
+    for (const pk of priorityKeywords) {
+      if (combinedText.includes(pk) && ptToEnMap[pk]) {
+        ptToEnMap[pk].split(/\s+/).forEach(w => {
+          if (w.length > 2) matchedTokens.add(w);
+        });
+        if (matchedTokens.size >= 3) break;
       }
     }
 
-    if (terms.length === 0) {
-      const words = q.replace(/[^\w\s]/gi, "").split(/\s+/).filter(w => w.length > 4);
-      return words.join(" ") || "clinical medicine";
+    // Se ainda houver espaço para tokens, casar termos secundários (sintomas/sinais)
+    if (matchedTokens.size < 4) {
+      const sortedEntries = Object.entries(ptToEnMap).sort((a, b) => b[0].length - a[0].length);
+      for (const [pt, en] of sortedEntries) {
+        if (combinedText.includes(pt)) {
+          en.split(/\s+/).forEach(w => {
+            if (w.length > 2) matchedTokens.add(w);
+          });
+          if (matchedTokens.size >= 4) break;
+        }
+      }
     }
 
-    return terms.join(" ");
+    if (matchedTokens.size === 0) {
+      const words = combinedText.replace(/[^\w\s]/gi, "").split(/\s+/).filter(w => w.length > 4);
+      return words.slice(0, 3).join(" ") || "clinical medicine";
+    }
+
+    return Array.from(matchedTokens).slice(0, 4).join(" ");
+  }
+
+  /**
+   * Limpa stopwords, ruídos demográficos (ex: "paciente sexo masculino", "faixa etária") 
+   * e termos genéricos para garantir busca precisa nas APIs científicas.
+   */
+  static cleanQueryForSearch(queryText, extraKeywords = []) {
+    const demographicAndStopWords = new Set([
+      "paciente", "pacientes", "sexo", "masculino", "feminino", "homem", "mulher",
+      "idade", "anos", "meses", "dias", "faixa", "etaria", "etária", "esta", "está",
+      "com", "relata", "refere", "apresenta", "quadro", "caso", "ha", "há",
+      "dor", "dores", // Genérico demais em busca textual ampla, atrai odontologia e fisioterapia
+      "qual", "quais", "como", "onde", "quando", "quem", "por", "que", "sao", "são",
+      "os", "as", "um", "uma", "uns", "umas", "de", "da", "do", "das", "dos",
+      "em", "na", "no", "nas", "nos", "para", "sobre", "pelo", "pela",
+      "principais", "indicações", "indicacoes", "indicação", "indicacao", "uso",
+      "aplicar", "escore", "rotina", "exames", "exame", "conduta", "manejo", "tratamento",
+      "inicial", "geral", "clinica", "clínica", "emergencia", "emergência", "urgencia",
+      "urgência", "atendimento", "duvida", "dúvida"
+    ]);
+
+    const words = queryText
+      .replace(/[^\w\s\u00C0-\u00FF]/gi, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !demographicAndStopWords.has(w.toLowerCase()));
+
+    const cleanKeywords = (extraKeywords || [])
+      .flatMap(k => (typeof k === "string" ? k.split(/\s+/) : []))
+      .filter(k => k.length > 2 && !demographicAndStopWords.has(k.toLowerCase()));
+
+    const combinedSet = new Set([...words, ...cleanKeywords]);
+    const terms = Array.from(combinedSet);
+
+    if (terms.length === 0) {
+      return queryText.replace(/[^\w\s\u00C0-\u00FF]/gi, " ").trim();
+    }
+
+    return terms.slice(0, 5).join(" ");
   }
 
   /**
    * Busca artigos médicos em Português na base SciELO (Scientific Electronic Library Online)
-   * Utiliza a API de metadados Crossref/SciELO (prefixo DOI oficial 10.1590)
+   * Utiliza a API de metadados Crossref/SciELO (prefixo DOI oficial 10.1590) com filtro estrito de relevância clínica.
    */
-  static async searchSciELO(queryText, limit = 4) {
-    console.log(`🇧🇷 [LOG SCIELO BRASIL] Buscando artigos indexados na SciELO para: "${queryText}"...`);
+  static async searchSciELO(queryText, limit = 4, extraKeywords = []) {
+    const cleanQuery = this.cleanQueryForSearch(queryText, extraKeywords);
+    console.log(`🇧🇷 [LOG SCIELO BRASIL] Buscando artigos indexados na SciELO para: "${cleanQuery}"...`);
 
     try {
-      const cleanQuery = queryText.replace(/[^\w\s\u00C0-\u00FF]/gi, " ").trim();
-      const scieloUrl = `https://api.crossref.org/works?query=${encodeURIComponent(cleanQuery)}&filter=prefix:10.1590&rows=${limit}&sort=relevance`;
+      const scieloUrl = `https://api.crossref.org/works?query=${encodeURIComponent(cleanQuery)}&filter=prefix:10.1590&rows=${Math.max(limit * 3, 30)}&sort=relevance`;
       
       const response = await fetch(scieloUrl, {
         headers: {
           "User-Agent": "MedIa-Clinical-RAG/2.4 (mailto:contato@media.med.br)"
-        }
+        },
+        signal: AbortSignal.timeout(6000)
       });
 
       if (!response.ok) {
@@ -184,9 +272,26 @@ export class ExternalEvidenceService {
       const data = await response.json();
       const items = data?.message?.items || [];
       const results = [];
+      const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
       for (const item of items) {
         const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]+>/g, "") : "Artigo Científico SciELO";
+        const titleLower = title.toLowerCase();
+        
+        // Validação Semântica Estrita: o título deve conter ao menos um dos termos clínicos pesquisados
+        const matchCount = queryWords.reduce((acc, word) => acc + (titleLower.includes(word) ? 1 : 0), 0);
+        if (queryWords.length > 0 && matchCount === 0) {
+          // Descartar artigos fora de contexto (ex: retocele, trauma esportivo, dor de dente para febre)
+          continue;
+        }
+
+        // Filtro anti-ruído: descartar periódicos ou artigos de artes, cinema, literatura e filosofia
+        const journalLower = (item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "").toLowerCase();
+        const nonMedicalNoise = ["filme", "cinema", "poesia", "romance", "teatro", "sociologia", "filosofia", "antropologia", "educação física", "esporte", "turismo"];
+        if (nonMedicalNoise.some(noise => titleLower.includes(noise) || journalLower.includes(noise))) {
+          continue;
+        }
+
         const pubYear = item.issued?.["date-parts"]?.[0]?.[0] || item.created?.["date-parts"]?.[0]?.[0] || new Date().getFullYear();
         const authors = (item.author || []).slice(0, 3).map(a => `${a.given || ""} ${a.family || ""}`.trim()).filter(Boolean);
         const journal = item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "SciELO Brasil / América Latina";
@@ -196,6 +301,7 @@ export class ExternalEvidenceService {
         results.push({
           id: `scielo-${doi || Math.random().toString(36).slice(2)}`,
           document_id: `scielo-${doi || Math.random().toString(36).slice(2)}`,
+          title: `[SciELO] ${title}`,
           document_title: `[SciELO] ${title}`,
           document_filename: `SciELO DOI: ${doi || "N/A"}`,
           document_category: "SCIELO_ARTICLES",
@@ -209,13 +315,15 @@ export class ExternalEvidenceService {
           section_title: "Artigo Científico Indexado SciELO",
           content: `Título: ${title}\nAutores: ${authors.join(", ") || "Corpo Clínico / Pesquisadores SciELO"}\nPeriódico: ${journal} (${pubYear})\nDOI: ${doi || "N/A"}\nLink de Acesso: ${scieloUrlFinal}\nTrecho / Resumo da Evidência: Estudo clínico e epidemiológico indexado na SciELO abordando aspectos diagnósticos, terapêuticos e condutas recomendadas na literatura médica brasileira e internacional sobre o tema.`,
           rrfScore: 0.04,
-          evidenceScore: 0.94,
+          evidenceScore: 0.90 + Math.min(0.08, matchCount * 0.03),
           evidenceLevel: "Alta (SciELO Brasil)",
           status: "ACTIVE"
         });
+
+        if (results.length >= limit) break;
       }
 
-      console.log(`✅ [LOG SCIELO BRASIL] Recuperados ${results.length} artigos nacionais/latino-americanos na SciELO.`);
+      console.log(`✅ [LOG SCIELO BRASIL] Recuperados ${results.length} artigos nacionais/latino-americanos relevantes na SciELO.`);
       return results;
     } catch (err) {
       console.warn("⚠️ [LOG SCIELO BRASIL AVISO] Erro ao consultar SciELO:", err.message);
@@ -226,14 +334,14 @@ export class ExternalEvidenceService {
   /**
    * Busca específica em Revisões Sistemáticas e Meta-análises da Cochrane Library (CDSR via NCBI PubMed)
    */
-  static async searchCochraneReviews(queryText, limit = 3) {
-    const englishQuery = this.translateQueryForPubMed(queryText);
+  static async searchCochraneReviews(queryText, limit = 3, extraKeywords = []) {
+    const englishQuery = this.translateQueryForPubMed(queryText, extraKeywords);
     const cochraneQuery = `("${englishQuery}") AND ("Cochrane Database Syst Rev"[Journal] OR "systematic review"[Publication Type] OR "meta-analysis"[Publication Type])`;
     console.log(`🌐 [LOG COCHRANE LIBRARY] Buscando Revisões Sistemáticas Cochrane no NCBI para: "${cochraneQuery}"...`);
 
     try {
       const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(cochraneQuery)}&retmode=json&retmax=${limit}`;
-      const searchRes = await fetch(searchUrl);
+      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(6000) });
       const searchData = await searchRes.json();
 
       const idList = searchData?.esearchresult?.idlist || [];
@@ -243,7 +351,7 @@ export class ExternalEvidenceService {
       }
 
       const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${idList.join(",")}&retmode=json`;
-      const summaryRes = await fetch(summaryUrl);
+      const summaryRes = await fetch(summaryUrl, { signal: AbortSignal.timeout(6000) });
       const summaryData = await summaryRes.json();
 
       const results = [];
@@ -264,6 +372,7 @@ export class ExternalEvidenceService {
         results.push({
           id: `cochrane-${id}`,
           document_id: `cochrane-${id}`,
+          title: `[Cochrane Library] ${title}`,
           document_title: `[Cochrane Library] ${title}`,
           document_filename: `Cochrane CDSR PMID: ${id}`,
           document_category: "COCHRANE_REVIEW",
@@ -295,13 +404,13 @@ export class ExternalEvidenceService {
   /**
    * Busca artigos e resumos médicos em tempo real no NCBI PubMed (Web)
    */
-  static async searchPubMed(queryText, limit = 4) {
-    const pubMedQuery = this.translateQueryForPubMed(queryText);
+  static async searchPubMed(queryText, limit = 4, extraKeywords = []) {
+    const pubMedQuery = this.translateQueryForPubMed(queryText, extraKeywords);
     console.log(`🌐 [LOG PUBMED WEB] Buscando na API do NCBI PubMed em tempo real para: "${pubMedQuery}"...`);
 
     try {
       const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(pubMedQuery)}&retmode=json&retmax=${limit}`;
-      const searchRes = await fetch(searchUrl);
+      const searchRes = await fetch(searchUrl, { signal: AbortSignal.timeout(6000) });
       const searchData = await searchRes.json();
 
       const idList = searchData?.esearchresult?.idlist || [];
@@ -311,7 +420,7 @@ export class ExternalEvidenceService {
       }
 
       const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${idList.join(",")}&retmode=json`;
-      const summaryRes = await fetch(summaryUrl);
+      const summaryRes = await fetch(summaryUrl, { signal: AbortSignal.timeout(6000) });
       const summaryData = await summaryRes.json();
 
       const results = [];
@@ -331,6 +440,7 @@ export class ExternalEvidenceService {
         results.push({
           id: `pubmed-${id}`,
           document_id: `pubmed-${id}`,
+          title: `[PubMed Web] ${title}`,
           document_title: `[PubMed Web] ${title}`,
           document_filename: `NCBI PubMed PMID: ${id}`,
           document_category: "PUBMED_WEB",
@@ -368,7 +478,7 @@ export class ExternalEvidenceService {
 
     try {
       const openiUrl = `https://openi.nlm.nih.gov/api/search?query=${encodeURIComponent(englishQuery)}&it=xg,xp,dx,ct&coll=pmc&m=1&n=${limit}`;
-      const response = await fetch(openiUrl);
+      const response = await fetch(openiUrl, { signal: AbortSignal.timeout(6000) });
 
       if (!response.ok) {
         console.warn(`⚠️ [LOG OPENI AVISO] Resposta não-OK da API Openi NIH: ${response.status}`);
