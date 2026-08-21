@@ -7,8 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
-        display: ['Outfit', 'Sora', '"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['Inter', '"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['Inter', '"Plus Jakarta Sans"', 'sans-serif'],
+        editorial: ['"Source Serif 4"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
         serif: ['Georgia', 'Cambria', 'serif'],
       },

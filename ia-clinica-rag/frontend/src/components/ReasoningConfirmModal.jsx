@@ -5,7 +5,7 @@ export function ReasoningConfirmModal({ isOpen, onClose, onConfirm, loading, ana
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+    <div className="media-chat fixed inset-0 z-50 bg-black/55 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 relative">
         <button
           onClick={onClose}

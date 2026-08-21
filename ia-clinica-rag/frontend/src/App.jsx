@@ -43,6 +43,8 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeTab, setActiveTab] = useState('chat');
+  const [showLogin, setShowLogin] = useState(true);
+  const [requestedTab, setRequestedTab] = useState('chat');
   const [selectedCitation, setSelectedCitation] = useState(null);
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(null);
   const [activeConsultation, setActiveConsultation] = useState(null);
@@ -84,7 +86,10 @@ export default function App() {
 
     checkAuthStatus();
 
-    const handleUnauthorized = () => setIsAuthenticated(false);
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false);
+      setShowLogin(true);
+    };
     window.addEventListener('auth_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
   }, []);
@@ -93,6 +98,22 @@ export default function App() {
     setActiveConsultation(consultation);
     setActiveReportData(reportData);
     setActiveTab('report');
+  };
+
+  const handleNavigate = (tab) => {
+    if (tab === 'landing' || isAuthenticated) {
+      setActiveTab(tab);
+      return;
+    }
+
+    setRequestedTab(tab);
+    setShowLogin(true);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    setShowLogin(false);
+    setActiveTab(requestedTab || 'chat');
   };
 
   const handleStartReportFromDiagnosis = async (diagnosis, contextMsg) => {
@@ -123,29 +144,30 @@ export default function App() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-navy-950 flex flex-col items-center justify-center text-slate-300">
-        <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium">Carregando IA Clínica RAG...</p>
+      <div className="min-h-screen bg-[#f4f1ea] flex flex-col items-center justify-center text-[#5e6c65]">
+        <div className="w-9 h-9 border-2 border-[#213f34] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-medium">Preparando o MedIa...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col font-sans">
-      {!isAuthenticated && (
-        <LoginModal onLoginSuccess={() => setIsAuthenticated(true)} />
+    <div className="min-h-screen bg-[#f4f1ea] text-[#17231f] flex flex-col font-sans">
+      {showLogin && !isAuthenticated && (
+        <LoginModal onLoginSuccess={handleLoginSuccess} closable={false} />
       )}
 
       <Navbar 
         activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+        setActiveTab={handleNavigate}
         hasActiveReport={!!activeReportData}
+        isAuthenticated={isAuthenticated}
       />
 
       <main className="flex-1">
         {activeTab === 'landing' && (
           <LandingPage
-            onStartChat={() => setActiveTab('chat')}
+            onStartChat={() => handleNavigate('chat')}
           />
         )}
 

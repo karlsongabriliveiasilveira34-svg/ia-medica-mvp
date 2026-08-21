@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Lock, KeyRound, ShieldCheck, AlertCircle, ArrowRight, Activity } from 'lucide-react';
+import { AlertCircle, ArrowRight, Eye, EyeOff, KeyRound, ShieldCheck, X } from 'lucide-react';
 
-export function LoginModal({ onLoginSuccess }) {
+export function LoginModal({ onLoginSuccess, onClose, closable = true }) {
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!password) {
-      setError('Por favor, digite a senha de acesso.');
+      setError('Digite a senha de acesso para continuar.');
       return;
     }
 
@@ -17,117 +18,97 @@ export function LoginModal({ onLoginSuccess }) {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password }),
       });
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await response.json() : {};
 
-      const contentType = res.headers.get("content-type") || "";
-      let data = {};
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      }
-
-      if (res.ok && data.status === 'success' && data.token) {
+      if (response.ok && data.status === 'success' && data.token) {
         localStorage.setItem('demo_token', data.token);
         onLoginSuccess(data.token);
-        setLoading(false);
         return;
-      } else if (res.status === 401 && data.message) {
+      }
+
+      if (response.status === 401 && data.message) {
         setError(data.message);
         setLoading(false);
         return;
       }
-    } catch (err) {
-      // Fallback para servidor offline ou ambiente de hospedagem estática web
+    } catch {
+      // A demonstração também funciona em hospedagem estática.
     }
 
-    // Fallback de demonstração para hospedeiro web estático (Vercel / GitHub Pages / Netlify)
     if (password.trim() === 'clinica2026') {
-      const fallbackToken = 'demo_token_' + Date.now();
+      const fallbackToken = `demo_token_${Date.now()}`;
       localStorage.setItem('demo_token', fallbackToken);
       onLoginSuccess(fallbackToken);
     } else {
-      setError('Senha incorreta. Verifique a senha da clínica e tente novamente.');
+      setError('Senha incorreta. Confira o acesso da demonstração e tente novamente.');
     }
     setLoading(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-      <div className="w-full max-w-md bg-slate-900 border border-teal-500/30 rounded-2xl shadow-2xl shadow-teal-950/50 p-6 md:p-8 relative overflow-hidden">
-        {/* Glow de Fundo */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/60 p-4 backdrop-blur-sm" onMouseDown={(event) => closable && event.target === event.currentTarget && onClose?.()}>
+      <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[1.75rem] bg-[#fffdf8] shadow-[0_40px_100px_-30px_rgba(0,0,0,0.55)] md:grid-cols-[0.9fr_1.1fr]">
+        {closable && (
+          <button onClick={onClose} aria-label="Fechar" className="absolute right-5 top-5 z-10 rounded-full p-2 text-[#69746f] transition hover:bg-black/5"><X className="h-4 w-4" /></button>
+        )}
 
-        {/* Header */}
-        <div className="text-center mb-6 relative z-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 border border-teal-500/40 text-teal-400 mb-4 shadow-inner">
-            <Activity className="w-7 h-7" />
+        <div className="hidden bg-[#213f34] p-9 text-white md:flex md:flex-col md:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f4f1ea] font-editorial font-bold text-[#213f34]">M</span>
+            <span className="font-editorial text-xl">MedIa</span>
           </div>
-          <h2 className="text-2xl font-bold text-slate-100 tracking-tight">
-            IA Clínica RAG
-          </h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Plataforma de Decisão Médica & RAG Multiagente
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-teal-500/10 text-teal-300 border border-teal-500/20">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Acesso Restrito para Clínicas & Médicos
+          <div>
+            <p className="font-editorial text-3xl leading-tight">Veja o produto trabalhando com um caso clínico.</p>
+            <div className="mt-7 space-y-3 text-sm text-[#dce7e1]">
+              <p className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-[#d8a68f]" /> Ambiente de demonstração</p>
+              <p className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-[#d8a68f]" /> Acesso protegido por senha</p>
+            </div>
           </div>
+          <p className="text-xs leading-5 text-[#aebdb6]">Não use dados pessoais ou identificáveis de pacientes durante o teste.</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-          {error && (
-            <div className="flex items-center gap-2 p-3 text-xs bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-xl animate-shake">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+        <div className="p-7 sm:p-10 md:p-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9d4f3f]">Demonstração</p>
+          <h2 className="mt-4 font-editorial text-3xl text-[#17231f]">Entre para explorar.</h2>
+          <p className="mt-3 text-sm leading-6 text-[#5e6c65]">Use a senha compartilhada com você para abrir o assistente clínico.</p>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-              Senha de Acesso da Clínica
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                <KeyRound className="w-4 h-4" />
+          <form onSubmit={handleSubmit} className="mt-8">
+            {error && (
+              <div className="mb-4 flex items-start gap-2 rounded-xl border border-[#bb6a5d]/30 bg-[#fbefeb] p-3 text-xs leading-5 text-[#8e4638]">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Digite a senha de demonstração"
-                className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
-                autoFocus
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-slate-950 font-semibold rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 disabled:opacity-50 cursor-pointer"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                Autenticando...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                Entrar na Plataforma
-                <ArrowRight className="w-4 h-4" />
-              </span>
             )}
-          </button>
-        </form>
 
-        {/* Footer */}
-        <div className="mt-6 pt-4 border-t border-slate-800 text-center text-xs text-slate-500 relative z-10">
-          <p>Demonstração Técnica Segura com Busca Vetorial & Gemini 3.5</p>
+            <label htmlFor="demo-password" className="text-xs font-semibold text-[#4f5c56]">Senha da demonstração</label>
+            <div className="relative mt-2">
+              <input
+                id="demo-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Digite a senha"
+                autoFocus
+                className="w-full rounded-xl border border-[#17231f]/20 bg-white py-3 pl-4 pr-12 text-sm text-[#17231f] outline-none transition placeholder:text-[#9aa39f] focus:border-[#315547] focus:ring-2 focus:ring-[#315547]/15"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#77817c]">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            <button type="submit" disabled={loading} className="group mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#213f34] px-5 text-sm font-semibold text-white transition hover:bg-[#172f27] disabled:cursor-wait disabled:opacity-60">
+              {loading ? 'Verificando acesso...' : <>Abrir demonstração <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></>}
+            </button>
+          </form>
+
+          {closable && (
+            <button onClick={onClose} className="mt-6 w-full text-center text-xs font-medium text-[#69746f] hover:text-[#17231f]">Voltar para a apresentação</button>
+          )}
         </div>
       </div>
     </div>

@@ -152,16 +152,16 @@ export function KnowledgeManager() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    <div className="media-chat media-knowledge max-w-7xl mx-auto px-3 py-5 sm:px-6 sm:py-8 space-y-5 sm:space-y-6">
       {/* Top Header */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="media-knowledge-hero glass-panel p-5 sm:p-7 rounded-[1.75rem] border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-clinical-500/10 text-clinical-400 border border-clinical-500/30 uppercase tracking-widest">
               Governança de Evidências Oficiais
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white mt-1.5 flex items-center gap-2">
+          <h2 className="font-editorial text-3xl font-medium tracking-[-0.02em] text-white mt-2 flex items-center gap-2">
             <ShieldCheck className="w-6 h-6 text-clinical-400" />
             Dashboard da Base de Conhecimento Médica
           </h2>
@@ -181,7 +181,7 @@ export function KnowledgeManager() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-panel p-4 rounded-xl border border-slate-800">
+        <div className="media-knowledge-stat glass-panel p-4 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">Fontes Oficiais Ativas</span>
             <Building2 className="w-4 h-4 text-clinical-400" />
@@ -192,7 +192,7 @@ export function KnowledgeManager() {
           <span className="text-[10px] text-emerald-400 font-medium">100% Auditadas e Oficiais</span>
         </div>
 
-        <div className="glass-panel p-4 rounded-xl border border-slate-800">
+        <div className="media-knowledge-stat glass-panel p-4 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">Diretrizes de Saúde Pública</span>
             <Award className="w-4 h-4 text-amber-400" />
@@ -203,7 +203,7 @@ export function KnowledgeManager() {
           <span className="text-[10px] text-slate-400 font-medium">PCDT / MS • OMS • OPAS</span>
         </div>
 
-        <div className="glass-panel p-4 rounded-xl border border-slate-800">
+        <div className="media-knowledge-stat glass-panel p-4 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">Documentos Indexados</span>
             <Database className="w-4 h-4 text-purple-400" />
@@ -214,7 +214,7 @@ export function KnowledgeManager() {
           <span className="text-[10px] text-slate-400 font-medium">No PostgreSQL pgvector</span>
         </div>
 
-        <div className="glass-panel p-4 rounded-xl border border-slate-800">
+        <div className="media-knowledge-stat glass-panel p-4 rounded-2xl border border-slate-800">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">Literatura Científica Web</span>
             <Globe className="w-4 h-4 text-emerald-400" />

@@ -2,16 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
 @layer base {
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #05080c;
-    color: #f1f5f9;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f4f1ea;
+    color: #17231f;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, .font-heading {
-    font-family: 'Outfit', 'Sora', 'Plus Jakarta Sans', sans-serif;
+    font-family: inherit;
+  }
+}
+
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.typing-dot {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 999px;
+  background: #607069;
+  animation: typing-bounce 1s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 280ms;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -22,16 +87,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #05080c;
+  background: #e8e2d7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #151e28;
+  background: #87928c;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00F5D4;
+  background: #53615a;
 }
 
 /* Clinical Dark Glass Panels */
@@ -122,6 +187,367 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+/* MedIa product surface — shared visual language with the public landing page */
+.media-chat {
+  color: #17231f;
+}
+
+.media-chat .glass-panel,
+.media-chat .media-empty-state,
+.media-chat .media-message-assistant {
+  background: #fffdf8 !important;
+  border-color: rgba(23, 35, 31, 0.12) !important;
+  box-shadow: 0 20px 55px -42px rgba(23, 35, 31, 0.45) !important;
+}
+
+.media-chat .media-message-user {
+  background: #213f34 !important;
+  color: #fff !important;
+  box-shadow: 0 16px 35px -28px rgba(23, 35, 31, 0.75) !important;
+}
+
+.media-chat .media-message-user .text-slate-100,
+.media-chat .media-message-user .text-slate-200,
+.media-chat .media-message-user .text-slate-300,
+.media-chat .media-message-user strong {
+  color: #fff !important;
+}
+
+.media-chat .media-message-assistant .text-white,
+.media-chat .media-empty-state .text-white {
+  color: #17231f !important;
+}
+
+.media-chat.fixed h1.text-white,
+.media-chat.fixed h2.text-white,
+.media-chat.fixed h3.text-white,
+.media-chat.fixed h4.text-white {
+  color: #17231f !important;
+}
+
+.media-chat.fixed button.text-white,
+.media-chat.fixed [class*="bg-gradient-to-"].text-white,
+.media-chat.fixed .bg-clinical-600.text-white,
+.media-chat.fixed .bg-emerald-600.text-white {
+  color: #fff !important;
+}
+
+.media-chat .media-assistant-avatar,
+.media-chat .media-assistant-avatar * {
+  color: #fff !important;
+}
+
+.media-chat .bg-slate-950,
+.media-chat [class*="bg-slate-950/"] {
+  background-color: #f4f1ea !important;
+}
+
+.media-chat .bg-slate-900,
+.media-chat [class*="bg-slate-900/"] {
+  background-color: #fffdf8 !important;
+}
+
+.media-chat .bg-slate-800,
+.media-chat [class*="bg-slate-800/"] {
+  background-color: #ebe6dc !important;
+}
+
+.media-chat .border-slate-800,
+.media-chat [class*="border-slate-800/"],
+.media-chat .border-slate-700,
+.media-chat [class*="border-slate-700/"] {
+  border-color: rgba(23, 35, 31, 0.12) !important;
+}
+
+.media-chat .text-slate-100,
+.media-chat .text-slate-200 {
+  color: #27352f !important;
+}
+
+.media-chat .text-slate-300 {
+  color: #4f5c56 !important;
+}
+
+.media-chat .text-slate-400 {
+  color: #69746f !important;
+}
+
+.media-chat .text-slate-500 {
+  color: #89928e !important;
+}
+
+.media-chat [class*="text-clinical-"],
+.media-chat [class*="text-teal-"] {
+  color: #9d4f3f !important;
+}
+
+.media-chat [class*="text-emerald-"] {
+  color: #315547 !important;
+}
+
+.media-chat [class*="border-clinical-"],
+.media-chat [class*="border-teal-"],
+.media-chat [class*="border-emerald-"] {
+  border-color: rgba(49, 85, 71, 0.28) !important;
+}
+
+.media-chat [class*="bg-teal-950"],
+.media-chat [class*="bg-emerald-950"],
+.media-chat [class*="bg-clinical-950"],
+.media-chat [class*="bg-teal-500/"],
+.media-chat [class*="bg-emerald-500/"],
+.media-chat [class*="bg-clinical-500/"] {
+  background-color: #e5ede8 !important;
+}
+
+.media-chat .bg-clinical-600,
+.media-chat .bg-clinical-500,
+.media-chat .bg-teal-600,
+.media-chat .bg-teal-500,
+.media-chat .bg-emerald-600,
+.media-chat .bg-emerald-500,
+.media-chat .bg-emerald-400 {
+  background-color: #315547 !important;
+}
+
+.media-chat [class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: #315547 !important;
+}
+
+.media-chat [class*="bg-rose-950"] {
+  background-color: #f8e9e5 !important;
+}
+
+.media-chat [class*="text-rose-"] {
+  color: #9a4c43 !important;
+}
+
+.media-chat [class*="bg-amber-950"] {
+  background-color: #f6edda !important;
+}
+
+.media-chat [class*="text-amber-"] {
+  color: #8a6030 !important;
+}
+
+.media-chat [class*="shadow-teal-"],
+.media-chat [class*="shadow-clinical-"],
+.media-chat [class*="shadow-emerald-"] {
+  --tw-shadow-color: transparent !important;
+}
+
+.media-chat input,
+.media-chat textarea,
+.media-chat select {
+  color: #17231f !important;
+  caret-color: #9d4f3f;
+}
+
+.media-chat input::placeholder,
+.media-chat textarea::placeholder {
+  color: #8b9590 !important;
+}
+
+.media-chat input:focus,
+.media-chat textarea:focus,
+.media-chat select:focus {
+  border-color: #315547 !important;
+  box-shadow: 0 0 0 3px rgba(49, 85, 71, 0.1);
+}
+
+.media-chat .media-specialty-selector,
+.media-chat .media-session-bar,
+.media-chat .media-composer {
+  background: rgba(244, 241, 234, 0.96);
+}
+
+.media-chat .media-composer {
+  border-top: 1px solid rgba(23, 35, 31, 0.1);
+  padding-top: 0.6rem;
+}
+
+.media-chat .media-chat-input {
+  background: #fffdf8 !important;
+  border-color: rgba(23, 35, 31, 0.16) !important;
+  box-shadow: 0 12px 32px -26px rgba(23, 35, 31, 0.55);
+}
+
+.media-chat .media-attach-button {
+  background: #fffdf8 !important;
+}
+
+.media-chat .media-send-button,
+.media-chat .media-send-button * {
+  color: #fff !important;
+}
+
+.media-chat .media-loading {
+  animation: none;
+  background: #fffdf8 !important;
+}
+
+.media-chat .animate-pulse {
+  animation: none;
+}
+
+.media-specialty-scroll,
+.media-calculators,
+.media-session-bar > div:last-child {
+  scrollbar-width: none;
+}
+
+.media-specialty-scroll::-webkit-scrollbar,
+.media-calculators::-webkit-scrollbar,
+.media-session-bar > div:last-child::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .media-chat .media-specialty-selector {
+    width: auto;
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .media-chat .media-segmented > button {
+    flex: 1 1 50%;
+    justify-content: center;
+    min-height: 2.35rem;
+  }
+
+  .media-chat .media-session-bar > div:last-child {
+    display: flex;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+  }
+
+  .media-chat .media-session-bar > div:last-child > button {
+    flex: 0 0 auto;
+    min-height: 2.35rem;
+  }
+
+  .media-chat .media-message {
+    max-width: calc(100vw - 4.25rem);
+  }
+
+  .media-chat .media-composer-form > button:nth-of-type(2) span {
+    display: none !important;
+  }
+
+  .media-chat .media-composer-form > button:nth-of-type(2) {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+}
+
+/* Knowledge library */
+.media-knowledge .text-white {
+  color: #17231f !important;
+}
+
+.media-knowledge button.text-white,
+.media-knowledge button[class*="bg-clinical-"],
+.media-knowledge button[class*="bg-emerald-"],
+.media-knowledge button[class*="bg-teal-"] {
+  color: #fff !important;
+}
+
+.media-knowledge .media-knowledge-hero {
+  background: #fffdf8 !important;
+  box-shadow: 0 28px 65px -48px rgba(23, 35, 31, 0.5) !important;
+}
+
+.media-knowledge .media-knowledge-stat {
+  position: relative;
+  overflow: hidden;
+  background: #fffdf8 !important;
+  box-shadow: none !important;
+}
+
+.media-knowledge .media-knowledge-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #9d4f3f;
+}
+
+.media-knowledge [class*="text-purple-"] {
+  color: #9d4f3f !important;
+}
+
+.media-knowledge > .flex.border-b {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.media-knowledge > .flex.border-b::-webkit-scrollbar {
+  display: none;
+}
+
+.media-knowledge > .flex.border-b > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.media-knowledge table {
+  color: #4f5c56;
+}
+
+.media-knowledge thead,
+.media-knowledge [class*="bg-slate-900/"] {
+  background: #f0ece3 !important;
+}
+
+.media-knowledge tbody tr {
+  background: #fffdf8 !important;
+}
+
+.media-knowledge tbody tr:hover {
+  background: #f6f3ec !important;
+}
+
+.media-knowledge th,
+.media-knowledge td {
+  border-color: rgba(23, 35, 31, 0.1);
+}
+
+.media-knowledge input,
+.media-knowledge select {
+  background: #fffdf8 !important;
+  border-color: rgba(23, 35, 31, 0.16) !important;
+}
+
+.media-knowledge input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 0.75rem;
+  background: #213f34;
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 639px) {
+  .media-knowledge .media-knowledge-hero {
+    border-radius: 1.4rem;
+  }
+
+  .media-knowledge .media-knowledge-hero h2 {
+    font-size: 1.75rem;
+    line-height: 1.1;
+  }
+
+  .media-knowledge table th,
+  .media-knowledge table td {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+  }
 }
 
 

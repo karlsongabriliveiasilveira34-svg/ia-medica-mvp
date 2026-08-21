@@ -427,22 +427,22 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] max-w-6xl mx-auto px-4 py-4">
+    <div className="media-chat flex h-[calc(100dvh-64px)] max-w-7xl flex-col mx-auto px-3 py-3 sm:px-6 sm:py-5">
       
       {/* Top Header: Seletor de Especialidade + Seletor de Persona (Médico vs Estudante) */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-2">
+      <div className="media-chat-controls flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-2">
         <SpecialtySelector
           selectedSpecialty={selectedSpecialty}
           onSelectSpecialty={setSelectedSpecialty}
         />
 
         {/* Toggle de Persona: Modo Médico vs Estudante */}
-        <div className="flex items-center bg-slate-900/90 p-1 rounded-2xl border border-slate-800 self-end sm:self-auto shadow-sm">
+        <div className="media-segmented flex items-center bg-slate-900/90 p-1 rounded-full border border-slate-800 self-stretch sm:self-auto shadow-sm">
           <button
             onClick={() => setUserMode('doctor')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               userMode === 'doctor'
-                ? 'bg-clinical-600 text-white shadow-md'
+                ? 'bg-[#213f34] text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -454,7 +454,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             onClick={() => setUserMode('student')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
               userMode === 'student'
-                ? 'bg-gradient-to-r from-teal-600 to-indigo-600 text-white shadow-md'
+                ? 'bg-[#9d4f3f] text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -465,7 +465,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
       </div>
 
       {/* Barra de Ações da Sessão Conversacional com Gravação e Retomada de Caso */}
-      <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-900/80 rounded-xl border border-slate-800 mb-3">
+      <div className="media-session-bar flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-900/80 rounded-2xl border border-slate-800 mb-3">
         <div className="flex items-center gap-2 text-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="text-slate-300 font-medium">
@@ -501,7 +501,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             <button
               onClick={handleAnalyzeCase}
               disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-teal-600 to-clinical-600 hover:from-teal-500 hover:to-clinical-500 text-white font-semibold text-xs shadow-md transition-all disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#213f34] hover:bg-[#172f27] text-white font-semibold text-xs shadow-sm transition-all disabled:opacity-50"
             >
               <FileCheck className="w-4 h-4 text-white" />
               <span>Analisar Caso Completo</span>
@@ -579,18 +579,18 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
       )}
 
       {/* Timeline de Mensagens */}
-      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+      <div className="media-thread flex-1 overflow-y-auto space-y-5 pr-1 sm:space-y-6 sm:pr-2">
         {messages.length === 0 && (
-          <div className="my-auto py-8 px-6 bg-slate-900/80 border border-slate-800 rounded-3xl text-center space-y-5 shadow-2xl glass-panel animate-fadeIn">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-clinical-600 to-teal-400 mx-auto flex items-center justify-center text-white shadow-lg shadow-clinical-900/50">
+          <div className="media-empty-state my-auto py-7 px-4 sm:py-10 sm:px-8 bg-slate-900/80 border border-slate-800 rounded-[1.75rem] text-center space-y-5 shadow-xl glass-panel animate-fadeIn">
+            <div className="media-assistant-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#213f34] mx-auto flex items-center justify-center text-white shadow-sm">
               <Stethoscope className="w-7 h-7" />
             </div>
             <div className="max-w-2xl mx-auto space-y-2">
-              <h2 className="text-xl font-extrabold text-white tracking-tight">
-                Plataforma de Apoio à Decisão Clínica Baseada em Evidências
+              <h2 className="font-editorial text-2xl sm:text-3xl font-medium text-white tracking-[-0.02em]">
+                Comece pelo caso. As fontes vêm junto.
               </h2>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Respostas de alta profundidade técnica ancoradas em diretrizes oficiais e revisões sistemáticas da Cochrane Library.
+                Descreva a situação clínica como você pensaria no consultório ou no plantão. O MedIa organiza a análise sem esconder o fundamento.
               </p>
             </div>
 
@@ -639,18 +639,18 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           return (
             <div
               key={msg.id}
-              className={`flex gap-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`media-message-row flex gap-2 sm:gap-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.sender === 'bot' && (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-clinical-600 to-teal-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                <div className="media-assistant-avatar w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#213f34] flex items-center justify-center text-white shrink-0 shadow-sm">
                   <Bot className="w-5 h-5" />
                 </div>
               )}
 
-              <div className={`max-w-3xl rounded-2xl p-5 shadow-xl ${
+              <div className={`media-message max-w-3xl rounded-2xl p-4 sm:p-5 shadow-sm ${
                 msg.sender === 'user'
-                  ? 'bg-clinical-600 text-white rounded-tr-none'
-                  : 'glass-panel border border-slate-800 text-slate-100 rounded-tl-none'
+                  ? 'media-message-user bg-[#213f34] text-white rounded-br-md'
+                  : 'media-message-assistant glass-panel border border-slate-800 text-slate-100 rounded-bl-md'
               }`}>
                 
                 {/* Imagem Anexada pelo Usuário */}
@@ -999,7 +999,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           );
         })}
         {loading && (
-          <div className="flex gap-4 items-center p-4 bg-slate-900/50 rounded-2xl border border-slate-800 animate-pulse">
+          <div className="media-loading flex gap-3 items-center p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
             <Loader2 className="w-5 h-5 text-clinical-400 animate-spin" />
             <span className="text-xs text-slate-400 font-medium">
               Agente Médico ({userMode === 'student' ? 'Modo Estudante' : 'Modo Médico'}) processando evidências com Gemini Flash...
@@ -1016,7 +1016,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
       </div>
 
       {/* Input de Mensagem com Suporte a Imagem Multimodal */}
-      <div className="mt-1 space-y-2">
+      <div className="media-composer mt-1 space-y-2">
         {/* Preview da Imagem Selecionada */}
         {selectedImage && (
           <div className="p-2 bg-slate-950 rounded-2xl border border-teal-500/40 flex items-center justify-between animate-fadeIn max-w-md">
@@ -1047,7 +1047,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             e.preventDefault();
             handleSendQuestion();
           }}
-          className="flex gap-2"
+          className="media-composer-form flex gap-2"
         >
           {/* Botão de Anexo de Imagem (JPG/PNG) */}
           <button
@@ -1055,7 +1055,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             onClick={() => imageInputRef.current?.click()}
             disabled={loading}
             title="Anexar Imagem Clínica, ECG ou Exame (JPG/PNG)"
-            className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50"
+            className="media-attach-button bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50"
           >
             <ImageIcon className="w-5 h-5 text-teal-400" />
           </button>
@@ -1079,7 +1079,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
                     : 'Digite o caso clínico, achados de exame ou dúvida para apoio à conduta médica...')
             }
             disabled={loading}
-            className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-clinical-500 transition-colors disabled:opacity-50"
+            className="media-chat-input min-w-0 flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-clinical-500 transition-colors disabled:opacity-50"
           />
 
           {/* Botão de Alternância: Pesquisa Padrão vs Pesquisa Profunda */}
@@ -1095,13 +1095,14 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             title="Alternar entre Pesquisa Padrão e Pesquisa Profunda"
           >
             <Send className={`w-3.5 h-3.5 -rotate-45 transition-transform ${deepResearch ? 'text-emerald-100 scale-110' : 'text-emerald-400'}`} />
-            <span>{deepResearch ? 'Pesquisa Profunda' : 'Pesquisa Padrão'}</span>
+            <span className="hidden md:inline">{deepResearch ? 'Pesquisa Profunda' : 'Pesquisa Padrão'}</span>
+            <span className="md:hidden">{deepResearch ? 'Profunda' : 'Padrão'}</span>
           </button>
 
           <button
             type="submit"
             disabled={loading || (!input.trim() && !selectedImage)}
-            className="bg-clinical-600 hover:bg-clinical-500 disabled:bg-slate-800 text-white font-semibold px-5 py-3 rounded-2xl transition-all shadow-md flex items-center justify-center disabled:opacity-50 shrink-0"
+            className="media-send-button bg-[#213f34] hover:bg-[#172f27] disabled:bg-slate-800 text-white font-semibold px-4 sm:px-5 py-3 rounded-2xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 shrink-0"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
           </button>
