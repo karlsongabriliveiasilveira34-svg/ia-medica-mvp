@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, FileText, ExternalLink, Loader2, AlertTriangle, Activity, ChevronRight, HelpCircle, ShieldAlert, Terminal, ChevronDown, FileCheck, Stethoscope, CheckCircle2, Bookmark, Scale, FolderOpen, History, Lock, Globe, Building2, GraduationCap, Download, PieChart, Sparkles, HelpCircle as HelpIcon, Info, Mic, Image as ImageIcon, X as XIcon } from 'lucide-react';
+import { Send, Bot, User, FileText, ExternalLink, Loader2, AlertTriangle, Activity, ChevronRight, HelpCircle, ShieldAlert, Terminal, ChevronDown, FileCheck, Stethoscope, CheckCircle2, Bookmark, Scale, FolderOpen, History, Lock, Globe, Building2, GraduationCap, Download, PieChart, Sparkles, HelpCircle as HelpIcon, Info, Mic, Image as ImageIcon, Camera, X as XIcon } from 'lucide-react';
 import { TrustBadge } from './TrustBadge';
 import { SpecialtySelector } from './SpecialtySelector';
 import { FeedbackWidget } from './FeedbackWidget';
 import { ReasoningConfirmModal } from './ReasoningConfirmModal';
 import { AudioConsultationRecorder } from './AudioConsultationRecorder';
+import { CameraCaptureModal } from './CameraCaptureModal';
 import { MedIaIcon } from './MedIaLogo';
 
 export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReportEditor }) {
@@ -22,6 +23,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
   const [caseResumeSummary, setCaseResumeSummary] = useState(null);
   const [highlightedSourceId, setHighlightedSourceId] = useState(null);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const [showReasoningModal, setShowReasoningModal] = useState(false);
   const [reasoningContext, setReasoningContext] = useState(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -263,6 +265,16 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
+  };
+
+  // Receber foto capturada diretamente pela câmera
+  const handlePhotoCaptured = (photoObj) => {
+    setSelectedImage({
+      dataUrl: photoObj.dataUrl,
+      name: photoObj.name,
+      sizeKb: photoObj.sizeKb,
+      fromCamera: true
+    });
   };
 
   const handleSendQuestion = async (textToSend) => {
@@ -1016,27 +1028,38 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
         <span>Dados protegidos pela LGPD (Lei 13.709/2018). Apoio à decisão clínica com rastreabilidade médico-legal completa.</span>
       </div>
 
-      {/* Input de Mensagem com Suporte a Imagem Multimodal */}
+      {/* Input de Mensagem com Suporte a Câmera e Imagem Multimodal */}
       <div className="media-composer mt-1 space-y-2">
-        {/* Preview da Imagem Selecionada */}
+        {/* Preview da Imagem ou Foto da Câmera Selecionada */}
         {selectedImage && (
-          <div className="p-2 bg-slate-950 rounded-2xl border border-teal-500/40 flex items-center justify-between animate-fadeIn max-w-md">
-            <div className="flex items-center gap-2.5 truncate">
-              <img
-                src={selectedImage.dataUrl}
-                alt="Preview Imagem"
-                className="w-12 h-12 object-cover rounded-xl border border-slate-800 shrink-0"
-              />
+          <div className="p-2.5 bg-slate-950 rounded-2xl border border-emerald-500/40 flex items-center justify-between animate-fadeIn max-w-md shadow-lg">
+            <div className="flex items-center gap-3 truncate">
+              <div className="relative shrink-0">
+                <img
+                  src={selectedImage.dataUrl}
+                  alt="Preview Imagem"
+                  className="w-12 h-12 object-cover rounded-xl border border-slate-700 shadow-sm"
+                />
+                {selectedImage.fromCamera && (
+                  <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-0.5 rounded-full ring-2 ring-slate-950">
+                    <Camera className="w-2.5 h-2.5" />
+                  </span>
+                )}
+              </div>
               <div className="truncate text-xs">
-                <span className="font-bold text-slate-200 block truncate">{selectedImage.name}</span>
-                <span className="text-[10px] text-teal-400 font-semibold">{selectedImage.sizeKb} KB • Imagem Pronta para Envio</span>
+                <span className="font-bold text-slate-200 block truncate flex items-center gap-1.5">
+                  {selectedImage.name}
+                </span>
+                <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                  {selectedImage.fromCamera ? '📷 Foto da Câmera' : '📁 Imagem Anexada'} • {selectedImage.sizeKb} KB
+                </span>
               </div>
             </div>
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="p-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors ml-2 shrink-0"
-              title="Remover Imagem"
+              className="p-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors ml-2 shrink-0 border border-slate-800"
+              title="Remover Foto/Imagem"
             >
               <XIcon className="w-4 h-4" />
             </button>
@@ -1050,21 +1073,32 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           }}
           className="media-composer-form flex gap-2"
         >
-          {/* Botão de Anexo de Imagem (JPG/PNG) */}
+          {/* Botão 1: Tirar Foto Direta com a Câmera */}
+          <button
+            type="button"
+            onClick={() => setShowCameraModal(true)}
+            disabled={loading}
+            title="Tirar Foto com a Câmera (Lesão, ECG, Exame Físico)"
+            className="media-attach-button bg-slate-900 hover:bg-emerald-950/80 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
+          >
+            <Camera className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+          </button>
+
+          {/* Botão 2: Anexar Imagem da Galeria / Arquivos */}
           <button
             type="button"
             onClick={() => imageInputRef.current?.click()}
             disabled={loading}
-            title="Anexar Imagem Clínica, ECG ou Exame (JPG/PNG)"
-            className="media-attach-button bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50"
+            title="Anexar Arquivo da Galeria (JPG/PNG/WEBP)"
+            className="media-attach-button bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
           >
-            <ImageIcon className="w-5 h-5 text-teal-400" />
+            <ImageIcon className="w-5 h-5 text-teal-400 group-hover:scale-110 transition-transform" />
           </button>
           <input
             type="file"
             ref={imageInputRef}
             onChange={handleImageSelect}
-            accept="image/jpeg,image/png"
+            accept="image/*"
             className="hidden"
           />
 
@@ -1074,7 +1108,9 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               selectedImage
-                ? 'Digite observações adicionais sobre a imagem (opcional)...'
+                ? (selectedImage.fromCamera
+                    ? 'Digite observações sobre a foto capturada (opcional)...'
+                    : 'Digite observações adicionais sobre a imagem (opcional)...')
                 : (userMode === 'student'
                     ? 'Digite uma queixa ou dúvida para explorar a fisiopatologia e raciocínio clínico...'
                     : 'Digite o caso clínico, achados de exame ou dúvida para apoio à conduta médica...')
@@ -1109,6 +1145,13 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           </button>
         </form>
       </div>
+
+      {/* Modal de Captura de Foto com Câmera ao Vivo */}
+      <CameraCaptureModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onPhotoCaptured={handlePhotoCaptured}
+      />
 
       {/* Modal de Confirmação de Raciocínio para Laudo */}
       <ReasoningConfirmModal
