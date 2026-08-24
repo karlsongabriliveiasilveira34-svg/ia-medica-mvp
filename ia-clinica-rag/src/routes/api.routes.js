@@ -53,6 +53,25 @@ const queryImageUpload = multer({
 
 export const apiRouter = Router();
 
+import { 
+  getPediatricMedicationsHandler,
+  calculateDoseHandler,
+  calculateZScoreHandler,
+  validateVaccinesHandler,
+  checkRedFlagsHandler
+} from "../controllers/pediatric.controller.js";
+import {
+  createPreAnamneseSessionHandler,
+  getPreAnamneseByTokenHandler,
+  submitPreAnamneseHandler,
+  getDoctorWorklistHandler,
+  getAnamneseDetailsHandler
+} from "../controllers/pre-anamnese.controller.js";
+import {
+  fhirEncounterHandler,
+  webhookAgendamentoCriadoHandler
+} from "../controllers/fhir.controller.js";
+
 // Aplicar Middleware de Sanitização de Logs (Prevenção de Vazamento de PII)
 apiRouter.use(logSanitizerMiddleware);
 
@@ -62,8 +81,28 @@ apiRouter.get("/health", checkHealth);
 // Rotas de Autenticação (Públicas)
 apiRouter.use(authRouter);
 
+// --- ROTAS PÚBLICAS DO PORTAL DO PACIENTE (ANAMNESE PRÉVIA EM CASA) ---
+apiRouter.get("/api/public/pre-anamnese/:token", getPreAnamneseByTokenHandler);
+apiRouter.post("/api/public/pre-anamnese/:token/submit", submitPreAnamneseHandler);
+
+// --- ROTAS DE INTEROPERABILIDADE HL7 FHIR & WEBHOOKS DE ERPS HOSPITALARES ---
+apiRouter.post("/api/v1/fhir/Encounter", fhirEncounterHandler);
+apiRouter.post("/api/webhooks/agendamento-criado", webhookAgendamentoCriadoHandler);
+
 // Aplicar Middleware de Autenticação para todas as rotas de API subsequentes
 apiRouter.use("/api", requireAuth);
+
+// --- ROTAS DO MÓDULO PEDIÁTRICO ESPECIALIZADO ---
+apiRouter.get("/api/pediatric/medications", getPediatricMedicationsHandler);
+apiRouter.post("/api/pediatric/calculate-dose", calculateDoseHandler);
+apiRouter.post("/api/pediatric/calculate-zscore", calculateZScoreHandler);
+apiRouter.post("/api/pediatric/validate-vaccines", validateVaccinesHandler);
+apiRouter.post("/api/pediatric/check-redflags", checkRedFlagsHandler);
+
+// --- ROTAS DA FILA DO DIA DO MÉDICO & ANAMNESE PRÉVIA ---
+apiRouter.get("/api/worklist", getDoctorWorklistHandler);
+apiRouter.post("/api/worklist/create-session", createPreAnamneseSessionHandler);
+apiRouter.get("/api/worklist/:id", getAnamneseDetailsHandler);
 
 // Endpoint principal do Agentic RAG Multiagente (suporta texto e/ou upload de imagem)
 apiRouter.post("/api/query", queryImageUpload.single("image"), handleQuery);

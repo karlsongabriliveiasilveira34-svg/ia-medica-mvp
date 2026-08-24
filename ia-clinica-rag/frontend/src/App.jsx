@@ -8,6 +8,9 @@ import { CitationModal } from './components/CitationModal';
 import { ProbabilisticModal } from './components/ProbabilisticModal';
 import { MedicalReportEditor } from './components/MedicalReportEditor';
 import { LoginModal } from './components/LoginModal';
+import { DoctorWorklist } from './components/DoctorWorklist';
+import { PediatricModule } from './components/PediatricModule';
+import { PreAnamnesePortal } from './components/PreAnamnesePortal';
 
 // Configuração de Interceptador Global do fetch para enviar Token de Autenticação
 if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
@@ -177,6 +180,33 @@ export default function App() {
             onSelectCitation={(citation) => setSelectedCitation(citation)}
             onSelectDiagnosis={(diag) => setSelectedDiagnosis(diag)}
             onOpenReportEditor={handleOpenReportEditor}
+          />
+        )}
+
+        {activeTab === 'worklist' && (
+          <DoctorWorklist
+            onStartConsultationWithPatient={(patientCase) => {
+              setActiveTab('chat');
+            }}
+            onOpenPediatricModule={(patientCase) => {
+              setActiveTab('pediatric');
+            }}
+          />
+        )}
+
+        {activeTab === 'pediatric' && (
+          <PediatricModule
+            onOpenChatWithContext={(prompt) => {
+              setActiveTab('chat');
+            }}
+          />
+        )}
+
+        {activeTab === 'portal' && (
+          <PreAnamnesePortal
+            onSubmitSuccess={() => {
+              // Notificação e redirecionamento opcional
+            }}
           />
         )}
 
