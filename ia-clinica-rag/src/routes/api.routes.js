@@ -27,6 +27,9 @@ import {
 import { LgpdController } from "../controllers/lgpd.controller.js";
 
 import { authRouter } from "./auth.routes.js";
+import { iaRouter } from "./ia.routes.js";
+import { questoesRouter } from "./questoes.routes.js";
+import { pixFixRouter } from "./pix-fix.routes.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.js";
 
@@ -80,6 +83,11 @@ apiRouter.get("/health", checkHealth);
 
 // Rotas de Autenticação (Públicas)
 apiRouter.use(authRouter);
+
+// Rotas de IA Preceptora, Questões de Residência e PIX Dinâmico
+apiRouter.use(iaRouter);
+apiRouter.use(questoesRouter);
+apiRouter.use(pixFixRouter);
 
 // --- ROTAS PÚBLICAS DO PORTAL DO PACIENTE (ANAMNESE PRÉVIA EM CASA) ---
 apiRouter.get("/api/public/pre-anamnese/:token", getPreAnamneseByTokenHandler);
