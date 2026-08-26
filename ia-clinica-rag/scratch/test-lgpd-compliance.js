@@ -86,10 +86,10 @@ async function runLgpdComplianceSuite() {
   const sensitiveLogPayload = {
     user_id: "usr_4821",
     action: "LOGIN_ATTEMPT",
-    password: "MinhaSenhaSuperSecreta123!",
+    password: `mock_test_pwd_${Date.now()}`,
     cpf: "123.456.789-00",
     email: "medico.silva@hospital.com.br",
-    jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    jwt: `mock_jwt_header_${Date.now()}`,
     metadata: {
       credit_card: "4111222233334444",
       notes: "Consulta normal"

@@ -12,7 +12,6 @@ export class LgpdController {
   static async recordConsent(req, res) {
     try {
       const {
-        userId = "anonymous_user",
         sessionId,
         policyVersion = "v2.1.0",
         scopes = {
@@ -28,10 +27,11 @@ export class LgpdController {
       const ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1";
       const userAgent = req.headers["user-agent"] || "Unknown";
       const consentId = `consent-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      const cleanUserId = req.body?.userId ? String(req.body.userId) : (req.user?.userId || `usr_${Date.now()}`);
 
       const consentRecord = {
         id: consentId,
-        user_id: userId,
+        user_id: cleanUserId,
         session_id: sessionId || null,
         policy_version: policyVersion,
         granted: Boolean(granted),

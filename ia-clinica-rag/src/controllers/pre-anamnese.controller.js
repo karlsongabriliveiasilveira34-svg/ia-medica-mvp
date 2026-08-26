@@ -70,7 +70,7 @@ export async function submitPreAnamneseHandler(req, res) {
       lgpdConsentAccepted
     } = req.body || {};
 
-    if (!symptomsText || !symptomsText.trim()) {
+    if (!symptomsText || typeof symptomsText !== "string" || !symptomsText.trim()) {
       return res.status(400).json({
         status: "error",
         message: "Por favor, descreva seus principais sintomas."

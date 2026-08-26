@@ -1,11 +1,12 @@
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
 import { env } from "../config/env.js";
 import { emailService } from "./email.service.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || "media-super-secret-jwt-key-2026-secure-32chars";
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "media-super-secret-refresh-key-2026-secure-32chars";
+const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || crypto.randomBytes(32).toString("hex");
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || crypto.randomBytes(32).toString("hex");
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
@@ -15,8 +16,11 @@ const memorySessions = new Map();
 const memoryPasswordResetTokens = new Map();
 const userLoginHistory = new Map();
 
-// Seed de usuário médico verificado e estudante verificado para testes imediatos
-const demoMedHashed = await bcrypt.hash("clinica2026", 10);
+// Seed inicial dinâmico e seguro para testes locais
+const initialMedPass = process.env.DEMO_MEDICO_PASSWORD || process.env.DEMO_PASSWORD || "clinica2026";
+const initialEstPass = process.env.DEMO_ESTUDANTE_PASSWORD || "senha123";
+
+const demoMedHashed = await bcrypt.hash(String(initialMedPass), 10);
 memoryUsers.set("medico.demo@media.med.br", {
   id: "00000000-0000-0000-0000-000000000001",
   name: "Dr. Karlson Gabriel",
@@ -31,7 +35,7 @@ memoryUsers.set("medico.demo@media.med.br", {
   last_user_agent: "Mozilla/5.0"
 });
 
-const demoEstHashed = await bcrypt.hash("senha123", 10);
+const demoEstHashed = await bcrypt.hash(String(initialEstPass), 10);
 memoryUsers.set("estudante.demo@media.med.br", {
   id: "00000000-0000-0000-0000-000000000002",
   name: "Lucas Silveira (Interno)",

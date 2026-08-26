@@ -385,7 +385,7 @@ export function KnowledgeManager() {
                           </td>
 
                           <td className="px-6 py-4 text-right">
-                            {src.url ? (
+                            {src.url && typeof src.url === 'string' && (src.url.startsWith('http://') || src.url.startsWith('https://')) ? (
                               <a
                                 href={src.url}
                                 target="_blank"

@@ -5,7 +5,7 @@ let geminiClientInstance = null;
 
 function getClient() {
   if (!geminiClientInstance) {
-    const key = (env.geminiApiKey && env.geminiApiKey.trim()) || "AIzaSy_dummy_key_for_initialization";
+    const key = (env.geminiApiKey && env.geminiApiKey.trim()) || (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim()) || "";
     geminiClientInstance = new GoogleGenAI({ apiKey: key });
   }
   return geminiClientInstance;

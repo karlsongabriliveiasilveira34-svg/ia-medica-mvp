@@ -667,7 +667,7 @@ export function ClinicalChat({
               }`}>
                 
                 {/* Imagem Anexada pelo Usuário */}
-                {msg.sender === 'user' && msg.imagePreview && (
+                {msg.sender === 'user' && msg.imagePreview && typeof msg.imagePreview === 'string' && (msg.imagePreview.startsWith('data:image/') || msg.imagePreview.startsWith('blob:')) && (
                   <div className="mb-3 rounded-xl overflow-hidden max-w-xs border border-white/20 shadow-md">
                     <img src={msg.imagePreview} alt="Imagem Clínica Anexada" className="w-full max-h-56 object-cover" />
                   </div>
@@ -889,7 +889,7 @@ export function ClinicalChat({
                                     Ver Trecho (Pág. {pageNum})
                                   </button>
                                   <a
-                                    href={targetUrl}
+                                    href={typeof targetUrl === 'string' && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('/knowledge/')) ? targetUrl : '#'}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="text-slate-300 hover:text-white text-[10px] underline flex items-center gap-1"
@@ -919,6 +919,7 @@ export function ClinicalChat({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {webCitations.map((cit) => {
                             const isHighlighted = highlightedSourceId === cit.sourceId;
+                            const safeCitUrl = typeof cit.url === 'string' && (cit.url.startsWith('http://') || cit.url.startsWith('https://')) ? cit.url : '#';
 
                             return (
                               <div
@@ -959,7 +960,7 @@ export function ClinicalChat({
                                     Ver Resumo
                                   </button>
                                   <a
-                                    href={cit.url}
+                                    href={safeCitUrl}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="px-2 py-0.5 rounded bg-teal-600/30 hover:bg-teal-500 text-teal-200 hover:text-white font-medium text-[10px] flex items-center gap-1 border border-teal-500/40"

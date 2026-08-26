@@ -215,7 +215,7 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
               <div className="space-y-4">
                 {/* QR Code Container */}
                 <div className="flex flex-col items-center justify-center bg-[#faf8f5] p-5 rounded-3xl border border-[#17231f]/10 shadow-inner">
-                  {pixOrder.qrCodeUrl ? (
+                  {pixOrder.qrCodeUrl && typeof pixOrder.qrCodeUrl === 'string' && pixOrder.qrCodeUrl.startsWith('data:image/') ? (
                     <img
                       src={pixOrder.qrCodeUrl}
                       alt="QR Code PIX"

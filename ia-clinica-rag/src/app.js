@@ -20,8 +20,12 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 
-// 1. Headers de Segurança HTTP (Anti-XSS, Anti-Clickjacking, No-Sniff)
+// 1. Desabilitar identificação do Express (Anti-Fingerprinting)
+app.disable("x-powered-by");
+
+// 2. Headers de Segurança HTTP (Anti-XSS, Anti-Clickjacking, No-Sniff)
 app.use((req, res, next) => {
+  res.removeHeader("X-Powered-By");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -30,47 +34,50 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. Middlewares Globais de Rede e Payload
+// 3. Middlewares Globais de Rede, Rate Limiting e Payload
+app.use(generalLimiter);
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
-// 3. Sanitização Global de Dados e Proteção XSS
+// 4. Sanitização Global de Dados e Proteção XSS
 app.use(deepSanitizeMiddleware);
 
-// 4. Rate Limiting Geral para Rotas da API
-app.use("/api", generalLimiter);
+// Servir arquivos estáticos do frontend e pasta de conhecimento de forma segura
+const frontendDist = path.resolve(__dirname, "../frontend/dist");
+const frontendOut = path.resolve(__dirname, "../frontend/out");
+const knowledgeDir = path.resolve(__dirname, "../knowledge");
 
-// Servir arquivos estáticos do frontend e pasta de conhecimento (se existirem localmente)
-const frontendDist = path.join(__dirname, "../frontend/dist");
-const frontendOut = path.join(__dirname, "../frontend/out");
-const knowledgeDir = path.join(__dirname, "../knowledge");
-
-if (fs.existsSync(frontendDist)) app.use(express.static(frontendDist));
-if (fs.existsSync(frontendOut)) app.use(express.static(frontendOut));
-if (fs.existsSync(knowledgeDir)) app.use("/knowledge", express.static(knowledgeDir));
+if (fs.existsSync(frontendDist)) app.use(express.static(frontendDist, { dotfiles: "ignore", maxAge: "1d" }));
+if (fs.existsSync(frontendOut)) app.use(express.static(frontendOut, { dotfiles: "ignore", maxAge: "1d" }));
+if (fs.existsSync(knowledgeDir)) app.use("/knowledge", express.static(knowledgeDir, { dotfiles: "ignore", maxAge: "1d" }));
 
 // Rotas da API
 app.use(apiRouter);
 
-// Handler para rotas não encontradas
+// Handler seguro para rotas não encontradas
 app.use((req, res, next) => {
-  if (req.accepts("html") && !req.path.startsWith("/api") && fs.existsSync(path.join(frontendDist, "index.html"))) {
-    return res.sendFile(path.join(frontendDist, "index.html"), (err) => {
-      if (err) {
+  const indexPath = path.resolve(frontendDist, "index.html");
+  if (req.accepts("html") && !req.path.startsWith("/api") && fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath, (err) => {
+      if (err && !res.headersSent) {
         res.status(404).json({ status: "error", message: "Rota não encontrada" });
       }
     });
   }
-  res.status(404).json({ status: "error", message: `Rota ${req.method} ${req.path} não encontrada.` });
+  if (!res.headersSent) {
+    res.status(404).json({ status: "error", message: `Rota ${req.method} ${req.path} não encontrada.` });
+  }
 });
 
-// Middleware de tratamento global de erros
+// Middleware de tratamento global de erros (sem expor stack traces em produção)
 app.use((err, req, res, next) => {
-  console.error("🔥 Erro não tratado na aplicação:", err);
-  res.status(err.status || 500).json({
-    status: "error",
-    message: err.message || "Erro interno do servidor",
-    ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {})
-  });
+  console.error("🔥 Erro capturado na aplicação:", err.message);
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({
+      status: "error",
+      message: err.message || "Erro interno do servidor",
+      ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {})
+    });
+  }
 });

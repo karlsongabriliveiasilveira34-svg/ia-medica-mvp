@@ -6,33 +6,33 @@ import { SourceValidatorService } from "../services/source-validator.service.js"
  */
 export async function handleListSources(req, res) {
   try {
-    const { authorityLevel, validationStatus, organization, search } = req.query;
+    const { authorityLevel, validationStatus, organization, search } = req.query || {};
 
     let whereClause = "WHERE 1=1";
     const queryParams = [];
     let paramIdx = 1;
 
-    if (authorityLevel) {
+    if (authorityLevel && !isNaN(parseInt(authorityLevel, 10))) {
       whereClause += ` AND s.authority_level = $${paramIdx}`;
       queryParams.push(parseInt(authorityLevel, 10));
       paramIdx++;
     }
 
-    if (validationStatus) {
+    if (validationStatus && typeof validationStatus === "string") {
       whereClause += ` AND s.validation_status = $${paramIdx}`;
       queryParams.push(validationStatus);
       paramIdx++;
     }
 
-    if (organization) {
+    if (organization && typeof organization === "string") {
       whereClause += ` AND s.organization ILIKE $${paramIdx}`;
-      queryParams.push(`%${organization}%`);
+      queryParams.push(`%${organization.trim()}%`);
       paramIdx++;
     }
 
-    if (search) {
+    if (search && typeof search === "string") {
       whereClause += ` AND (s.title ILIKE $${paramIdx} OR s.organization ILIKE $${paramIdx} OR s.condition ILIKE $${paramIdx})`;
-      queryParams.push(`%${search}%`);
+      queryParams.push(`%${search.trim()}%`);
       paramIdx++;
     }
 

@@ -86,10 +86,10 @@ export async function handleGenerateReportFromReasoning(req, res) {
 
 export async function handleProcessAudio(req, res) {
   try {
-    const { transcript, specialty, sessionId } = req.body;
+    const { transcript, specialty, sessionId } = req.body || {};
 
-    if (!transcript || !transcript.trim()) {
-      return res.status(400).json({ status: "error", message: "Transcrição da consulta não fornecida." });
+    if (!transcript || typeof transcript !== "string" || !transcript.trim()) {
+      return res.status(400).json({ status: "error", message: "Transcrição válida da consulta não fornecida." });
     }
 
     const reportData = await ReportGeneratorService.processAudioTranscript({

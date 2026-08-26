@@ -29,16 +29,18 @@ export async function handleQuery(req, res) {
       }
     } else if (imageBase64 || imageDataUrl) {
       try {
-        let rawBase64 = imageBase64 || imageDataUrl;
-        if (rawBase64.includes(";base64,")) {
+        let rawBase64 = typeof imageBase64 === "string" ? imageBase64 : (typeof imageDataUrl === "string" ? imageDataUrl : "");
+        if (rawBase64 && rawBase64.includes(";base64,")) {
           rawBase64 = rawBase64.split(";base64,")[1];
         }
-        const buffer = Buffer.from(rawBase64, "base64");
-        const sanitized = processAndSanitizeImage(buffer);
-        imagePayload = {
-          mimeType: sanitized.mimeType,
-          base64Data: sanitized.base64Data
-        };
+        if (rawBase64) {
+          const buffer = Buffer.from(rawBase64, "base64");
+          const sanitized = processAndSanitizeImage(buffer);
+          imagePayload = {
+            mimeType: sanitized.mimeType,
+            base64Data: sanitized.base64Data
+          };
+        }
       } catch (imgErr) {
         return res.status(400).json({
           status: "error",

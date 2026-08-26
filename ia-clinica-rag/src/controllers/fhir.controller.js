@@ -26,13 +26,14 @@ export async function fhirEncounterHandler(req, res) {
     const scheduledPeriod = encounterResource.period?.start || new Date().toISOString();
     const scheduledTime = new Date(scheduledPeriod).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    const isPediatric = Boolean(encounterResource.extension?.find((e) => e.url?.includes("pediatric"))?.valueBoolean);
+    const extensions = Array.isArray(encounterResource.extension) ? encounterResource.extension : [];
+    const isPediatric = Boolean(extensions.find((e) => e && typeof e.url === "string" && e.url.includes("pediatric"))?.valueBoolean);
 
     const session = await preAnamneseService.createPreAnamneseSession({
       patientName,
-      patientAge: encounterResource.extension?.find((e) => e.url?.includes("patientAge"))?.valueString || "Não informado",
+      patientAge: extensions.find((e) => e && typeof e.url === "string" && e.url.includes("patientAge"))?.valueString || "Não informado",
       isPediatric,
-      phone: encounterResource.extension?.find((e) => e.url?.includes("phone"))?.valueString || "",
+      phone: extensions.find((e) => e && typeof e.url === "string" && e.url.includes("phone"))?.valueString || "",
       scheduledTime,
       doctorName,
       clinicName: "Hospital / ERP Integrado"

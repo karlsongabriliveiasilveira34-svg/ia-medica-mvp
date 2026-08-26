@@ -7,7 +7,7 @@ import { ingestDocument, deleteDocument as removeDocFromDb, listDocuments } from
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const knowledgePath = path.join(__dirname, "../../knowledge");
+const knowledgePath = path.resolve(__dirname, "../../knowledge");
 
 export async function handleListDocuments(req, res) {
   try {
@@ -44,26 +44,46 @@ export async function handleUploadDocument(req, res) {
       });
     }
 
-    const { category = "geral", title } = req.body;
-    const originalName = req.file.originalname;
-    const targetFolder = path.join(knowledgePath, category);
+    const { category = "geral", title } = req.body || {};
+    
+    // Sanitização rigorosa contra Path Traversal
+    const safeCategory = path.basename(String(category)).replace(/[^a-zA-Z0-9_-]/g, "") || "geral";
+    const safeFilename = path.basename(String(req.file.originalname)).replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const targetFolder = path.resolve(knowledgePath, safeCategory);
+    
+    // Garantir que o diretório de destino não escapa da pasta knowledge
+    if (!targetFolder.startsWith(knowledgePath)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Caminho de categoria inválido."
+      });
+    }
+
     await fs.mkdir(targetFolder, { recursive: true });
 
-    const targetFilePath = path.join(targetFolder, originalName);
+    const targetFilePath = path.resolve(targetFolder, safeFilename);
+    if (!targetFilePath.startsWith(knowledgePath)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Nome de arquivo inválido."
+      });
+    }
+
     await fs.writeFile(targetFilePath, req.file.buffer);
 
-    console.log(`📥 Arquivo salvo em: ${targetFilePath}`);
+    console.log(`📥 Arquivo salvo de forma segura em: ${targetFilePath}`);
 
     // Extrair PDF
     const pdfData = await extractPdf(targetFilePath);
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
 
-    const docTitle = title || originalName.replace(/\.pdf$/i, "").replace(/_/g, " ");
+    const docTitle = title ? String(title).slice(0, 200) : safeFilename.replace(/\.pdf$/i, "").replace(/_/g, " ");
 
     const result = await ingestDocument({
       title: docTitle,
-      filename: originalName,
-      category,
+      filename: safeFilename,
+      category: safeCategory,
       text: pdfData.text,
       checksum,
       metadata: {
@@ -89,7 +109,7 @@ export async function handleUploadDocument(req, res) {
 
 export async function handleDeleteDocument(req, res) {
   try {
-    const { id } = req.params;
+    const id = req.params?.id ? String(req.params.id) : null;
     if (!id) {
       return res.status(400).json({
         status: "error",

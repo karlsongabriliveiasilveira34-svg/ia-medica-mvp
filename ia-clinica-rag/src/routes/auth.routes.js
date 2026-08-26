@@ -16,11 +16,11 @@ authRouter.post(
   async (req, res) => {
     try {
       const { name, email, password, crm, specialty, plan } = req.body;
-      if (!name || !email || !password) {
+      if (!name || typeof name !== "string" || !email || typeof email !== "string" || !password || typeof password !== "string") {
         return res.status(400).json({
           status: "error",
           code: "MISSING_FIELDS",
-          message: "Nome, email e senha são obrigatórios."
+          message: "Nome, email e senha válidos são obrigatórios."
         });
       }
 

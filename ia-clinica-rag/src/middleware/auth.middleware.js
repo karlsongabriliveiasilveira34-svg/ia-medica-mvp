@@ -1,8 +1,9 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { AuthSecurityService } from "../services/auth-security.service.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || "media-super-secret-jwt-key-2026-secure-32chars";
+const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || crypto.randomBytes(32).toString("hex");
 
 /**
  * 1. Middleware de Autenticação Geral

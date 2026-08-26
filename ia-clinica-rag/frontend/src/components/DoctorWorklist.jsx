@@ -6,7 +6,7 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState(null);
   const [showNewScheduleModal, setShowNewScheduleModal] = useState(false);
-  const [copiedToken, setCopiedToken] = useState(null);
+  const [isCopiedCase, setIsCopiedCase] = useState(false);
 
   // Formulário de Novo Agendamento
   const [newPatientName, setNewPatientName] = useState('');
@@ -67,8 +67,8 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
   const handleCopyLink = (token, url) => {
     const fullUrl = url || `${window.location.origin}/portal?token=${token}`;
     navigator.clipboard.writeText(fullUrl);
-    setCopiedToken(token);
-    setTimeout(() => setCopiedToken(null), 3000);
+    setIsCopiedCase(true);
+    setTimeout(() => setIsCopiedCase(false), 3000);
   };
 
   return (
@@ -306,7 +306,7 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                     className="px-4 py-2 rounded-full bg-[#213f34] text-white text-xs font-bold inline-flex items-center gap-1.5"
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>{copiedToken === selectedCase.token ? 'Link Copiado!' : 'Copiar Link do Paciente'}</span>
+                    <span>{isCopiedCase ? 'Link Copiado!' : 'Copiar Link do Paciente'}</span>
                   </button>
                 </div>
               )}
