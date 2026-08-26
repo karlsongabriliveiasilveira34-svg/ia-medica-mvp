@@ -16,39 +16,32 @@ const memorySessions = new Map();
 const memoryPasswordResetTokens = new Map();
 const userLoginHistory = new Map();
 
-// Seed inicial dinâmico e seguro para testes locais
-const initialMedPass = process.env.DEMO_MEDICO_PASSWORD || process.env.DEMO_PASSWORD || "clinica2026";
-const initialEstPass = process.env.DEMO_ESTUDANTE_PASSWORD || "senha123";
+// Inicialização dinâmica de contas locais resilientes
+function createLocalAccount(name, email, plan, initialPass, crm = null, specialty = null) {
+  const hash = bcrypt.hashSync(String(initialPass), 10);
+  return {
+    id: crypto.randomUUID(),
+    name,
+    email,
+    password_hash: hash,
+    plan,
+    app_mode: plan,
+    email_verificado: true,
+    crm,
+    specialty,
+    last_ip: "127.0.0.1",
+    last_user_agent: "Mozilla/5.0"
+  };
+}
 
-const demoMedHashed = await bcrypt.hash(String(initialMedPass), 10);
-memoryUsers.set("medico.demo@media.med.br", {
-  id: "00000000-0000-0000-0000-000000000001",
-  name: "Dr. Karlson Gabriel",
-  email: "medico.demo@media.med.br",
-  password_hash: demoMedHashed,
-  plan: "medico",
-  app_mode: "medico",
-  email_verificado: true,
-  crm: "123456-SP",
-  specialty: "Clínica Médica",
-  last_ip: "127.0.0.1",
-  last_user_agent: "Mozilla/5.0"
-});
+const defaultAccounts = [
+  createLocalAccount("Dr. Karlson Gabriel", process.env.MEDICO_DEMO_EMAIL || "medico.demo@media.med.br", "medico", process.env.DEMO_MEDICO_PASSWORD || "clinica2026", "123456-SP", "Clínica Médica"),
+  createLocalAccount("Lucas Silveira (Interno)", process.env.ESTUDANTE_DEMO_EMAIL || "estudante.demo@media.med.br", "estudante", process.env.DEMO_ESTUDANTE_PASSWORD || "senha123")
+];
 
-const demoEstHashed = await bcrypt.hash(String(initialEstPass), 10);
-memoryUsers.set("estudante.demo@media.med.br", {
-  id: "00000000-0000-0000-0000-000000000002",
-  name: "Lucas Silveira (Interno)",
-  email: "estudante.demo@media.med.br",
-  password_hash: demoEstHashed,
-  plan: "estudante",
-  app_mode: "estudante",
-  email_verificado: true,
-  crm: null,
-  specialty: null,
-  last_ip: "127.0.0.1",
-  last_user_agent: "Mozilla/5.0"
-});
+for (const acc of defaultAccounts) {
+  memoryUsers.set(acc.email, acc);
+}
 
 export class AuthSecurityService {
   /**

@@ -385,16 +385,19 @@ export function KnowledgeManager() {
                           </td>
 
                           <td className="px-6 py-4 text-right">
-                            {src.url && typeof src.url === 'string' && (src.url.startsWith('http://') || src.url.startsWith('https://')) ? (
-                              <a
-                                href={src.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-clinical-300 hover:text-clinical-200 transition-colors text-[11px]"
+                            {src.url && typeof src.url === 'string' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (src.url && (src.url.startsWith('http://') || src.url.startsWith('https://'))) {
+                                    window.open(encodeURI(src.url), '_blank', 'noopener,noreferrer');
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-clinical-300 hover:text-clinical-200 transition-colors text-[11px] cursor-pointer"
                               >
                                 <span>Acessar</span>
                                 <ExternalLink className="w-3 h-3" />
-                              </a>
+                              </button>
                             ) : (
                               <span className="text-slate-500 text-[11px]">—</span>
                             )}

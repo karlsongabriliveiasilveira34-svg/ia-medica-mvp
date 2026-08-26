@@ -43,23 +43,28 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // 4. Sanitização Global de Dados e Proteção XSS
 app.use(deepSanitizeMiddleware);
 
-// Servir arquivos estáticos do frontend e pasta de conhecimento de forma segura
+// Cache de caminhos estáticos em memória no boot (evita I/O de disco por requisição)
 const frontendDist = path.resolve(__dirname, "../frontend/dist");
 const frontendOut = path.resolve(__dirname, "../frontend/out");
 const knowledgeDir = path.resolve(__dirname, "../knowledge");
+const indexHtmlPath = path.resolve(frontendDist, "index.html");
 
-if (fs.existsSync(frontendDist)) app.use(express.static(frontendDist, { dotfiles: "ignore", maxAge: "1d" }));
-if (fs.existsSync(frontendOut)) app.use(express.static(frontendOut, { dotfiles: "ignore", maxAge: "1d" }));
-if (fs.existsSync(knowledgeDir)) app.use("/knowledge", express.static(knowledgeDir, { dotfiles: "ignore", maxAge: "1d" }));
+const hasDist = fs.existsSync(frontendDist);
+const hasOut = fs.existsSync(frontendOut);
+const hasKnowledge = fs.existsSync(knowledgeDir);
+const hasIndexHtml = fs.existsSync(indexHtmlPath);
+
+if (hasDist) app.use(express.static(frontendDist, { dotfiles: "ignore", maxAge: "1d" }));
+if (hasOut) app.use(express.static(frontendOut, { dotfiles: "ignore", maxAge: "1d" }));
+if (hasKnowledge) app.use("/knowledge", express.static(knowledgeDir, { dotfiles: "ignore", maxAge: "1d" }));
 
 // Rotas da API
 app.use(apiRouter);
 
-// Handler seguro para rotas não encontradas
+// Handler seguro para rotas não encontradas (sem operações síncronas de I/O)
 app.use((req, res, next) => {
-  const indexPath = path.resolve(frontendDist, "index.html");
-  if (req.accepts("html") && !req.path.startsWith("/api") && fs.existsSync(indexPath)) {
-    return res.sendFile(indexPath, (err) => {
+  if (req.accepts("html") && !req.path.startsWith("/api") && hasIndexHtml) {
+    return res.sendFile(indexHtmlPath, (err) => {
       if (err && !res.headersSent) {
         res.status(404).json({ status: "error", message: "Rota não encontrada" });
       }

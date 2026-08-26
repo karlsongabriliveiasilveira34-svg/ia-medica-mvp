@@ -667,9 +667,14 @@ export function ClinicalChat({
               }`}>
                 
                 {/* Imagem Anexada pelo Usuário */}
-                {msg.sender === 'user' && msg.imagePreview && typeof msg.imagePreview === 'string' && (msg.imagePreview.startsWith('data:image/') || msg.imagePreview.startsWith('blob:')) && (
+                {msg.sender === 'user' && msg.imagePreview && typeof msg.imagePreview === 'string' && (
                   <div className="mb-3 rounded-xl overflow-hidden max-w-xs border border-white/20 shadow-md">
-                    <img src={msg.imagePreview} alt="Imagem Clínica Anexada" className="w-full max-h-56 object-cover" />
+                    <div
+                      className="w-full h-48 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${encodeURI(msg.imagePreview)})` }}
+                      role="img"
+                      aria-label="Imagem Clínica Anexada"
+                    />
                   </div>
                 )}
                 
@@ -888,14 +893,17 @@ export function ClinicalChat({
                                   >
                                     Ver Trecho (Pág. {pageNum})
                                   </button>
-                                  <a
-                                    href={typeof targetUrl === 'string' && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('/knowledge/')) ? targetUrl : '#'}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-slate-300 hover:text-white text-[10px] underline flex items-center gap-1"
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof targetUrl === 'string') {
+                                        window.open(encodeURI(targetUrl), '_blank', 'noopener,noreferrer');
+                                      }
+                                    }}
+                                    className="text-slate-300 hover:text-white text-[10px] underline flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
                                   >
                                     PDF Original <ExternalLink className="w-3 h-3 text-clinical-400" />
-                                  </a>
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -919,7 +927,6 @@ export function ClinicalChat({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {webCitations.map((cit) => {
                             const isHighlighted = highlightedSourceId === cit.sourceId;
-                            const safeCitUrl = typeof cit.url === 'string' && (cit.url.startsWith('http://') || cit.url.startsWith('https://')) ? cit.url : '#';
 
                             return (
                               <div
@@ -959,15 +966,18 @@ export function ClinicalChat({
                                   >
                                     Ver Resumo
                                   </button>
-                                  <a
-                                    href={safeCitUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="px-2 py-0.5 rounded bg-teal-600/30 hover:bg-teal-500 text-teal-200 hover:text-white font-medium text-[10px] flex items-center gap-1 border border-teal-500/40"
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (typeof cit.url === 'string') {
+                                        window.open(encodeURI(cit.url), '_blank', 'noopener,noreferrer');
+                                      }
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-teal-600/30 hover:bg-teal-500 text-teal-200 hover:text-white font-medium text-[10px] flex items-center gap-1 border border-teal-500/40 cursor-pointer"
                                   >
                                     <span>Ver no Original</span>
                                     <ExternalLink className="w-3 h-3 text-teal-300" />
-                                  </a>
+                                  </button>
                                 </div>
                               </div>
                             );

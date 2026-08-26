@@ -216,10 +216,11 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
                 {/* QR Code Container */}
                 <div className="flex flex-col items-center justify-center bg-[#faf8f5] p-5 rounded-3xl border border-[#17231f]/10 shadow-inner">
                   {pixOrder.qrCodeUrl && typeof pixOrder.qrCodeUrl === 'string' && pixOrder.qrCodeUrl.startsWith('data:image/') ? (
-                    <img
-                      src={pixOrder.qrCodeUrl}
-                      alt="QR Code PIX"
-                      className="w-48 h-48 rounded-2xl shadow-md border border-white"
+                    <div
+                      style={{ backgroundImage: `url(${encodeURI(pixOrder.qrCodeUrl)})` }}
+                      className="w-48 h-48 rounded-2xl shadow-md border border-white bg-contain bg-no-repeat bg-center bg-white"
+                      role="img"
+                      aria-label="QR Code PIX"
                     />
                   ) : (
                     <div className="w-48 h-48 bg-white rounded-2xl flex items-center justify-center border">
