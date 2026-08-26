@@ -201,9 +201,14 @@ class EmailService {
   }
 
   /**
-   * 3. Notificação de Novo Login em Dispositivo / IP Inédito
+   * 3. Notificação de Login / Alerta de Segurança
    */
-  async sendNewDeviceLoginAlert(email, { ip, userAgent, location = 'Localização Protegida', time = new Date().toLocaleString('pt-BR') }) {
+  async sendLoginNotificationEmail(email, name = 'Colega', { ip = '127.0.0.1', userAgent = 'Navegador Web', timestamp = new Date() } = {}, isSuspicious = false) {
+    const timeFormatted = timestamp instanceof Date ? timestamp.toLocaleString('pt-BR') : String(timestamp);
+    const subject = isSuspicious 
+      ? '⚠️ [ALERTA DE SEGURANÇA] Novo Login Suspeito no medIa' 
+      : '🛡️ Novo Acesso Detectado na sua Conta medIa';
+
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -212,20 +217,21 @@ class EmailService {
         </div>
         
         <div style="background-color: #ffffff; padding: 28px; border-radius: 18px; border: 1px solid rgba(23,35,31,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-          <h2 style="font-size: 18px; color: #b45309; margin-top: 0;">Novo Acesso Detectado</h2>
+          <h2 style="font-size: 18px; color: ${isSuspicious ? '#b45309' : '#213f34'}; margin-top: 0;">
+            ${isSuspicious ? '⚠️ Novo Acesso em Dispositivo / Local Não Habitual' : 'Novo Login Registrado'}
+          </h2>
           <p style="font-size: 14px; line-height: 1.6; color: #405048;">
-            Identificamos um login recente na sua conta com os seguintes detalhes de conexão:
+            Olá, <strong>${name}</strong>. Identificamos um novo acesso bem-sucedido à sua conta medIa com os seguintes detalhes de conexão:
           </p>
           
           <ul style="background-color: #faf8f5; border-radius: 12px; padding: 16px 24px; font-size: 13px; color: #17231f; line-height: 1.8; list-style-type: square;">
-            <li><strong>Data e Hora:</strong> ${time}</li>
+            <li><strong>Data e Hora:</strong> ${timeFormatted}</li>
             <li><strong>Endereço IP:</strong> ${ip}</li>
             <li><strong>Dispositivo:</strong> ${userAgent}</li>
-            <li><strong>Local:</strong> ${location}</li>
           </ul>
           
           <p style="font-size: 13px; line-height: 1.6; color: #405048; margin-top: 18px;">
-            Se foi você, nenhuma ação é necessária. Se você não reconhece este acesso, altere sua senha imediatamente.
+            Se foi você, nenhuma ação é necessária. Se você não reconhece este acesso, recomendamos alterar sua senha imediatamente.
           </p>
         </div>
         
@@ -237,10 +243,14 @@ class EmailService {
 
     return this.sendMail({
       to: email,
-      subject: '🛡️ Novo Login Detectado na sua Conta MedIa',
+      subject,
       html,
-      text: `Novo login detectado em ${time} a partir do IP ${ip} (${userAgent}). Se não foi você, troque sua senha imediatamente.`
+      text: `Olá, ${name}. Novo login detectado em ${timeFormatted} pelo IP ${ip} (${userAgent}).`
     });
+  }
+
+  async sendNewDeviceLoginAlert(email, details) {
+    return this.sendLoginNotificationEmail(email, 'Colega', details, true);
   }
 }
 
