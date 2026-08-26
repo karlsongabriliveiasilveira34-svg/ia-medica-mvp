@@ -90,20 +90,53 @@ export default function App() {
       .catch((e) => console.warn('Erro ao carregar uso:', e));
   };
 
+  const [verificationBanner, setVerificationBanner] = useState(null);
+
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const token = localStorage.getItem('demo_token');
+      // 1. Verificar se há token de ativação de email na URL (?verify_token=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const verifyToken = urlParams.get('verify_token');
+      if (verifyToken) {
+        try {
+          const verifyRes = await fetch('/api/auth/verify-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: verifyToken })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyRes.ok) {
+            setVerificationBanner({
+              type: 'success',
+              message: '🎉 Seu email foi verificado com sucesso! Sua conta está 100% ativa.'
+            });
+            setShowLogin(true);
+          } else {
+            setVerificationBanner({
+              type: 'error',
+              message: verifyData.message || 'Link de verificação inválido ou expirado.'
+            });
+          }
+        } catch (e) {
+          setVerificationBanner({ type: 'error', message: 'Erro ao verificar email.' });
+        }
+      }
+
+      const token = localStorage.getItem('access_token') || localStorage.getItem('demo_token');
       const savedUser = localStorage.getItem('media_user');
       
       if (savedUser) {
         try {
-          setCurrentUser(JSON.parse(savedUser));
+          const parsed = JSON.parse(savedUser);
+          setCurrentUser(parsed);
+          setIsAuthenticated(true);
         } catch (e) {}
-      }
-
-      if (!token) {
-        // Criar token de demonstração automaticamente
-        localStorage.setItem('demo_token', 'demo_active_token_123');
+      } else if (token) {
+        setIsAuthenticated(true);
+      } else {
+        // Usuário visitante inicial
+        setIsAuthenticated(false);
+        setCurrentUser(null);
       }
 
       try {
@@ -135,15 +168,17 @@ export default function App() {
     setShowLogin(false);
     if (user) setCurrentUser(user);
     refreshUsageData();
-    setActiveTab(requestedTab || 'chat');
+    setActiveTab(requestedTab && requestedTab !== 'landing' ? requestedTab : 'chat');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('demo_token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('media_user');
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setShowLogin(true);
+    setActiveTab('landing');
   };
 
   const handleStartReportFromDiagnosis = async (diagnosis, contextMsg) => {
@@ -183,7 +218,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#f4f1ea] text-[#17231f] flex flex-col font-sans">
-      {showLogin && !isAuthenticated && (
+      {verificationBanner && (
+        <div className={`px-4 py-3 text-center text-xs font-bold flex items-center justify-center gap-2 ${verificationBanner.type === 'success' ? 'bg-emerald-700 text-white' : 'bg-rose-700 text-white'}`}>
+          <span>{verificationBanner.message}</span>
+          <button onClick={() => setVerificationBanner(null)} className="ml-2 text-sm font-black underline cursor-pointer">Fechar [x]</button>
+        </div>
+      )}
+
+      {showLogin && (
         <LoginModal onLoginSuccess={handleLoginSuccess} closable={true} onClose={() => setShowLogin(false)} />
       )}
 

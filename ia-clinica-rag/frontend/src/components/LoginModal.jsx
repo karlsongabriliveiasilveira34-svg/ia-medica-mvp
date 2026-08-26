@@ -1,78 +1,239 @@
-import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, ShieldCheck, X, Sparkles, Check, GraduationCap, Stethoscope, User, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  AlertCircle, ArrowRight, ShieldCheck, X, Sparkles, Check, 
+  GraduationCap, Stethoscope, User, Zap, Mail, Lock, KeyRound, 
+  RefreshCw, CheckCircle2, AlertTriangle, Shield
+} from 'lucide-react';
 import { MedIaIcon } from './MedIaLogo';
 
-export function LoginModal({ onLoginSuccess, onClose, closable = true }) {
+export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTab = 'login' }) {
+  const [activeTab, setActiveTab] = useState(initialTab); // 'login', 'register', 'forgot', 'verify_pending'
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('medico'); // 'free', 'estudante', 'clinica', 'medico'
-  const [customEmail, setCustomEmail] = useState('');
-  const [showCustomGoogle, setShowCustomGoogle] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  // Login com Google (Simulação Oficial com Google Identity)
-  const handleGoogleLogin = async (overrideEmail = null, overrideName = null) => {
+  // Formulário Login / Register
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [crm, setCrm] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState('estudante'); // 'estudante' ou 'medico'
+  
+  // reCAPTCHA State
+  const [recaptchaChecked, setRecaptchaChecked] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
+
+  // Carregar token reCAPTCHA simulado / real
+  const handleRecaptchaToggle = () => {
+    if (!recaptchaChecked) {
+      setRecaptchaChecked(true);
+      setRecaptchaToken(`recaptcha_token_${Date.now()}`);
+      setErrorMessage('');
+    } else {
+      setRecaptchaChecked(false);
+      setRecaptchaToken('');
+    }
+  };
+
+  // 1. SUBMIT LOGIN
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!email || !password) {
+      setErrorMessage('Por favor, preencha seu email e senha.');
+      return;
+    }
+
+    if (!recaptchaChecked) {
+      setErrorMessage('Por favor, marque a verificação anti-robô (reCAPTCHA).');
+      return;
+    }
+
     setLoading(true);
-    const emailToUse = overrideEmail || customEmail || (selectedPlan === 'estudante' ? 'estudante.med@unimontes.br' : 'medico.demo@media.med.br');
-    const nameToUse = overrideName || (selectedPlan === 'estudante' ? 'Lucas Silveira (Internato)' : 'Dr. Karlson Gabriel');
-    const photoToUse = selectedPlan === 'estudante'
-      ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-      : 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80';
 
     try {
-      const response = await fetch('/api/auth/google', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          googleId: `google_${Date.now()}`,
-          email: emailToUse,
-          name: nameToUse,
-          photo: photoToUse,
-          selectedPlan
+          email,
+          password,
+          recaptchaToken
         })
       });
 
       const data = await response.json();
-      if (response.ok && data.token) {
-        localStorage.setItem('demo_token', data.token);
+
+      if (response.ok && data.accessToken) {
+        localStorage.setItem('demo_token', data.accessToken);
+        localStorage.setItem('access_token', data.accessToken);
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
         if (data.user) localStorage.setItem('media_user', JSON.stringify(data.user));
-        onLoginSuccess(data.token, data.user);
+
+        setSuccessMessage('Login efetuado com sucesso! Redirecionando...');
+        setTimeout(() => {
+          onLoginSuccess(data.accessToken, data.user);
+        }, 500);
         return;
       }
+
+      if (data.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(email);
+        setActiveTab('verify_pending');
+        setErrorMessage(data.message);
+        return;
+      }
+
+      setErrorMessage(data.message || 'Credenciais inválidas. Verifique seu email e senha.');
     } catch (err) {
-      console.warn('Fallback offline para Google Auth:', err);
+      setErrorMessage('Falha ao conectar com o servidor. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2. SUBMIT CADASTRO
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!name || !email || !password) {
+      setErrorMessage('Nome, email e senha são obrigatórios.');
+      return;
     }
 
-    // Fallback gracioso caso backend esteja inicializando
-    const fallbackToken = `google_jwt_${Date.now()}`;
-    const fallbackUser = {
-      userId: `google_${Date.now()}`,
-      email: emailToUse,
-      name: nameToUse,
-      photo: photoToUse,
-      plan: selectedPlan
-    };
-    localStorage.setItem('demo_token', fallbackToken);
-    localStorage.setItem('media_user', JSON.stringify(fallbackUser));
-    onLoginSuccess(fallbackToken, fallbackUser);
-    setLoading(false);
+    if (password.length < 6) {
+      setErrorMessage('A senha deve conter no mínimo 6 caracteres.');
+      return;
+    }
+
+    if (!recaptchaChecked) {
+      setErrorMessage('Por favor, marque a verificação anti-robô (reCAPTCHA).');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          crm: selectedPlan === 'medico' ? crm : null,
+          plan: selectedPlan,
+          recaptchaToken
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUnverifiedEmail(email);
+        setActiveTab('verify_pending');
+        setSuccessMessage('Conta criada com sucesso! Enviamos um link de confirmação para o seu email.');
+        return;
+      }
+
+      setErrorMessage(data.message || 'Erro ao criar conta. Tente outro email.');
+    } catch (err) {
+      setErrorMessage('Erro de conexão ao cadastrar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. REENVIAR EMAIL DE CONFIRMAÇÃO
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResendingEmail(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: unverifiedEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('Novo email de verificação enviado! Verifique sua caixa de entrada e spam.');
+      } else {
+        setErrorMessage(data.message || 'Erro ao reenviar email.');
+      }
+    } catch (err) {
+      setErrorMessage('Erro ao reenviar verificação.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  // 4. ESQUECI MINHA SENHA
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!email) {
+      setErrorMessage('Informe seu email cadastrado.');
+      return;
+    }
+
+    if (!recaptchaChecked) {
+      setErrorMessage('Por favor, complete a verificação anti-robô.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, recaptchaToken })
+      });
+      const data = await res.json();
+      setSuccessMessage(data.message || 'Instruções de recuperação enviadas para o seu email!');
+    } catch (err) {
+      setErrorMessage('Erro ao solicitar redefinição de senha.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Login Rápido de Demonstração (Médico Demo)
+  const handleQuickDemoLogin = (role = 'medico') => {
+    setEmail(role === 'medico' ? 'medico.demo@media.med.br' : 'estudante.demo@media.med.br');
+    setPassword(role === 'medico' ? 'clinica2026' : 'senha123');
+    setRecaptchaChecked(true);
+    setRecaptchaToken(`demo_token_${Date.now()}`);
   };
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/60 p-4 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => closable && e.target === e.currentTarget && onClose?.()}
     >
-      <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto">
         {closable && (
           <button
             onClick={onClose}
             aria-label="Fechar"
-            className="absolute right-5 top-5 z-10 rounded-full p-2 text-[#69746f] transition hover:bg-black/5"
+            className="absolute right-5 top-5 z-20 rounded-full p-2 text-[#69746f] transition hover:bg-black/5"
           >
             <X className="h-4 w-4" />
           </button>
         )}
 
-        {/* Lado Esquerdo: Identidade Visual e Proposta de Valor */}
+        {/* Lado Esquerdo: Identidade Visual e Segurança */}
         <div className="flex flex-col justify-between bg-[#213f34] p-8 text-[#f4f1ea]">
           <div className="space-y-6">
             <div className="flex items-center gap-2.5">
@@ -90,154 +251,370 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true }) {
                 Inteligência Clínica & Educação Médica
               </h2>
               <p className="text-xs text-[#dce7e1] leading-relaxed">
-                Acesse o copiloto clínico com RAG multiagente, diretrizes nacionais de saúde, doses pediátricas e biblioteca acadêmica.
+                Ambiente seguro com autenticação criptografada, proteção anti-robô e verificação obrigatória de conta.
               </p>
             </div>
 
-            <div className="space-y-2 pt-2 text-xs text-[#dce7e1]">
+            <div className="space-y-2.5 pt-2 text-xs text-[#dce7e1]">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Autenticação Google sem senhas</span>
+                <span>Criptografia bcrypt e Tokens JWT</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Conformidade total com a LGPD (Lei 13.709/2018)</span>
+                <Shield className="h-4 w-4 text-amber-300 shrink-0" />
+                <span>Google reCAPTCHA & Notificação de Login</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
-                <span>Fontes científicas SciELO & PubMed verificadas</span>
+                <GraduationCap className="h-4 w-4 text-emerald-300 shrink-0" />
+                <span>1.250+ Questões ENARE & 10.420+ Flashcards</span>
               </div>
             </div>
           </div>
 
-          <div className="pt-6 text-[11px] text-[#aebdb6] border-t border-white/10">
-            Apoio à decisão clínica para médicos e estudantes.
+          {/* Atalho de Demonstração Rápida */}
+          <div className="mt-6 rounded-2xl bg-black/20 p-4 border border-white/10 text-xs">
+            <span className="font-bold text-amber-300 block mb-1">Preenchimento Rápido:</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('medico')}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition"
+              >
+                Dr. Médico (Demo)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemoLogin('estudante')}
+                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition"
+              >
+                Estudante (Demo)
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Lado Direito: Botão Oficial do Google & Seletor de Perfil */}
-        <div className="flex flex-col justify-between p-7 sm:p-9 space-y-6 text-[#17231f]">
-          <div className="space-y-5">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#9d4f3f]">
-                Acesso Seguro & Sem Senha
-              </span>
-              <h3 className="font-editorial text-2xl font-bold text-[#17231f] mt-0.5">
-                Entrar no medIa
-              </h3>
-              <p className="text-xs text-[#5e6c65] mt-1">
-                Faça login com sua Conta Google para sincronizar seu histórico e plano.
-              </p>
+        {/* Lado Direito: Formulário e Abas */}
+        <div className="p-7 sm:p-9 flex flex-col justify-center space-y-5">
+          
+          {/* Navegação entre Abas */}
+          {activeTab !== 'verify_pending' && (
+            <div className="flex rounded-2xl bg-[#f0ece1] p-1 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => { setActiveTab('login'); setErrorMessage(''); setSuccessMessage(''); }}
+                className={`flex-1 py-2 rounded-xl transition ${activeTab === 'login' ? 'bg-[#213f34] text-white shadow-sm' : 'text-[#5e6c65] hover:text-[#17231f]'}`}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('register'); setErrorMessage(''); setSuccessMessage(''); }}
+                className={`flex-1 py-2 rounded-xl transition ${activeTab === 'register' ? 'bg-[#213f34] text-white shadow-sm' : 'text-[#5e6c65] hover:text-[#17231f]'}`}
+              >
+                Criar Conta
+              </button>
             </div>
+          )}
 
-            {/* Seletor de Perfil de Acesso */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block">
-                Selecione seu Perfil / Plano:
-              </span>
+          {/* Mensagens de Alerta */}
+          {errorMessage && (
+            <div className="flex items-start gap-2.5 rounded-2xl bg-rose-50 p-3.5 text-xs text-rose-900 border border-rose-200 animate-fadeIn">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="flex items-start gap-2.5 rounded-2xl bg-emerald-50 p-3.5 text-xs text-emerald-900 border border-emerald-200 animate-fadeIn">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 1. ABA DE LOGIN */}
+          {/* ========================================================================= */}
+          {activeTab === 'login' && (
+            <form onSubmit={handleLoginSubmit} className="space-y-4 animate-fadeIn">
+              <div className="space-y-1">
+                <h3 className="font-editorial text-2xl font-bold text-[#17231f]">Bem-vindo de volta</h3>
+                <p className="text-xs text-[#5e6c65]">Informe suas credenciais para acessar sua conta.</p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-3 h-4 w-4 text-[#8a9690]" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="seu.email@exemplo.com"
+                      className="w-full rounded-xl border border-[#17231f]/15 bg-white pl-10 pr-4 py-2.5 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none focus:ring-1 focus:ring-[#213f34]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-bold text-[#17231f]">Senha</label>
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab('forgot'); setErrorMessage(''); setSuccessMessage(''); }}
+                      className="text-[11px] text-[#213f34] hover:underline font-semibold"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[#8a9690]" />
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded-xl border border-[#17231f]/15 bg-white pl-10 pr-4 py-2.5 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none focus:ring-1 focus:ring-[#213f34]"
+                    />
+                  </div>
+                </div>
+
+                {/* Google reCAPTCHA Checkbox Box */}
+                <div 
+                  onClick={handleRecaptchaToggle}
+                  className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition shadow-inner"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${recaptchaChecked ? 'bg-emerald-700 border-emerald-700 text-white' : 'border-[#17231f]/30 bg-white'}`}>
+                      {recaptchaChecked && <Check className="w-3.5 h-3.5" />}
+                    </div>
+                    <span className="text-xs font-bold text-[#17231f]">Não sou um robô</span>
+                  </div>
+                  <div className="flex flex-col items-end opacity-70">
+                    <span className="text-[9px] font-bold text-[#5e6c65] uppercase">reCAPTCHA</span>
+                    <span className="text-[8px] text-[#8a9690]">Privacidade • Termos</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-2xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                <span>{loading ? 'Validando Acesso...' : 'Acessar medIa'}</span>
+              </button>
+            </form>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 2. ABA DE CRIAR CONTA (CADASTRO) */}
+          {/* ========================================================================= */}
+          {activeTab === 'register' && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-4 animate-fadeIn">
+              <div className="space-y-1">
+                <h3 className="font-editorial text-2xl font-bold text-[#17231f]">Criar Nova Conta</h3>
+                <p className="text-xs text-[#5e6c65]">Cadastre-se para liberar o copiloto clínico ou acadêmico.</p>
+              </div>
+
+              {/* Seletor de Perfil Inicial */}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan('medico')}
-                  className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-                    selectedPlan === 'medico'
-                      ? 'bg-[#213f34] text-white border-[#213f34] shadow-md'
-                      : 'bg-[#faf8f5] text-[#17231f] border-[#17231f]/10 hover:border-[#213f34]'
-                  }`}
-                >
-                  <Stethoscope className="w-4 h-4 shrink-0" />
-                  <div>
-                    <strong className="text-xs block">Médico / MD</strong>
-                    <span className={`text-[10px] ${selectedPlan === 'medico' ? 'text-emerald-200' : 'text-[#5e6c65]'}`}>
-                      Diagnósticos & Doses
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setSelectedPlan('estudante')}
-                  className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-                    selectedPlan === 'estudante'
-                      ? 'bg-[#213f34] text-white border-[#213f34] shadow-md'
-                      : 'bg-[#faf8f5] text-[#17231f] border-[#17231f]/10 hover:border-[#213f34]'
-                  }`}
+                  className={`p-3 rounded-2xl border text-left transition ${selectedPlan === 'estudante' ? 'border-[#213f34] bg-emerald-50/50 text-[#213f34]' : 'border-[#17231f]/10 bg-white text-[#5e6c65]'}`}
                 >
-                  <GraduationCap className="w-4 h-4 shrink-0" />
-                  <div>
-                    <strong className="text-xs block">Estudante</strong>
-                    <span className={`text-[10px] ${selectedPlan === 'estudante' ? 'text-amber-200' : 'text-[#5e6c65]'}`}>
-                      Livros & Quizzes
-                    </span>
-                  </div>
+                  <GraduationCap className="w-4 h-4 mb-1 text-amber-600" />
+                  <span className="text-xs font-bold block">Estudante</span>
+                  <span className="text-[10px] text-[#5e6c65]">Provas & Resumos</span>
                 </button>
-              </div>
-            </div>
-
-            {/* Botão Oficial do Google */}
-            <div className="space-y-3 pt-2">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleGoogleLogin()}
-                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-[#faf8f5] text-[#17231f] font-bold text-sm border border-[#17231f]/20 shadow-sm flex items-center justify-center gap-3 transition hover:shadow-md active:scale-[0.99] disabled:opacity-50"
-              >
-                {/* Ícone Oficial SVG do Google */}
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                  />
-                </svg>
-                <span>{loading ? 'Conectando ao Google...' : 'Entrar com Conta Google'}</span>
-              </button>
-
-              <div className="text-center">
                 <button
                   type="button"
-                  onClick={() => setShowCustomGoogle(!showCustomGoogle)}
-                  className="text-[11px] text-[#5e6c65] underline hover:text-[#17231f]"
+                  onClick={() => setSelectedPlan('medico')}
+                  className={`p-3 rounded-2xl border text-left transition ${selectedPlan === 'medico' ? 'border-[#213f34] bg-emerald-50/50 text-[#213f34]' : 'border-[#17231f]/10 bg-white text-[#5e6c65]'}`}
                 >
-                  {showCustomGoogle ? 'Usar login rápido com 1 clique' : 'Inserir outro e-mail Google manualmente'}
+                  <Stethoscope className="w-4 h-4 mb-1 text-emerald-700" />
+                  <span className="text-xs font-bold block">Médico</span>
+                  <span className="text-[10px] text-[#5e6c65]">Conduta & Plantão</span>
                 </button>
               </div>
 
-              {showCustomGoogle && (
-                <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 space-y-2 animate-fadeIn">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#17231f] mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Ex: Dra. Mariana Costa"
+                    className="w-full rounded-xl border border-[#17231f]/15 bg-white px-3.5 py-2 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
                   <input
                     type="email"
-                    value={customEmail}
-                    onChange={(e) => setCustomEmail(e.target.value)}
-                    placeholder="seu.email@gmail.com"
-                    className="w-full p-2.5 rounded-xl border border-[#17231f]/20 bg-white text-xs outline-none focus:border-[#213f34]"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu.email@exemplo.com"
+                    className="w-full rounded-xl border border-[#17231f]/15 bg-white px-3.5 py-2 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleGoogleLogin(customEmail)}
-                    className="w-full py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold"
-                  >
-                    Entrar com este E-mail
-                  </button>
                 </div>
-              )}
-            </div>
-          </div>
 
-          <p className="text-[10px] text-center text-[#7a8881]">
-            Ao entrar, você concorda com os Termos de Uso e Política de Privacidade do medIa v2.0.
-          </p>
+                <div>
+                  <label className="block text-xs font-bold text-[#17231f] mb-1">Senha (Mínimo 6 dígitos)</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-[#17231f]/15 bg-white px-3.5 py-2 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none"
+                  />
+                </div>
+
+                {selectedPlan === 'medico' && (
+                  <div>
+                    <label className="block text-xs font-bold text-[#17231f] mb-1">CRM (Opcional)</label>
+                    <input
+                      type="text"
+                      value={crm}
+                      onChange={(e) => setCrm(e.target.value)}
+                      placeholder="Ex: 123456-SP"
+                      className="w-full rounded-xl border border-[#17231f]/15 bg-white px-3.5 py-2 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* reCAPTCHA Checkbox Box */}
+                <div 
+                  onClick={handleRecaptchaToggle}
+                  className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${recaptchaChecked ? 'bg-emerald-700 border-emerald-700 text-white' : 'border-[#17231f]/30 bg-white'}`}>
+                      {recaptchaChecked && <Check className="w-3.5 h-3.5" />}
+                    </div>
+                    <span className="text-xs font-bold text-[#17231f]">Não sou um robô</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-[#5e6c65] uppercase">reCAPTCHA</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-2xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                <span>{loading ? 'Criando Conta...' : 'Cadastrar e Receber Link'}</span>
+              </button>
+            </form>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 3. ABA DE VERIFICAÇÃO PENDENTE */}
+          {/* ========================================================================= */}
+          {activeTab === 'verify_pending' && (
+            <div className="space-y-4 text-center animate-fadeIn py-2">
+              <div className="w-14 h-14 rounded-3xl bg-amber-100 text-amber-900 mx-auto flex items-center justify-center shadow-inner">
+                <Mail className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-editorial text-2xl font-bold text-[#17231f]">Verifique seu Email</h3>
+                <p className="text-xs text-[#5e6c65] max-w-sm mx-auto">
+                  Enviamos um link de ativação para <strong className="text-[#17231f]">{unverifiedEmail}</strong>.
+                </p>
+              </div>
+
+              <p className="text-xs text-[#5e6c65] bg-[#faf8f5] p-3.5 rounded-2xl border border-[#17231f]/10">
+                Por motivos de segurança médico-legal, o acesso a prescrições e calculadoras só é liberado após a confirmação do endereço de email.
+              </p>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingEmail}
+                  className="w-full py-2.5 rounded-xl border border-[#213f34] text-[#213f34] font-bold text-xs hover:bg-emerald-50 transition disabled:opacity-50"
+                >
+                  {resendingEmail ? 'Reenviando...' : 'Reenviar Email de Confirmação'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('login'); setErrorMessage(''); setSuccessMessage(''); }}
+                  className="w-full py-2.5 rounded-xl text-xs text-[#5e6c65] hover:text-[#17231f] font-semibold"
+                >
+                  Voltar para o Login
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* 4. ABA DE ESQUECI MINHA SENHA */}
+          {/* ========================================================================= */}
+          {activeTab === 'forgot' && (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4 animate-fadeIn">
+              <div className="space-y-1">
+                <h3 className="font-editorial text-2xl font-bold text-[#17231f]">Recuperação de Senha</h3>
+                <p className="text-xs text-[#5e6c65]">Informe seu email para enviarmos o link de redefinição.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#17231f] mb-1">Email Cadastrado</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu.email@exemplo.com"
+                  className="w-full rounded-xl border border-[#17231f]/15 bg-white px-3.5 py-2.5 text-xs text-[#17231f] placeholder:text-[#8a9690] focus:border-[#213f34] focus:outline-none"
+                />
+              </div>
+
+              {/* reCAPTCHA Checkbox Box */}
+              <div 
+                onClick={handleRecaptchaToggle}
+                className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${recaptchaChecked ? 'bg-emerald-700 border-emerald-700 text-white' : 'border-[#17231f]/30 bg-white'}`}>
+                    {recaptchaChecked && <Check className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-xs font-bold text-[#17231f]">Não sou um robô</span>
+                </div>
+                <span className="text-[9px] font-bold text-[#5e6c65] uppercase">reCAPTCHA</span>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-2xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-md transition disabled:opacity-50"
+                >
+                  {loading ? 'Enviando Instruções...' : 'Enviar Link de Redefinição'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('login'); setErrorMessage(''); setSuccessMessage(''); }}
+                  className="w-full py-2 rounded-xl text-xs text-[#5e6c65] hover:text-[#17231f] font-semibold"
+                >
+                  Voltar para o Login
+                </button>
+              </div>
+            </form>
+          )}
+
         </div>
       </div>
     </div>

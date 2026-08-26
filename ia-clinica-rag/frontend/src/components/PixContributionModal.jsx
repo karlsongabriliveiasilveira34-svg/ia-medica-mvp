@@ -1,38 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Copy, Check, X, QrCode, Sparkles, ShieldCheck, CheckCircle2, Loader2, DollarSign } from 'lucide-react';
+import { 
+  Heart, Copy, Check, X, QrCode, Sparkles, ShieldCheck, 
+  CheckCircle2, Loader2, DollarSign, History, Clock, ArrowRight 
+} from 'lucide-react';
 
 export function PixContributionModal({ isOpen, onClose, initialData, onPaymentConfirmed }) {
-  const [amount, setAmount] = useState(initialData?.amount || 10.00);
+  const [activeTab, setActiveTab] = useState('donate'); // 'donate' ou 'history'
+  const [amount, setAmount] = useState(initialData?.amount || 15.00);
   const [pixOrder, setPixOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedPayload, setCopiedPayload] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
+  // Histórico
+  const [donationsHistory, setDonationsHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const suggestedAmounts = [5.00, 10.00, 25.00, 50.00];
+  const suggestedAmounts = [15.00, 30.00, 50.00, 100.00];
 
-  const fetchPixOrder = (selectedAmount) => {
+  // Gerar QR Code e Payload PIX Oficial
+  const fetchPixOrder = async (selectedAmount) => {
     setLoading(true);
-    fetch(`/api/pix/contribute?amount=${selectedAmount}&purpose=${initialData?.purpose || 'contribuicao'}&planType=${initialData?.planType || ''}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.status === 'success') {
-          setPixOrder(data.data);
+    const token = localStorage.getItem('access_token') || localStorage.getItem('demo_token');
+
+    try {
+      const res = await fetch('/api/pix/qrcode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          valor: selectedAmount,
+          descricao: initialData?.purpose === 'upgrade' ? `Assinatura ${initialData?.planName || 'Plano'}` : 'Apoio Voluntário MedIa'
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.copiaECola || data.payloadPix)) {
+        setPixOrder({
+          orderId: data.txid,
+          txid: data.txid,
+          amount: data.valor,
+          pixKey: data.chavePix || '38984045635',
+          qrCodeUrl: data.qrCodeBase64,
+          copyPasteCode: data.copiaECola || data.payloadPix
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao gerar PIX:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Carregar Histórico de Doações
+  const fetchDonationsHistory = async () => {
+    setLoadingHistory(true);
+    const token = localStorage.getItem('access_token') || localStorage.getItem('demo_token');
+
+    try {
+      const res = await fetch('/api/pix/historico', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
-      })
-      .catch((err) => console.error('Erro ao gerar PIX:', err))
-      .finally(() => setLoading(false));
+      });
+      const data = await res.json();
+      if (res.ok && data.doacoes) {
+        setDonationsHistory(data.doacoes);
+      }
+    } catch (err) {
+      console.warn('Erro ao buscar histórico:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
   };
 
   useEffect(() => {
     if (isOpen) {
-      const initialAmt = initialData?.amount || 10.00;
+      const initialAmt = initialData?.amount || 15.00;
       setAmount(initialAmt);
       setIsSuccess(false);
+      setActiveTab('donate');
       fetchPixOrder(initialAmt);
     }
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchDonationsHistory();
+    }
+  }, [activeTab]);
 
   if (!isOpen) return null;
 
@@ -56,14 +116,14 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
     if (!pixOrder) return;
     setConfirming(true);
 
-    fetch('/api/pix/confirm', {
+    fetch('/api/pix/confirmar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId: pixOrder.orderId })
+      body: JSON.stringify({ txid: pixOrder.txid, orderId: pixOrder.orderId })
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.status === 'success') {
+        if (data.sucesso || data.status === 'success') {
           setIsSuccess(true);
           if (onPaymentConfirmed) onPaymentConfirmed(pixOrder);
         }
@@ -76,7 +136,7 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-5 text-[#17231f]">
+      <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[92vh] overflow-y-auto space-y-5 text-[#17231f]">
         
         {/* Header */}
         <div className="flex items-start justify-between border-b border-[#17231f]/10 pb-4">
@@ -101,142 +161,162 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
           </button>
         </div>
 
-        {isSuccess ? (
-          <div className="p-6 text-center space-y-4 animate-fadeIn">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 mx-auto flex items-center justify-center shadow-inner">
-              <CheckCircle2 className="w-9 h-9" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-editorial text-2xl font-bold text-[#17231f]">
-                Contribuição Confirmada! ❤️
-              </h4>
-              <p className="text-xs text-[#5e6c65] max-w-sm mx-auto leading-relaxed">
-                Muito obrigado por impulsionar a inteligência clínica no Brasil. O seu acesso foi atualizado com sucesso.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-full bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition"
-            >
-              Continuar Usando o medIa
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Seletor de Valores Sugeridos (apenas se for contribuição) */}
-            {initialData?.purpose !== 'upgrade' && (
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block">
-                  Escolha um valor para contribuir:
-                </span>
-                <div className="grid grid-cols-4 gap-2">
-                  {suggestedAmounts.map((val) => (
-                    <button
-                      key={val}
-                      onClick={() => handleSelectAmount(val)}
-                      className={`py-2 rounded-2xl text-xs font-bold transition border ${
-                        amount === val
-                          ? 'bg-[#213f34] text-white border-[#213f34] shadow-sm'
-                          : 'bg-[#faf8f5] text-[#17231f] border-[#17231f]/10 hover:border-[#17231f]/30'
-                      }`}
-                    >
-                      R$ {val.toFixed(2).replace('.', ',')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Abas: Gerar Pagamento vs Histórico */}
+        <div className="flex rounded-2xl bg-[#f0ece1] p-1 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => setActiveTab('donate')}
+            className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${activeTab === 'donate' ? 'bg-[#213f34] text-white shadow-sm' : 'text-[#5e6c65]'}`}
+          >
+            <QrCode className="w-3.5 h-3.5" /> Gerar PIX
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${activeTab === 'history' ? 'bg-[#213f34] text-white shadow-sm' : 'text-[#5e6c65]'}`}
+          >
+            <History className="w-3.5 h-3.5" /> Minhas Doações
+          </button>
+        </div>
 
-            {/* QR Code e Chave PIX */}
+        {/* ========================================================================= */}
+        {/* 1. ABA DE PAGAMENTO / DOAÇÃO PIX */}
+        {/* ========================================================================= */}
+        {activeTab === 'donate' && (
+          <div className="space-y-5 animate-fadeIn">
+            {/* Seletor de Valores Sugeridos */}
+            <div>
+              <label className="text-xs font-bold text-[#17231f] block mb-2">
+                Escolha o valor da contribuição:
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {suggestedAmounts.map((val) => (
+                  <button
+                    key={val}
+                    onClick={() => handleSelectAmount(val)}
+                    className={`py-2.5 rounded-xl border text-xs font-black transition ${
+                      amount === val
+                        ? 'border-[#213f34] bg-[#213f34] text-white shadow-sm'
+                        : 'border-[#17231f]/10 bg-[#faf8f5] text-[#17231f] hover:border-[#213f34]/40'
+                    }`}
+                  >
+                    R$ {val.toFixed(2)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {loading ? (
-              <div className="p-12 text-center text-[#5e6c65]">
-                <Loader2 className="w-7 h-7 animate-spin mx-auto mb-2 text-[#213f34]" />
-                <span className="text-xs">Gerando código PIX dinâmico...</span>
+              <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-700" />
+                <span className="text-xs text-[#5e6c65]">Gerando QR Code Oficial do Banco Central...</span>
               </div>
             ) : pixOrder ? (
               <div className="space-y-4">
-                
-                {/* Imagem do QR Code */}
-                <div className="p-4 bg-[#faf8f5] rounded-3xl border border-[#17231f]/10 text-center flex flex-col items-center justify-center space-y-2">
-                  <div className="p-2.5 bg-white rounded-2xl shadow-sm border border-[#17231f]/10">
+                {/* QR Code Container */}
+                <div className="flex flex-col items-center justify-center bg-[#faf8f5] p-5 rounded-3xl border border-[#17231f]/10 shadow-inner">
+                  {pixOrder.qrCodeUrl ? (
                     <img
                       src={pixOrder.qrCodeUrl}
-                      alt="QR Code PIX medIa"
-                      className="w-44 h-44 object-contain rounded-xl"
+                      alt="QR Code PIX"
+                      className="w-48 h-48 rounded-2xl shadow-md border border-white"
                     />
-                  </div>
-                  <span className="text-xs font-bold text-[#17231f]">
-                    Valor: R$ {pixOrder.amount.toFixed(2).replace('.', ',')}
-                  </span>
-                  <span className="text-[11px] text-[#7a8881]">
-                    Abra o app do seu banco e escaneie o código
+                  ) : (
+                    <div className="w-48 h-48 bg-white rounded-2xl flex items-center justify-center border">
+                      <QrCode className="w-20 h-20 text-[#5e6c65]" />
+                    </div>
+                  )}
+
+                  <span className="text-[11px] font-bold text-[#5e6c65] mt-3">
+                    Valor a Pagar: <strong className="text-emerald-800 text-sm">R$ {Number(amount).toFixed(2)}</strong>
                   </span>
                 </div>
 
-                {/* Chave PIX */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#4f5c56] uppercase tracking-wider">Chave PIX Oficial do Projeto:</span>
-                    <button
-                      onClick={() => handleCopy(pixOrder.displayKey || '38 98404056 35', 'key')}
-                      className="text-[#213f34] font-bold flex items-center gap-1 text-[11px] hover:underline"
-                    >
-                      {copiedKey ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedKey ? 'Chave Copiada!' : 'Copiar Chave'}</span>
-                    </button>
-                  </div>
-                  <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 text-sm font-mono font-bold text-[#17231f] flex items-center justify-between">
-                    <span className="tracking-wide">{pixOrder.displayKey || '38 98404056 35'}</span>
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      Chave Direta
-                    </span>
-                  </div>
-                </div>
-
-                {/* Código Copia e Cola */}
-                <div className="space-y-1.5">
-                  <span className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block">
-                    Código PIX Copia e Cola (Payload EMV):
-                  </span>
-                  <div className="flex gap-2">
+                {/* Copia e Cola */}
+                <div>
+                  <label className="text-xs font-bold text-[#17231f] block mb-1">
+                    Código PIX (Copia e Cola):
+                  </label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       readOnly
-                      value={pixOrder.qrCodeText}
-                      className="flex-1 p-2.5 rounded-2xl bg-[#faf8f5] border border-[#17231f]/10 text-[11px] font-mono text-[#5e6c65] truncate outline-none"
+                      value={pixOrder.copyPasteCode || ''}
+                      className="w-full text-xs font-mono bg-[#faf8f5] border border-[#17231f]/15 rounded-xl px-3 py-2 text-[#5e6c65] truncate focus:outline-none"
                     />
                     <button
-                      onClick={() => handleCopy(pixOrder.qrCodeText, 'payload')}
-                      className="px-4 py-2.5 rounded-2xl bg-[#213f34] hover:bg-[#172f27] text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition"
+                      onClick={() => handleCopy(pixOrder.copyPasteCode, 'payload')}
+                      className="px-3.5 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold flex items-center gap-1.5 shrink-0 hover:bg-[#172b22] transition"
                     >
-                      {copiedPayload ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedPayload ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
                       <span>{copiedPayload ? 'Copiado!' : 'Copiar'}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Botão de Confirmação */}
-                <button
-                  onClick={handleConfirmPayment}
-                  disabled={confirming}
-                  className="w-full py-3.5 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
-                >
-                  {confirming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Validando Comprovante...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Já fiz o PIX! Confirmar Ativação</span>
-                    </>
-                  )}
-                </button>
+                {isSuccess ? (
+                  <div className="flex items-center gap-2 p-3.5 rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-bold">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <span>Pagamento confirmado com sucesso! Muito obrigado por apoiar o medIa.</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleConfirmPayment}
+                    disabled={confirming}
+                    className="w-full py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {confirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    <span>{confirming ? 'Verificando Pagamento...' : 'Já Realizei o Pagamento'}</span>
+                  </button>
+                )}
               </div>
             ) : null}
-          </>
+          </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* 2. ABA DE HISTÓRICO DE DOAÇÕES */}
+        {/* ========================================================================= */}
+        {activeTab === 'history' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-[#17231f]">Histórico de Contribuições</h4>
+              <p className="text-xs text-[#5e6c65]">Registro das suas doações e apoios realizados.</p>
+            </div>
+
+            {loadingHistory ? (
+              <div className="py-8 text-center text-xs text-[#5e6c65]">Carregando histórico...</div>
+            ) : donationsHistory.length === 0 ? (
+              <div className="p-6 rounded-2xl bg-[#faf8f5] text-center border border-[#17231f]/10 text-xs text-[#5e6c65]">
+                Nenhuma doação registrada nesta conta ainda. Seja o primeiro a apoiar!
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {donationsHistory.map((don, idx) => (
+                  <div
+                    key={don.txid || idx}
+                    className="flex items-center justify-between p-3.5 rounded-2xl border border-[#17231f]/10 bg-white shadow-sm"
+                  >
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-[#17231f] block">{don.descricao || 'Apoio MedIa'}</span>
+                      <span className="text-[10px] text-[#5e6c65] flex items-center gap-1 font-mono">
+                        <Clock className="w-3 h-3" /> {new Date(don.created_at).toLocaleDateString('pt-BR')} • {don.txid}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-emerald-800 block">R$ {Number(don.valor).toFixed(2)}</span>
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 inline-block">
+                        {don.status || 'Confirmado'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

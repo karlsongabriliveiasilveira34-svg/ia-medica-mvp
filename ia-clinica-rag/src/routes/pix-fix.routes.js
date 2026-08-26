@@ -1,12 +1,27 @@
 import { Router } from "express";
 import QRCode from "qrcode";
 import { pool } from "../config/database.js";
+import { authenticate } from "../middleware/auth.middleware.js";
 
 export const pixFixRouter = Router();
 
 const PIX_CHAVE_PADRAO = process.env.PIX_CHAVE || "38984045635";
 const BENEFICIARIO_PADRAO = "MedIa Tecnologia e Saude";
 const CIDADE_PADRAO = "SAO PAULO";
+
+// Store em memória de doações caso PostgreSQL não esteja ativo localmente
+const memoryDonations = [
+  {
+    txid: "TX1787719942264",
+    userId: "00000000-0000-0000-0000-000000000001",
+    userEmail: "medico.demo@media.med.br",
+    valor: 50.00,
+    descricao: "Apoio Patrono Clínico",
+    status: "confirmado",
+    chave_pix: "38984045635",
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  }
+];
 
 /**
  * Função utilitária para gerar payload EMV padrão BACEN (PIX Copia e Cola)
@@ -75,10 +90,12 @@ pixFixRouter.get(["/api/pix/dados", "/pix/dados"], (req, res) => {
 /**
  * 2. Gerar QR Code Dinâmico e Copia e Cola
  */
-pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], async (req, res) => {
+pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], authenticate, async (req, res) => {
   try {
     const { valor, descricao = "Apoio MedIa", txid = `TX${Date.now()}` } = req.body;
     const numValor = valor ? Number(valor) : 15.00;
+    const userId = req.user?.id || req.user?.userId || "anonymous";
+    const userEmail = req.user?.email || "anonimo@media.med.br";
 
     const payloadEMV = gerarPayloadPixEMV({
       chave: PIX_CHAVE_PADRAO,
@@ -97,7 +114,20 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], async (req, res) => {
       }
     });
 
-    // Salvar doação pendente se o banco estiver disponível
+    // Salvar doação pendente
+    const donationRecord = {
+      txid,
+      userId,
+      userEmail,
+      valor: numValor,
+      chave_pix: PIX_CHAVE_PADRAO,
+      descricao,
+      qrcode_payload: payloadEMV,
+      status: 'pendente',
+      created_at: new Date().toISOString()
+    };
+    memoryDonations.unshift(donationRecord);
+
     try {
       await pool.query(
         "INSERT INTO doacoes_pix (txid, valor, chave_pix, descricao, qrcode_payload, status) VALUES ($1, $2, $3, $4, $5, 'pendente')",
@@ -107,6 +137,19 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], async (req, res) => {
 
     return res.json({
       sucesso: true,
+      status: "success",
+      data: {
+        orderId: txid,
+        txid,
+        amount: numValor,
+        valor: numValor,
+        pixKey: PIX_CHAVE_PADRAO,
+        chavePix: PIX_CHAVE_PADRAO,
+        qrCodeUrl: qrCodeDataUrl,
+        qrCodeBase64: qrCodeDataUrl,
+        copiaECola: payloadEMV,
+        copyPasteCode: payloadEMV
+      },
       txid,
       valor: numValor,
       chavePix: PIX_CHAVE_PADRAO,
@@ -115,7 +158,7 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], async (req, res) => {
       qrCodeBase64: qrCodeDataUrl
     });
   } catch (err) {
-    console.error("[PIX ROUTE] Erro ao gerar QRCode:", err);
+    console.error("[PIX ROUTE][ERROR] Erro ao gerar QRCode:", err);
     return res.status(500).json({ sucesso: false, erro: "Falha ao gerar QR Code do PIX." });
   }
 });
@@ -123,21 +166,73 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], async (req, res) => {
 /**
  * 3. Confirmar Pagamento/Doação PIX
  */
-pixFixRouter.post(["/api/pix/confirmar", "/pix/confirmar"], async (req, res) => {
+pixFixRouter.post(["/api/pix/confirmar", "/api/pix/confirm", "/pix/confirmar"], async (req, res) => {
   try {
-    const { txid } = req.body;
+    const { txid, orderId } = req.body;
+    const targetTxid = txid || orderId;
+
+    const memDonation = memoryDonations.find(d => d.txid === targetTxid);
+    if (memDonation) {
+      memDonation.status = "confirmado";
+      memDonation.confirmed_at = new Date().toISOString();
+    }
+
     try {
       await pool.query(
         "UPDATE doacoes_pix SET status = 'confirmado', confirmed_at = NOW() WHERE txid = $1",
-        [txid]
+        [targetTxid]
       );
     } catch (e) {}
 
     return res.json({
+      status: "success",
       sucesso: true,
       mensagem: "Doação/Pagamento PIX confirmado com sucesso! Muito obrigado pelo apoio."
     });
   } catch (err) {
-    return res.status(500).json({ sucesso: false, erro: err.message });
+    return res.status(500).json({ status: "error", sucesso: false, erro: err.message });
+  }
+});
+
+/**
+ * 4. HISTÓRICO DE DOAÇÕES DO USUÁRIO LOGADO
+ * Garante que um usuário nunca veja as doações de outro.
+ */
+pixFixRouter.get(["/api/pix/historico", "/pix/historico"], authenticate, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        status: "error",
+        code: "AUTH_REQUIRED",
+        message: "Faça login para visualizar seu histórico de doações."
+      });
+    }
+
+    const userId = req.user.id || req.user.userId;
+    const userEmail = req.user.email;
+
+    // Buscar doações associadas ao usuário
+    let userDonations = [];
+    try {
+      const dbRes = await pool.query(
+        "SELECT * FROM doacoes_pix ORDER BY created_at DESC LIMIT 50"
+      );
+      if (dbRes.rows.length > 0) userDonations = dbRes.rows;
+    } catch (e) {}
+
+    // Filtrar estritamente por usuário
+    const filtered = memoryDonations.filter(
+      d => d.userId === userId || d.userEmail === userEmail
+    );
+
+    return res.json({
+      status: "success",
+      sucesso: true,
+      count: filtered.length,
+      doacoes: filtered
+    });
+  } catch (err) {
+    console.error("[PIX ROUTE][ERROR] Erro ao buscar histórico:", err);
+    return res.status(500).json({ status: "error", message: "Erro ao buscar histórico de doações." });
   }
 });

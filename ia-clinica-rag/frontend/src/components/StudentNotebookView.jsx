@@ -35,50 +35,89 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const [showExplanation, setShowExplanation] = useState(false);
   const [userStats, setUserStats] = useState({ correct: 0, wrong: 0, totalAnswered: 0 });
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [generationSuccessMessage, setGenerationSuccessMessage] = useState('');
 
-  // Filtrar questões
+  // Carregar questões reais da API ao iniciar ou mudar filtros
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (selectedQuestionArea !== 'all') queryParams.append('especialidade', selectedQuestionArea);
+        if (selectedExamBank !== 'all') queryParams.append('banca', selectedExamBank);
+
+        const res = await fetch(`/api/questoes?${queryParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.questoes && data.questoes.length > 0) {
+            // Mapear campos caso venham da tabela SQL
+            const formatted = data.questoes.map(q => ({
+              id: q.id,
+              exam: q.banca || q.exam || 'ENARE',
+              area: (q.especialidade || q.area || 'clinica').toLowerCase(),
+              topic: q.tema || q.topic || 'Clínica Geral',
+              question: q.enunciado || q.question,
+              options: typeof q.alternativas === 'string' ? JSON.parse(q.alternativas) : (q.alternativas || q.options),
+              correct: q.resposta_correta !== undefined ? q.resposta_correta : q.correct,
+              explanation: q.explicacao || q.explanation
+            }));
+            setQuestionsList(formatted);
+          }
+        }
+      } catch (err) {
+        console.warn('Usando banco inicial de questões:', err.message);
+      }
+    };
+
+    fetchQuestions();
+  }, [selectedQuestionArea, selectedExamBank]);
+
+  // Filtrar questões ativas
   const filteredQuestions = questionsList.filter(q => {
-    const matchesArea = selectedQuestionArea === 'all' || q.area === selectedQuestionArea;
-    const matchesBank = selectedExamBank === 'all' || q.exam.toLowerCase().includes(selectedExamBank.toLowerCase());
+    const matchesArea = selectedQuestionArea === 'all' || (q.area && q.area.toLowerCase().includes(selectedQuestionArea.toLowerCase()));
+    const matchesBank = selectedExamBank === 'all' || (q.exam && q.exam.toLowerCase().includes(selectedExamBank.toLowerCase()));
     return matchesArea && matchesBank;
   });
 
   const activeQuestions = filteredQuestions.length > 0 ? filteredQuestions : questionsList;
   const currentQ = activeQuestions[currentQuestionIndex % activeQuestions.length] || INITIAL_QUESTIONS[0];
 
-  // Gerar mais 10 questões inéditas via IA
+  // Gerar 5 questões inéditas comentadas via Gemini (/api/questoes/gerar)
   const handleGenerateAIQuestions = async () => {
     setIsGeneratingQuestions(true);
+    setGenerationSuccessMessage('');
     try {
-      const prompt = `Gere 3 questões inéditas comentadas no padrão ENARE e Revalida para a área de ${selectedQuestionArea === 'all' ? 'Clínica Médica' : selectedQuestionArea}.`;
-      const res = await fetch('/api/query', {
+      const areaName = selectedQuestionArea === 'all' ? 'Clínica Médica' : selectedQuestionArea;
+      const res = await fetch('/api/questoes/gerar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: prompt, mode: 'student' })
+        body: JSON.stringify({
+          especialidade: areaName,
+          tema: `Casos Clínicos de ${areaName} e Protocolos Oficiais`,
+          dificuldadeEspecifica: 'media'
+        })
       });
+
       const data = await res.json();
 
-      // Adicionar nova questão gerada pela IA ao banco
-      const newQuestion = {
-        id: Date.now(),
-        exam: 'ENARE / IA MedIa Inédita',
-        area: selectedQuestionArea === 'all' ? 'clinica' : selectedQuestionArea,
-        topic: 'Caso Clínico Avançado',
-        question: data.answer ? data.answer.slice(0, 320) + '...' : 'Paciente de 45 anos com febre e tosse persistente. Qual a melhor conduta diagnóstica inicial segundo as diretrizes?',
-        options: [
-          'A) Solicitar Radiografia de Tórax em PA e Perfil + Hemograma',
-          'B) Iniciar Quinolona Respiratória em monoterapia imediatamente',
-          'C) Prescrever apenas sintomáticos e reavaliar em 14 dias',
-          'D) Solicitar Broncoscopia com biópsia transbrônquica de urgência'
-        ],
-        correct: 0,
-        explanation: 'A abordagem inicial racional de tosse persistente com febre requer confirmação radiológica e avaliação laboratorial antes de esquemas de amplo espectro, prevenindo resistência bacteriana.'
-      };
+      if (res.ok && data.questoes && data.questoes.length > 0) {
+        const newQuestionsFormatted = data.questoes.map((q, idx) => ({
+          id: Date.now() + idx,
+          exam: q.banca || 'ENARE / MedIa Inédita',
+          area: (q.especialidade || selectedQuestionArea).toLowerCase(),
+          topic: q.tema || 'Caso Clínico Dinâmico',
+          question: q.enunciado || q.question,
+          options: q.alternativas || q.options,
+          correct: q.resposta_correta !== undefined ? q.resposta_correta : q.correct,
+          explanation: q.explicacao || q.explanation
+        }));
 
-      setQuestionsList(prev => [newQuestion, ...prev]);
-      setCurrentQuestionIndex(0);
-      setSelectedAnswer(null);
-      setShowExplanation(false);
+        setQuestionsList(prev => [...newQuestionsFormatted, ...prev]);
+        setCurrentQuestionIndex(0);
+        setSelectedAnswer(null);
+        setShowExplanation(false);
+        setGenerationSuccessMessage(`🎉 5 novas questões de ${areaName} geradas com sucesso!`);
+        setTimeout(() => setGenerationSuccessMessage(''), 4000);
+      }
     } catch (err) {
       console.warn('Fallback na geração de questões:', err);
     } finally {
@@ -111,7 +150,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   };
 
   // ==========================================
-  // ESTADO DA IA PRECEPTORA
+  // ESTADO DA IA PRECEPTORA ACADÊMICA
   // ==========================================
   const [tutorMessages, setTutorMessages] = useState([
     { sender: 'tutor', text: 'Olá! Sou sua IA Preceptora Acadêmica. Posso explicar mecanismos fisiopatológicos, discutir farmacologia, anatomia ou ajudar você a resolver qualquer questão do ENARE e Revalida. O que você gostaria de estudar hoje?' }
@@ -129,18 +168,18 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
     setIsTutorTyping(true);
 
     try {
-      const res = await fetch('/api/query', {
+      const res = await fetch('/api/ia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          question: `[MODO ESTUDANTE - PRECEPTORIA ACADÊMICA]: ${userText}. Por favor, explique de forma didática, detalhando a fisiopatologia, referências de livros (Harrison/Guyton/Cecil) e dicas práticas para provas de residência (ENARE/Revalida).`,
-          mode: 'student'
+          mensagem: userText,
+          modo: 'estudante'
         })
       });
 
       const data = await res.json();
-      if (res.ok && data.answer) {
-        setTutorMessages(prev => [...prev, { sender: 'tutor', text: data.answer }]);
+      if (res.ok && (data.answer || data.resposta)) {
+        setTutorMessages(prev => [...prev, { sender: 'tutor', text: data.answer || data.resposta }]);
       } else {
         throw new Error('Falha no modelo');
       }
