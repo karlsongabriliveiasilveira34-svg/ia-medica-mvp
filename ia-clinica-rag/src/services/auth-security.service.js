@@ -45,19 +45,21 @@ for (const acc of defaultAccounts) {
 
 export class AuthSecurityService {
   /**
-   * 1. CADASTRO (SIGNUP)
-   * Cria conta com email_verificado = false e dispara email de verificação
+   * 1. CADASTRO DE NOVO USUÁRIO (COM HASH SEGURO, PLANO FREE OBRIGATÓRIO E ENVIO DE EMAIL)
    */
-  static async registerUser({ name, email, password, crm = null, specialty = null, plan = "estudante" }) {
+  static async registerUser({ name, email, password, crm = null, specialty = null, plan = "free", role = null, app_mode = null, baseUrl = null }) {
     await ensureUsersSchema();
     const cleanEmail = (email || "").trim().toLowerCase();
     const cleanName = (name || "Colega").trim();
+    const userProfile = (role || app_mode || plan || "estudante") === "medico" ? "medico" : "estudante";
+    const userPlan = "free"; // Todo novo cadastro inicia estritamente no plano FREE
     console.log(`[AUTH][REGISTER] email normalizado: ${cleanEmail}`);
+    console.log(`[AUTH][REGISTER] plano atribuído: ${userPlan} | perfil: ${userProfile}`);
 
     // 1. Verificar se usuário já existe
     let existingUser = null;
     try {
-      const dbCheck = await pool.query("SELECT id, email, email_verificado FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
+      const dbCheck = await pool.query("SELECT id, email, email_verificado, plan FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
       if (dbCheck.rows.length > 0) existingUser = dbCheck.rows[0];
     } catch (e) {
       existingUser = memoryUsers.get(cleanEmail);
@@ -85,8 +87,8 @@ export class AuthSecurityService {
       // Atualizar hash e token de ativação para conta pendente
       try {
         await pool.query(
-          "UPDATE users SET name = $1, password_hash = $2, token_verificacao = $3, plan = $4, crm = $5, specialty = $6, updated_at = NOW() WHERE LOWER(email) = $7",
-          [cleanName, passwordHash, verificationToken, plan, crm, specialty, cleanEmail]
+          "UPDATE users SET name = $1, password_hash = $2, token_verificacao = $3, plan = $4, crm = $5, specialty = $6, app_mode = $7, updated_at = NOW() WHERE LOWER(email) = $8",
+          [cleanName, passwordHash, verificationToken, userPlan, crm, specialty, userProfile, cleanEmail]
         );
       } catch (e) {
         const mem = memoryUsers.get(cleanEmail);
@@ -94,11 +96,12 @@ export class AuthSecurityService {
           mem.name = cleanName;
           mem.password_hash = passwordHash;
           mem.token_verificacao = verificationToken;
-          mem.plan = plan;
+          mem.plan = userPlan;
+          mem.app_mode = userProfile;
         }
       }
     } else {
-      // Inserir novo usuário
+      // Inserir novo usuário com plano FREE
       try {
         const query = `
           INSERT INTO users (name, email, password_hash, plan, crm, specialty, email_verificado, token_verificacao, app_mode)
@@ -109,11 +112,11 @@ export class AuthSecurityService {
           cleanName,
           cleanEmail,
           passwordHash,
-          plan,
+          userPlan,
           crm,
           specialty,
           verificationToken,
-          plan === "medico" ? "medico" : "estudante"
+          userProfile
         ];
         const res = await pool.query(query, values);
         userId = res.rows[0].id;
@@ -125,12 +128,12 @@ export class AuthSecurityService {
           name: cleanName,
           email: cleanEmail,
           password_hash: passwordHash,
-          plan,
+          plan: userPlan,
           crm,
           specialty,
           email_verificado: false,
           token_verificacao: verificationToken,
-          app_mode: plan === "medico" ? "medico" : "estudante"
+          app_mode: userProfile
         });
       }
     }
@@ -141,18 +144,18 @@ export class AuthSecurityService {
       name: cleanName,
       email: cleanEmail,
       password_hash: passwordHash,
-      plan,
+      plan: userPlan,
       crm,
       specialty,
       email_verificado: false,
       token_verificacao: verificationToken,
-      app_mode: plan === "medico" ? "medico" : "estudante"
+      app_mode: userProfile
     });
 
-    console.log(`[AUTH][REGISTER] usuário criado: ${userId}`);
+    console.log(`[AUTH][REGISTER] usuário criado: ${userId} (Plano: ${userPlan})`);
 
-    // 3. Disparar envio de email assíncrono
-    emailService.sendVerificationEmail(cleanEmail, verificationToken, cleanName).catch(err => {
+    // 3. Disparar envio de email assíncrono com link oficial
+    emailService.sendVerificationEmail(cleanEmail, verificationToken, cleanName, baseUrl).catch(err => {
       console.error("[AUTH][ERROR] Falha no disparo do email de verificação:", err.message);
     });
 
@@ -160,7 +163,8 @@ export class AuthSecurityService {
       id: userId,
       name: cleanName,
       email: cleanEmail,
-      plan,
+      plan: userPlan,
+      app_mode: userProfile,
       email_verificado: false,
       verificationToken
     };
@@ -232,8 +236,8 @@ export class AuthSecurityService {
       userId: user.id,
       email: user.email,
       name: user.name || "Colega",
-      plan: user.plan || "estudante",
-      app_mode: user.app_mode || user.plan || "estudante",
+      plan: user.plan || "free",
+      app_mode: user.app_mode || "estudante",
       crm: user.crm || null,
       specialty: user.specialty || null,
       email_verificado: true
@@ -376,8 +380,8 @@ export class AuthSecurityService {
       userId: user.id,
       email: user.email,
       name: user.name || "Colega",
-      plan: user.plan || "estudante",
-      app_mode: user.app_mode || user.plan || "estudante",
+      plan: user.plan || "free",
+      app_mode: user.app_mode || "estudante",
       crm: user.crm || null,
       specialty: user.specialty || null,
       email_verificado: true

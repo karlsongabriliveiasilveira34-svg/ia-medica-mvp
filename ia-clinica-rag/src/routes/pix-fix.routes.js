@@ -153,30 +153,63 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], authenticate, async (req, 
 });
 
 /**
- * 3. Confirmar Pagamento/Doação PIX
+ * 3. Confirmar Pagamento/Doação PIX & Liberar Plano Pago
  */
 pixFixRouter.post(["/api/pix/confirmar", "/api/pix/confirm", "/pix/confirmar"], async (req, res) => {
   try {
-    const { txid, orderId } = req.body;
+    const { txid, orderId, plano } = req.body;
     const targetTxid = txid || orderId;
+
+    let targetPlan = plano || null;
+    let userId = null;
+    let userEmail = null;
 
     const memDonation = memoryDonations.find(d => d.txid === targetTxid);
     if (memDonation) {
       memDonation.status = "confirmado";
       memDonation.confirmed_at = new Date().toISOString();
+      targetPlan = targetPlan || memDonation.planoAlvo;
+      userId = memDonation.userId;
+      userEmail = memDonation.userEmail;
     }
 
     try {
-      await pool.query(
-        "UPDATE doacoes_pix SET status = 'confirmado', confirmed_at = NOW() WHERE txid = $1",
+      const dbDonationRes = await pool.query(
+        "UPDATE doacoes_pix SET status = 'confirmado', confirmed_at = NOW() WHERE txid = $1 RETURNING *",
         [targetTxid]
       );
+      if (dbDonationRes.rows.length > 0) {
+        const d = dbDonationRes.rows[0];
+        targetPlan = targetPlan || d.plano_alvo;
+        userId = userId || d.user_id;
+        userEmail = userEmail || d.user_email;
+      }
     } catch (e) {}
+
+    // Determinar plano pago com base no valor ou plano informado
+    if (!targetPlan) {
+      if (memDonation?.valor >= 79) targetPlan = "medico";
+      else if (memDonation?.valor >= 19) targetPlan = "estudante";
+    }
+
+    // Se houver plano pago confirmado e usuário associado, atualizar o plano
+    if (targetPlan && (userId || userEmail)) {
+      try {
+        await pool.query(
+          "UPDATE users SET plan = $1, updated_at = NOW() WHERE id::text = $2 OR LOWER(email) = $3",
+          [targetPlan, String(userId), (userEmail || "").toLowerCase()]
+        );
+        console.log(`[PAYMENT] ✅ Plano ${targetPlan} ativado para usuário ${userEmail || userId}`);
+      } catch (err) {
+        console.warn("[PAYMENT] Aviso ao atualizar plano no PostgreSQL:", err.message);
+      }
+    }
 
     return res.json({
       status: "success",
       sucesso: true,
-      mensagem: "Doação/Pagamento PIX confirmado com sucesso! Muito obrigado pelo apoio."
+      planoAtivado: targetPlan,
+      mensagem: "Doação/Pagamento PIX confirmado com sucesso! Recursos liberados."
     });
   } catch (err) {
     return res.status(500).json({ status: "error", sucesso: false, erro: err.message });

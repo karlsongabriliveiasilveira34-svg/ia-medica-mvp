@@ -27,29 +27,63 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   // ==========================================
   // ESTADO DO BANCO DE QUESTÕES & SIMULADOS
   // ==========================================
+  // ==========================================
+  // ESTADO DO BANCO DE QUESTÕES & SIMULADOS REAIS
+  // ==========================================
   const [selectedExamBank, setSelectedExamBank] = useState('all');
   const [selectedQuestionArea, setSelectedQuestionArea] = useState('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('todas'); // 'todas', 'nao_respondidas', 'erradas'
   const [questionsList, setQuestionsList] = useState(INITIAL_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [userStats, setUserStats] = useState({ correct: 0, wrong: 0, totalAnswered: 0 });
+  const [userStats, setUserStats] = useState({ correct: 0, wrong: 0, totalAnswered: 0, aproveitamento: 0 });
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [generationSuccessMessage, setGenerationSuccessMessage] = useState('');
+  const [totalQuestionsInDb, setTotalQuestionsInDb] = useState(1250);
 
-  // Carregar questões reais da API ao iniciar ou mudar filtros
+  // 1. Carregar estatísticas reais do estudante
+  const fetchUserStudyProgress = async () => {
+    const token = localStorage.getItem('access_token');
+    try {
+      const res = await fetch('/api/questoes/progresso', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setUserStats({
+            correct: data.acertos || 0,
+            wrong: data.erros || 0,
+            totalAnswered: data.totalRespondidas || 0,
+            aproveitamento: data.aproveitamento || 0
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar estatísticas do estudante:', e);
+    }
+  };
+
+  // 2. Carregar questões reais da API ao iniciar ou mudar filtros
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
+        const token = localStorage.getItem('access_token');
         const queryParams = new URLSearchParams();
         if (selectedQuestionArea !== 'all') queryParams.append('especialidade', selectedQuestionArea);
         if (selectedExamBank !== 'all') queryParams.append('banca', selectedExamBank);
+        if (selectedStatusFilter !== 'todas') queryParams.append('status', selectedStatusFilter);
+        queryParams.append('limit', '50');
 
-        const res = await fetch(`/api/questoes?${queryParams.toString()}`);
+        const res = await fetch(`/api/questoes?${queryParams.toString()}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
         if (res.ok) {
           const data = await res.json();
+          if (data.total !== undefined) setTotalQuestionsInDb(data.total);
           if (data.questoes && data.questoes.length > 0) {
-            // Mapear campos caso venham da tabela SQL
             const formatted = data.questoes.map(q => ({
               id: q.id,
               exam: q.banca || q.exam || 'ENARE',
@@ -69,7 +103,49 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
     };
 
     fetchQuestions();
-  }, [selectedQuestionArea, selectedExamBank]);
+    fetchUserStudyProgress();
+  }, [selectedQuestionArea, selectedExamBank, selectedStatusFilter]);
+
+  // 3. Submissão de resposta conectada ao backend com persistência real
+  const handleSelectOption = async (idx) => {
+    if (showExplanation) return;
+    setSelectedAnswer(idx);
+    setShowExplanation(true);
+
+    const token = localStorage.getItem('access_token');
+    const isCorrect = idx === currentQ.correct;
+
+    // Atualização otimista na interface
+    setUserStats(prev => {
+      const newTotal = prev.totalAnswered + 1;
+      const newCorrect = isCorrect ? prev.correct + 1 : prev.correct;
+      const newWrong = !isCorrect ? prev.wrong + 1 : prev.wrong;
+      return {
+        totalAnswered: newTotal,
+        correct: newCorrect,
+        wrong: newWrong,
+        aproveitamento: Math.round((newCorrect / newTotal) * 100)
+      };
+    });
+
+    // Enviar para API oficial de respostas
+    try {
+      await fetch('/api/questoes/responder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          questaoId: currentQ.id,
+          alternativaSelecionada: idx,
+          tempoSegundos: 30
+        })
+      });
+    } catch (e) {
+      console.warn('Erro ao salvar resposta no backend:', e);
+    }
+  };
 
   // Filtrar questões ativas
   const filteredQuestions = questionsList.filter(q => {
@@ -101,7 +177,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
 
       if (res.ok && data.questoes && data.questoes.length > 0) {
         const newQuestionsFormatted = data.questoes.map((q, idx) => ({
-          id: Date.now() + idx,
+          id: q.id || (Date.now() + idx),
           exam: q.banca || 'ENARE / MedIa Inédita',
           area: (q.especialidade || selectedQuestionArea).toLowerCase(),
           topic: q.tema || 'Caso Clínico Dinâmico',
@@ -263,7 +339,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
       {activeStudentSubtab === 'quizzes' && (
         <div className="space-y-6 animate-fadeIn">
           
-          {/* Barra de Filtros de Bancas e Especialidades */}
+          {/* Barra de Filtros de Bancas, Status e Especialidades */}
           <div className="bg-white p-5 rounded-3xl border border-[#17231f]/10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#5e6c65] flex items-center gap-1 mr-1">
@@ -287,6 +363,34 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   {bank.name}
                 </button>
               ))}
+
+              <div className="w-[1px] h-5 bg-gray-200 mx-1 hidden sm:block" />
+
+              {/* Filtro de Status de Resposta */}
+              <div className="flex items-center gap-1">
+                {[
+                  { id: 'todas', label: 'Todas' },
+                  { id: 'nao_respondidas', label: 'Não respondidas' },
+                  { id: 'erradas', label: 'Apenas erradas' }
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    onClick={() => {
+                      setSelectedStatusFilter(st.id);
+                      setCurrentQuestionIndex(0);
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                      selectedStatusFilter === st.id
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
@@ -386,17 +490,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   <button
                     key={idx}
                     disabled={showExplanation}
-                    onClick={() => {
-                      setSelectedAnswer(idx);
-                      setShowExplanation(true);
-                      const correct = idx === currentQ.correct;
-                      setUserStats(prev => ({
-                        ...prev,
-                        totalAnswered: prev.totalAnswered + 1,
-                        correct: correct ? prev.correct + 1 : prev.correct,
-                        wrong: !correct ? prev.wrong + 1 : prev.wrong
-                      }));
-                    }}
+                    onClick={() => handleSelectOption(idx)}
                     className={`w-full text-left p-4 rounded-2xl border text-xs md:text-sm transition-all flex items-center justify-between ${btnStyle}`}
                   >
                     <span>{opt}</span>
