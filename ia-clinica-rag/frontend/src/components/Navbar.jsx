@@ -47,7 +47,7 @@ export function Navbar({
           </span>
           <span className="font-editorial text-2xl font-semibold tracking-[-0.03em] text-[#17231f]">medIa</span>
           <span className="text-[10px] font-bold uppercase tracking-wider bg-white/60 text-[#5e6c65] px-2 py-0.5 rounded-full border border-[#17231f]/10 hidden sm:inline-block">
-            v0.1.7
+            v0.1.8
           </span>
         </button>
 
@@ -185,14 +185,23 @@ export function Navbar({
                 <div className="relative">
                   <button
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-1.5 p-1 rounded-full hover:bg-white/60 transition"
+                    className="flex items-center gap-1.5 p-0.5 rounded-full hover:ring-2 hover:ring-[#213f34]/30 transition"
                     title={user.name || 'Perfil'}
                   >
-                    <img
-                      src={user.photo || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80'}
-                      alt={user.name || 'Avatar'}
-                      className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
-                    />
+                    {user.avatar || user.photo_url || user.photo ? (
+                      <img
+                        src={user.avatar || user.photo_url || user.photo}
+                        alt={user.name || 'Avatar'}
+                        className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#213f34] text-[#f4f1ea] flex items-center justify-center font-bold text-xs shadow-sm border border-[#213f34]/20">
+                        {user.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
+                      </div>
+                    )}
                   </button>
 
                   {showProfileMenu && (

@@ -257,7 +257,7 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
               </div>
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4 text-emerald-300 shrink-0" />
-                <span>1.250+ Questões ENARE & 10.420+ Flashcards</span>
+                <span>Banco de Questões ENARE & Flashcards com Repetição Espaçada</span>
               </div>
             </div>
           </div>

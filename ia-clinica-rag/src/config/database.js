@@ -124,13 +124,27 @@ export async function ensureUsersSchema() {
         CREATE TABLE IF NOT EXISTS flashcards (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           deck_id VARCHAR(50) NOT NULL,
+          area VARCHAR(100) DEFAULT 'clinica',
           frente TEXT NOT NULL,
           verso TEXT NOT NULL,
           dica TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- 6. TABELA DE DOAÇÕES E PAGAMENTOS PIX
+        -- 6. TABELA DE CONTROLE DE USO E LIMITES RIGOROSOS
+        CREATE TABLE IF NOT EXISTS user_usage (
+          user_id VARCHAR(255) PRIMARY KEY,
+          user_email VARCHAR(255),
+          plan VARCHAR(50) DEFAULT 'free',
+          ai_requests_month INT DEFAULT 0,
+          flashcards_day INT DEFAULT 0,
+          questions_day INT DEFAULT 0,
+          last_daily_date VARCHAR(20),
+          last_monthly_date VARCHAR(20),
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- 7. TABELA DE DOAÇÕES E PAGAMENTOS PIX
         CREATE TABLE IF NOT EXISTS doacoes_pix (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           txid VARCHAR(100) UNIQUE NOT NULL,
@@ -169,8 +183,29 @@ export async function ensureUsersSchema() {
           }
           console.log("[DATABASE] ✅ Acervo de questões indexado com sucesso no PostgreSQL.");
         }
+
+        // Seed inicial de flashcards se a tabela estiver vazia
+        const countCardsRes = await pool.query("SELECT COUNT(*) FROM flashcards");
+        const totalCards = parseInt(countCardsRes.rows[0].count, 10);
+        if (totalCards === 0 && Array.isArray(INITIAL_FLASHCARDS) && INITIAL_FLASHCARDS.length > 0) {
+          console.log(`[DATABASE] 📥 Inserindo acervo inicial de ${INITIAL_FLASHCARDS.length} flashcards oficiais no PostgreSQL...`);
+          for (const c of INITIAL_FLASHCARDS) {
+            await pool.query(
+              `INSERT INTO flashcards (deck_id, area, frente, verso, dica)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [c.deckId || 'geral', c.area || 'clinica', c.front, c.back, c.hint || null]
+            );
+          }
+          console.log("[DATABASE] ✅ Acervo de flashcards indexado com sucesso no PostgreSQL.");
+        }
+
+        // Ingestão adicional de PubMedQA se acervo tiver menos de 50 itens
+        if (total < 50) {
+          const { PubMedQAIngestionService } = await import("../services/pubmedqa-ingestion.service.js");
+          await PubMedQAIngestionService.ingestData(100);
+        }
       } catch (seedErr) {
-        console.warn("[DATABASE] ⚠️ Aviso no seed de questões:", seedErr.message);
+        console.warn("[DATABASE] ⚠️ Aviso no seed de questões/flashcards:", seedErr.message);
       }
 
       console.log("[DATABASE] ✅ Schema completo e tabelas de estudo sincronizadas com sucesso.");

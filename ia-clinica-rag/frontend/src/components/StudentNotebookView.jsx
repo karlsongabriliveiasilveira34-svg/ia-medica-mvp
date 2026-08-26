@@ -40,9 +40,17 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const [userStats, setUserStats] = useState({ correct: 0, wrong: 0, totalAnswered: 0, aproveitamento: 0 });
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [generationSuccessMessage, setGenerationSuccessMessage] = useState('');
-  const [totalQuestionsInDb, setTotalQuestionsInDb] = useState(1250);
+  const [totalQuestionsInDb, setTotalQuestionsInDb] = useState(0);
+  const [studyStats, setStudyStats] = useState({
+    totalQuestions: 0,
+    totalFlashcards: 0,
+    totalDecks: 8,
+    porEspecialidade: {},
+    porDeck: {}
+  });
+  const [limitWarning, setLimitWarning] = useState(null);
 
-  // 1. Carregar estatísticas reais do estudante
+  // 1. Carregar estatísticas reais do estudante e do acervo
   const fetchUserStudyProgress = async () => {
     const token = localStorage.getItem('access_token');
     try {
@@ -51,7 +59,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) {
+        if (data.success || data.totalRespondidas !== undefined) {
           setUserStats({
             correct: data.acertos || 0,
             wrong: data.erros || 0,
@@ -64,6 +72,31 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
       console.warn('Erro ao carregar estatísticas do estudante:', e);
     }
   };
+
+  useEffect(() => {
+    const fetchStatsAndCards = async () => {
+      try {
+        const statsRes = await fetch('/api/study/stats');
+        if (statsRes.ok) {
+          const sData = await statsRes.json();
+          setStudyStats(sData);
+          if (sData.totalQuestions) setTotalQuestionsInDb(sData.totalQuestions);
+        }
+      } catch (e) {}
+
+      try {
+        const cardsRes = await fetch('/api/flashcards?limit=200');
+        if (cardsRes.ok) {
+          const cData = await cardsRes.json();
+          if (cData.flashcards && cData.flashcards.length > 0) {
+            setFlashcardsList(cData.flashcards);
+          }
+        }
+      } catch (e) {}
+    };
+
+    fetchStatsAndCards();
+  }, []);
 
   // 2. Carregar questões reais da API ao iniciar ou mudar filtros
   useEffect(() => {
@@ -106,7 +139,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
     fetchUserStudyProgress();
   }, [selectedQuestionArea, selectedExamBank, selectedStatusFilter]);
 
-  // 3. Submissão de resposta conectada ao backend com persistência real
+  // 3. Submissão de resposta conectada ao backend com persistência e controle de limites
   const handleSelectOption = async (idx) => {
     if (showExplanation) return;
     setSelectedAnswer(idx);
@@ -128,9 +161,9 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
       };
     });
 
-    // Enviar para API oficial de respostas
+    // Enviar para API oficial de respostas com validação de limite
     try {
-      await fetch('/api/questoes/responder', {
+      const res = await fetch('/api/questoes/responder', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,6 +175,10 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
           tempoSegundos: 30
         })
       });
+      const data = await res.json();
+      if (!res.ok && data.code === 'LIMIT_REACHED') {
+        setLimitWarning(data.message || 'Você atingiu o limite gratuito diário de 5 questões no simulado.');
+      }
     } catch (e) {
       console.warn('Erro ao salvar resposta no backend:', e);
     }
@@ -215,9 +252,27 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const activeDeckCards = flashcardsList.filter(c => c.deckId === selectedDeckId);
   const currentCard = activeDeckCards[cardIndex % activeDeckCards.length] || INITIAL_FLASHCARDS[0];
 
-  // Resposta no estilo Anki (Repetição Espaçada)
-  const handleRateCard = (intervalText) => {
+  // Resposta no estilo Anki (Repetição Espaçada com Validação de Limites)
+  const handleRateCard = async (intervalText) => {
     setIsFlipped(false);
+    const token = localStorage.getItem('access_token');
+
+    try {
+      const res = await fetch('/api/flashcards/visualizar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ cardId: currentCard.id, deckId: selectedDeckId })
+      });
+      const data = await res.json();
+      if (!res.ok && data.code === 'LIMIT_REACHED') {
+        setLimitWarning(data.message || 'Você atingiu o limite gratuito diário de 10 flashcards.');
+        return;
+      }
+    } catch (e) {}
+
     setCardStats(prev => ({
       ...prev,
       reviewedToday: prev.reviewedToday + 1
@@ -296,7 +351,9 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             <span className="bg-amber-400 text-amber-950 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
               <GraduationCap className="w-4 h-4" /> MODO ESTUDANTE ATIVO
             </span>
-            <span className="text-xs text-amber-200/80 hidden sm:inline">• 1.250+ Questões Oficiais & 10.420+ Flashcards</span>
+            <span className="text-xs text-amber-200/80 hidden sm:inline">
+              • {studyStats.totalQuestions || totalQuestionsInDb || questionsList.length} Questões Oficiais & {studyStats.totalFlashcards || flashcardsList.length} Flashcards
+            </span>
           </div>
           <h1 className="font-editorial text-3xl md:text-4xl font-bold">Central Acadêmica & Provas de Residência</h1>
           <p className="text-xs md:text-sm text-[#c1d3ca] max-w-2xl">
@@ -316,13 +373,13 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             onClick={() => setActiveStudentSubtab('quizzes')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'quizzes' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
           >
-            <HelpCircle className="w-4 h-4" /> Banco de Questões (1.250+)
+            <HelpCircle className="w-4 h-4" /> Banco de Questões ({studyStats.totalQuestions || totalQuestionsInDb || questionsList.length})
           </button>
           <button
             onClick={() => setActiveStudentSubtab('flashcards')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'flashcards' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
           >
-            <Layers className="w-4 h-4" /> Flashcards (10k+)
+            <Layers className="w-4 h-4" /> Flashcards ({studyStats.totalFlashcards || flashcardsList.length})
           </button>
           <button
             onClick={() => setActiveStudentSubtab('tutor_chat')}
@@ -444,7 +501,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   </span>
                 </div>
                 <span className="text-xs text-[#5e6c65] block">
-                  Banco de Provas Oficiais • Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{activeQuestions.length}</strong> no simulado ativo (1.250+ no acervo)
+                  Banco de Provas Oficiais • Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{activeQuestions.length}</strong> no simulado ativo ({studyStats.totalQuestions || totalQuestionsInDb || questionsList.length} no acervo)
                 </span>
               </div>
 
@@ -569,10 +626,10 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h2 className="font-editorial text-2xl font-bold text-[#17231f]">Baralhos de Flashcards Médicos</h2>
-                <p className="text-xs text-[#5e6c65]">Mais de 10.420 cartões organizados por especialidade médica com algoritmo de repetição espaçada (SM-2).</p>
+                <p className="text-xs text-[#5e6c65]">Acervo de {studyStats.totalFlashcards || flashcardsList.length} cartões organizados por especialidade médica com algoritmo de repetição espaçada (SM-2).</p>
               </div>
               <span className="text-xs font-black bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-full border border-emerald-300">
-                10.420 Cards Indexados
+                {studyStats.totalFlashcards || flashcardsList.length} Cards Indexados
               </span>
             </div>
 
@@ -594,7 +651,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-[#17231f]">{deck.title}</span>
                     <span className="text-[10px] font-black bg-[#faf8f5] px-2 py-0.5 rounded-md border border-[#17231f]/10">
-                      {deck.badge}
+                      {studyStats.porDeck?.[deck.id] || flashcardsList.filter(c => (c.deckId === deck.id || c.deck_id === deck.id)).length || 0} cards
                     </span>
                   </div>
                   <p className="text-[11px] text-[#5e6c65] line-clamp-2 leading-relaxed mb-2">
@@ -882,6 +939,34 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               Perguntar
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Modal / Banner de Limite Atingido (Amigável) */}
+      {limitWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-amber-500/30 text-center space-y-4">
+            <div className="w-12 h-12 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center mx-auto">
+              <Zap className="w-6 h-6 text-amber-600" />
+            </div>
+            <h3 className="font-editorial text-xl font-bold text-[#17231f]">
+              Limite Gratuito Atingido
+            </h3>
+            <p className="text-xs text-[#5e6c65] leading-relaxed">
+              {limitWarning}
+            </p>
+            <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 text-[11px] text-[#213f34] font-medium">
+              💡 Dica: O <strong>Plano Estudante</strong> inclui flashcards e questões ilimitadas, além de IA Preceptora e biblioteca completa.
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setLimitWarning(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-[#17231f]/10 text-xs font-bold text-[#5e6c65] hover:bg-[#faf8f5] transition"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

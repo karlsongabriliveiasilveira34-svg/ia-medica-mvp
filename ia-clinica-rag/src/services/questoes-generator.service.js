@@ -500,12 +500,102 @@ Retorne estritamente um JSON no formato:
   }
 
   /**
-   * 6. LISTAGEM DE FLASHCARDS
+   * 6. LISTAGEM DE FLASHCARDS DO BANCO REAL COM PAGINAÇÃO E FILTROS
    */
-  static async listFlashcards({ deckId }) {
-    if (deckId && deckId !== "all") {
-      return memoryFlashcards.filter(f => f.deckId === deckId);
+  static async listFlashcards({ deckId, area, page = 1, limit = 50 } = {}) {
+    await ensureUsersSchema();
+    const offset = (Math.max(1, page) - 1) * limit;
+
+    try {
+      let sql = "SELECT * FROM flashcards WHERE 1=1";
+      const params = [];
+      if (deckId && deckId !== "all") {
+        params.push(deckId);
+        sql += ` AND deck_id = $${params.length}`;
+      }
+      if (area && area !== "all") {
+        params.push(area);
+        sql += ` AND area = $${params.length}`;
+      }
+      sql += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      const res = await pool.query(sql, params);
+      const countRes = await pool.query("SELECT COUNT(*) FROM flashcards");
+      const total = parseInt(countRes.rows[0]?.count || "0", 10);
+
+      if (res.rows.length > 0) {
+        return {
+          total: total || res.rows.length,
+          page,
+          limit,
+          flashcards: res.rows.map(r => ({
+            id: r.id,
+            deckId: r.deck_id,
+            area: r.area,
+            front: r.frente,
+            back: r.verso,
+            hint: r.dica
+          }))
+        };
+      }
+    } catch (err) {
+      console.warn("[FLASHCARDS] Fallback para flashcards em memória:", err.message);
     }
-    return memoryFlashcards;
+
+    let filtered = memoryFlashcards;
+    if (deckId && deckId !== "all") {
+      filtered = filtered.filter(f => f.deckId === deckId || f.deck_id === deckId);
+    }
+    if (area && area !== "all") {
+      filtered = filtered.filter(f => f.area === area);
+    }
+
+    return {
+      total: filtered.length,
+      page,
+      limit,
+      flashcards: filtered.slice(offset, offset + limit)
+    };
+  }
+
+  /**
+   * 7. MÉTRICAS E ESTATÍSTICAS REAIS DO ACERVO DE ESTUDO (ZERO NÚMEROS FICTÍCIOS)
+   */
+  static async getStudyStats() {
+    await ensureUsersSchema();
+
+    let totalQuestions = memoryQuestions.length;
+    let totalFlashcards = memoryFlashcards.length;
+    let porEspecialidade = {};
+    let porDeck = {};
+
+    try {
+      const countQ = await pool.query("SELECT COUNT(*) FROM questoes");
+      totalQuestions = parseInt(countQ.rows[0]?.count || "0", 10) || totalQuestions;
+
+      const countF = await pool.query("SELECT COUNT(*) FROM flashcards");
+      totalFlashcards = parseInt(countF.rows[0]?.count || "0", 10) || totalFlashcards;
+
+      const groupQ = await pool.query("SELECT especialidade, COUNT(*) as qtd FROM questoes GROUP BY especialidade");
+      groupQ.rows.forEach(r => {
+        porEspecialidade[r.especialidade] = parseInt(r.qtd, 10);
+      });
+
+      const groupF = await pool.query("SELECT deck_id, COUNT(*) as qtd FROM flashcards GROUP BY deck_id");
+      groupF.rows.forEach(r => {
+        porDeck[r.deck_id] = parseInt(r.qtd, 10);
+      });
+    } catch (err) {
+      console.warn("[STUDY STATS] Fallback para estatísticas em memória:", err.message);
+    }
+
+    return {
+      totalQuestions,
+      totalFlashcards,
+      totalDecks: 8,
+      porEspecialidade,
+      porDeck
+    };
   }
 }

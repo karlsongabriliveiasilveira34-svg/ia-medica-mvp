@@ -20,15 +20,18 @@ iaRouter.post(["/api/ia/chat", "/api/ia", "/ia/chat"], authenticate, aiQueryLimi
     const userId = req.user?.id || req.user?.userId || req.ip || "anonimo";
     const userPlan = req.user?.plan || "free";
 
-    // Validar cota mensal do plano (Plano Free: 5 requisições/mês)
-    const usageSummary = usageMeterService.getUsageSummary(userId, userPlan);
-    if (!usageSummary.ui.canMakeRequest) {
+    // Validar cota mensal do plano (Plano Free: 10 requisições de IA/mês)
+    const limitCheck = usageMeterService.checkResourceLimit(userId, userPlan, "ai");
+    if (!limitCheck.allowed) {
       return res.status(403).json({
         status: "error",
-        code: "PLAN_LIMIT_REACHED",
-        message: `Você atingiu o limite de ${usageSummary.usage.requestsLimit} mensagens mensais do ${usageSummary.plan.name}. Faça upgrade de plano para continuar usando sem interrupções.`,
-        usage: usageSummary.usage,
-        plan: usageSummary.plan
+        code: "LIMIT_REACHED",
+        resource: "ai",
+        limit: limitCheck.limit,
+        used: limitCheck.used,
+        remaining: 0,
+        resetAt: limitCheck.resetAt,
+        message: limitCheck.message
       });
     }
 
@@ -40,8 +43,8 @@ iaRouter.post(["/api/ia/chat", "/api/ia", "/ia/chat"], authenticate, aiQueryLimi
       historico
     });
 
-    // Registrar consumo
-    usageMeterService.recordUsage(userId, userPlan, 250);
+    // Registrar consumo no backend
+    usageMeterService.recordResourceUsage(userId, userPlan, "ai", 1);
 
     return res.json({
       status: "success",

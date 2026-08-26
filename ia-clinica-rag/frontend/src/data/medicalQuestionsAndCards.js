@@ -12,12 +12,12 @@ export const EXAM_BANKS = [
 ];
 
 export const SPECIALTY_AREAS = [
-  { id: 'all', name: 'Todas as Áreas', totalQuestions: 1250, totalCards: 10420 },
-  { id: 'clinica', name: 'Clínica Médica', totalQuestions: 380, totalCards: 2850 },
-  { id: 'cirurgia', name: 'Cirurgia Geral & Trauma', totalQuestions: 240, totalCards: 1950 },
-  { id: 'pediatria', name: 'Pediatria & Puericultura', totalQuestions: 220, totalCards: 1800 },
-  { id: 'go', name: 'Ginecologia & Obstetrícia', totalQuestions: 210, totalCards: 1920 },
-  { id: 'preventiva', name: 'Medicina Preventiva & SUS', totalQuestions: 200, totalCards: 1900 }
+  { id: 'all', name: 'Todas as Áreas' },
+  { id: 'clinica', name: 'Clínica Médica' },
+  { id: 'cirurgia', name: 'Cirurgia Geral & Trauma' },
+  { id: 'pediatria', name: 'Pediatria & Puericultura' },
+  { id: 'go', name: 'Ginecologia & Obstetrícia' },
+  { id: 'preventiva', name: 'Medicina Preventiva & SUS' }
 ];
 
 export const FLASHCARD_DECKS = [
@@ -25,81 +25,57 @@ export const FLASHCARD_DECKS = [
     id: 'cardio',
     area: 'clinica',
     title: 'Cardiologia & ECG',
-    cardsCount: 1450,
-    dueCount: 42,
     description: 'Arritmias, SCA, Insuficiência Cardíaca, Valvopatias e Hipertensão SBC',
-    color: 'border-rose-500/30 bg-rose-50/50 text-rose-900',
-    badge: '1.450 cards'
+    color: 'border-rose-500/30 bg-rose-50/50 text-rose-900'
   },
   {
     id: 'infecto',
     area: 'clinica',
     title: 'Infectologia & Antimicrobianos',
-    cardsCount: 1820,
-    dueCount: 58,
     description: 'Esquemas empíricos, Sepse (ILAS), Meningites, HIV/AIDS e Tuberculose',
-    color: 'border-amber-500/30 bg-amber-50/50 text-amber-900',
-    badge: '1.820 cards'
+    color: 'border-amber-500/30 bg-amber-50/50 text-amber-900'
   },
   {
     id: 'pediatria',
     area: 'pediatria',
     title: 'Pediatria & Puericultura',
-    cardsCount: 1200,
-    dueCount: 35,
     description: 'Calendário PNI, Crescimento e Desenvolvimento, Desidratação OMS e OMA',
-    color: 'border-sky-500/30 bg-sky-50/50 text-sky-900',
-    badge: '1.200 cards'
+    color: 'border-sky-500/30 bg-sky-50/50 text-sky-900'
   },
   {
     id: 'go',
     area: 'go',
     title: 'Ginecologia & Obstetrícia',
-    cardsCount: 1350,
-    dueCount: 29,
     description: 'Pré-Natal, Hemorragias da 1ª e 2ª Metade, Rastreio de Câncer e Anticoncepção',
-    color: 'border-pink-500/30 bg-pink-50/50 text-pink-900',
-    badge: '1.350 cards'
+    color: 'border-pink-500/30 bg-pink-50/50 text-pink-900'
   },
   {
     id: 'cirurgia',
     area: 'cirurgia',
     title: 'Cirurgia, Trauma & ATLS',
-    cardsCount: 1100,
-    dueCount: 44,
     description: 'Protocolo ABCDE, Abdome Agudo Inflamatório/Obstrutivo e Queimaduras',
-    color: 'border-emerald-500/30 bg-emerald-50/50 text-emerald-900',
-    badge: '1.100 cards'
+    color: 'border-emerald-500/30 bg-emerald-50/50 text-emerald-900'
   },
   {
     id: 'preventiva',
     area: 'preventiva',
     title: 'Medicina Preventiva & SUS',
-    cardsCount: 980,
-    dueCount: 22,
     description: 'Leis 8.080/8.142, Indicadores de Mortalidade, Risco Relativo e Bioética',
-    color: 'border-indigo-500/30 bg-indigo-50/50 text-indigo-900',
-    badge: '980 cards'
+    color: 'border-indigo-500/30 bg-indigo-50/50 text-indigo-900'
   },
   {
     id: 'farmaco',
     area: 'clinica',
     title: 'Farmacologia Clínica & Dosagens',
-    cardsCount: 1600,
-    dueCount: 65,
     description: 'Interações medicamentosas, Farmacocinética, Intoxicações e Ajustes Renais',
-    color: 'border-teal-500/30 bg-teal-50/50 text-teal-900',
-    badge: '1.600 cards'
+    color: 'border-teal-500/30 bg-teal-50/50 text-teal-900'
   },
   {
     id: 'nefro',
     area: 'clinica',
     title: 'Nefrologia & Distúrbios Hidroeletrolíticos',
-    cardsCount: 920,
-    dueCount: 30,
     description: 'Hiponatremia, Hipercalemia, Injúria Renal Aguda (KDIGO) e Glomerulopatias',
-    color: 'border-purple-500/30 bg-purple-50/50 text-purple-900',
-    badge: '920 cards'
+    color: 'border-purple-500/30 bg-purple-50/50 text-purple-900'
   }
 ];
 

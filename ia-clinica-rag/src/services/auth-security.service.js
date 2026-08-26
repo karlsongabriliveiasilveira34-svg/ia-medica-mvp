@@ -230,12 +230,18 @@ export class AuthSecurityService {
     console.log(`[AUTH][VERIFY] usuário encontrado: ${user.id}`);
     console.log("[AUTH][VERIFY] email confirmado");
 
-    // Gerar Sessão Autenticada Imediata (Login Automático)
+    // Gerar Sessão Autenticada Imediata (Login Automático com Avatar)
+    const emailClean = user.email || cleanEmail;
+    const emailHash = crypto.createHash("md5").update((emailClean || "").trim().toLowerCase()).digest("hex");
+    const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
+
     const payload = {
       id: user.id,
       userId: user.id,
       email: user.email,
       name: user.name || "Colega",
+      avatar: avatarUrl,
+      photo_url: avatarUrl,
       plan: user.plan || "free",
       app_mode: user.app_mode || "estudante",
       crm: user.crm || null,
@@ -374,12 +380,18 @@ export class AuthSecurityService {
       isSuspicious
     ).catch(err => console.error("[AUTH][ERROR] Falha ao enviar notificação de login:", err.message));
 
-    // Gerar Tokens JWT
+    // Gerar Tokens JWT com Avatar Real (Gravatar / Foto)
+    const emailClean = user.email || cleanEmail;
+    const emailHash = crypto.createHash("md5").update((emailClean || "").trim().toLowerCase()).digest("hex");
+    const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
+
     const payload = {
       id: user.id,
       userId: user.id,
       email: user.email,
       name: user.name || "Colega",
+      avatar: avatarUrl,
+      photo_url: avatarUrl,
       plan: user.plan || "free",
       app_mode: user.app_mode || "estudante",
       crm: user.crm || null,

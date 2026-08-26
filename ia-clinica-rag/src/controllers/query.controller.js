@@ -11,15 +11,18 @@ export async function handleQuery(req, res) {
     const userId = req.user?.id || req.user?.userId || req.ip || "anonimo";
     const userPlan = req.user?.plan || "free";
 
-    // 0. Validar cota mensal do plano (Plano Free: 5 requisições/mês)
-    const usageSummary = usageMeterService.getUsageSummary(userId, userPlan);
-    if (!usageSummary.ui.canMakeRequest) {
+    // 0. Validar cota mensal de IA (Plano Free: 10 requisições/mês)
+    const limitCheck = usageMeterService.checkResourceLimit(userId, userPlan, "ai");
+    if (!limitCheck.allowed) {
       return res.status(403).json({
         status: "error",
-        code: "PLAN_LIMIT_REACHED",
-        message: `Você atingiu o limite de ${usageSummary.usage.requestsLimit} mensagens mensais do ${usageSummary.plan.name}. Faça upgrade de plano para continuar usando sem interrupções.`,
-        usage: usageSummary.usage,
-        plan: usageSummary.plan
+        code: "LIMIT_REACHED",
+        resource: "ai",
+        limit: limitCheck.limit,
+        used: limitCheck.used,
+        remaining: 0,
+        resetAt: limitCheck.resetAt,
+        message: limitCheck.message
       });
     }
 
@@ -142,8 +145,8 @@ export async function handleQuery(req, res) {
       console.warn("⚠️ Aviso ao salvar resposta da IA no banco:", err.message);
     }
 
-    // Registrar consumo de requisição e tokens
-    usageMeterService.recordUsage(userId, userPlan, 350);
+    // Registrar consumo de requisição de IA e tokens no backend
+    usageMeterService.recordResourceUsage(userId, userPlan, "ai", 1);
 
     return res.status(200).json({
       ...result,
