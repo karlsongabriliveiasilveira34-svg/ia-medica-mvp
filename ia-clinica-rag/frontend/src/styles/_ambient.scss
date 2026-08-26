@@ -1,0 +1,175 @@
+// ====================================================================
+// 🌿 AMBIENTAÇÃO RESPONSIVA GLOBAL: CLASSES UTILITÁRIAS E LAYOUT EM REM
+// ====================================================================
+@use "sass:map";
+@use "functions" as *;
+@use "variables" as *;
+@use "mixins" as *;
+
+// 1. Definição do Root com Escala Tipográfica Fluida
+:root {
+  --font-hero: #{map.get($fluid-typography, "hero")};
+  --font-h1: #{map.get($fluid-typography, "h1")};
+  --font-h2: #{map.get($fluid-typography, "h2")};
+  --font-h3: #{map.get($fluid-typography, "h3")};
+  --font-h4: #{map.get($fluid-typography, "h4")};
+  --font-body-lg: #{map.get($fluid-typography, "body-lg")};
+  --font-body: #{map.get($fluid-typography, "body")};
+  --font-sm: #{map.get($fluid-typography, "sm")};
+  --font-xs: #{map.get($fluid-typography, "xs")};
+
+  --space-section-y: #{map.get($fluid-spacing, "section-y")};
+  --space-section-x: #{map.get($fluid-spacing, "section-x")};
+  --space-card: #{map.get($fluid-spacing, "card-p")};
+  --space-gap-lg: #{map.get($fluid-spacing, "gap-lg")};
+  --space-gap-md: #{map.get($fluid-spacing, "gap-md")};
+  --space-gap-sm: #{map.get($fluid-spacing, "gap-sm")};
+}
+
+// 2. Classes de Tipografia Fluida em REM
+.fluid-hero {
+  font-size: var(--font-hero);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.fluid-h1 {
+  font-size: var(--font-h1);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+.fluid-h2 {
+  font-size: var(--font-h2);
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.fluid-h3 {
+  font-size: var(--font-h3);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.fluid-h4 {
+  font-size: var(--font-h4);
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.fluid-body-lg {
+  font-size: var(--font-body-lg);
+  line-height: 1.55;
+}
+
+.fluid-body {
+  font-size: var(--font-body);
+  line-height: 1.6;
+}
+
+.fluid-caption {
+  font-size: var(--font-sm);
+  line-height: 1.5;
+  color: $color-text-muted;
+}
+
+// 3. Classes de Layout Ambiental Fluido
+.ambient-container {
+  @include ambient-container(1440px);
+}
+
+.ambient-container-compact {
+  @include ambient-container(1080px);
+}
+
+.ambient-section {
+  padding-top: var(--space-section-y);
+  padding-bottom: var(--space-section-y);
+}
+
+.ambient-card {
+  @include ambient-card();
+}
+
+// 4. Grid de Cartões Autoadaptativo sem Media Queries Fixas
+.ambient-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, rem(280px)), 1fr));
+  gap: var(--space-gap-md);
+}
+
+.ambient-grid-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-gap-md);
+
+  @include respond-to("sm") {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include respond-to("lg") {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+// 5. Stack Vertical Fluido com Gaps em REM
+.ambient-stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-gap-lg);
+}
+
+.ambient-stack-md {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-gap-md);
+}
+
+.ambient-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-gap-sm);
+}
+
+// 6. Alvos de Toque para Acessibilidade Móvel (Mínimo 44px em REM)
+.ambient-touch-target {
+  min-height: rem(44px);
+  min-width: rem(44px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 7. Modal Responsivo com Ambientação de Bottom-Sheet em Mobile
+.ambient-modal-responsive {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+
+  @include respond-to("sm") {
+    align-items: center;
+    padding: rem(16px);
+  }
+
+  .ambient-modal-content {
+    width: 100%;
+    max-height: 90vh;
+    border-top-left-radius: rem(20px);
+    border-top-right-radius: rem(20px);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    overflow-y: auto;
+    padding: var(--space-card);
+
+    @include respond-to("sm") {
+      max-width: rem(580px);
+      border-radius: rem(20px);
+    }
+  }
+}

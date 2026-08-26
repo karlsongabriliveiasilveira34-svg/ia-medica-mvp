@@ -1,0 +1,53 @@
+// ====================================================================
+// 🎨 VARIÁVEIS SASS: BREAKPOINTS, TOKENS DE AMBIENTAÇÃO E ESCALAS
+// ====================================================================
+@use "functions" as *;
+
+// 1. Breakpoints do Sistema Responsivo
+$breakpoints: (
+  "xs": 360px,      // Dispositivos móveis compactos (iPhone SE, etc.)
+  "sm": 640px,      // Smartphones grandes / Phablets
+  "md": 768px,      // Tablets (iPad Portrait)
+  "lg": 1024px,     // Laptops / Tablets Landscape
+  "xl": 1280px,     // Desktops padrão
+  "2xl": 1536px,    // Monitores Widescreen
+  "3xl": 1920px     // Monitores Ultrawide / 4K
+) !default;
+
+// 2. Dimensões de Viewport de Referência para Fluid Scaling
+$viewport-min: 360px !default;
+$viewport-max: 1440px !default;
+
+// 3. Tipografia Fluida (Min px -> Max px calculados para REM)
+$fluid-typography: (
+  "hero":    fluid(32px, 56px, $viewport-min, $viewport-max),
+  "h1":      fluid(26px, 40px, $viewport-min, $viewport-max),
+  "h2":      fluid(22px, 32px, $viewport-min, $viewport-max),
+  "h3":      fluid(18px, 24px, $viewport-min, $viewport-max),
+  "h4":      fluid(16px, 20px, $viewport-min, $viewport-max),
+  "body-lg": fluid(15px, 18px, $viewport-min, $viewport-max),
+  "body":    fluid(14px, 16px, $viewport-min, $viewport-max),
+  "sm":      fluid(12px, 14px, $viewport-min, $viewport-max),
+  "xs":      fluid(10px, 12px, $viewport-min, $viewport-max)
+) !default;
+
+// 4. Espaçamentos Fluidos (Paddings / Gaps de Contêiner)
+$fluid-spacing: (
+  "section-y": fluid(32px, 80px, $viewport-min, $viewport-max),
+  "section-x": fluid(16px, 48px, $viewport-min, $viewport-max),
+  "card-p":    fluid(14px, 28px, $viewport-min, $viewport-max),
+  "gap-lg":    fluid(16px, 32px, $viewport-min, $viewport-max),
+  "gap-md":    fluid(12px, 20px, $viewport-min, $viewport-max),
+  "gap-sm":    fluid(8px, 14px, $viewport-min, $viewport-max)
+) !default;
+
+// 5. Paleta de Cores Ambientais do MedIA
+$color-bg-base: #f4f1ea;
+$color-bg-surface: #ffffff;
+$color-bg-card: rgba(255, 255, 255, 0.85);
+$color-text-main: #17231f;
+$color-text-muted: #5e6c65;
+$color-primary: #213f34;
+$color-primary-light: #2d5446;
+$color-accent: #c49961;
+$color-border: rgba(33, 63, 52, 0.12);

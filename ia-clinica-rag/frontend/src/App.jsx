@@ -28,11 +28,11 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
   window.fetch = async (...args) => {
     let [resource, config] = args;
     const token = localStorage.getItem('access_token');
-    
+
     if (token && typeof resource === 'string' && resource.startsWith('/api') && !resource.includes('/api/auth/login') && !resource.includes('/api/auth/register')) {
       config = config || {};
-      const existingHeaders = config.headers instanceof Headers 
-        ? Object.fromEntries(config.headers.entries()) 
+      const existingHeaders = config.headers instanceof Headers
+        ? Object.fromEntries(config.headers.entries())
         : (config.headers || {});
 
       config.headers = {
@@ -61,7 +61,7 @@ export default function App() {
     usage: { highestPercentage: 0 },
     ui: { colorStatus: 'green' }
   });
-  
+
   // Abas e Modais
   const [activeTab, setActiveTab] = useState('landing'); // Iniciar na Landing Page
   const [showLogin, setShowLogin] = useState(false);
@@ -128,7 +128,7 @@ export default function App() {
               try {
                 userObj = JSON.parse(decodeURIComponent(hashUserRaw));
                 localStorage.setItem('media_user', JSON.stringify(userObj));
-              } catch (e) {}
+              } catch (e) { }
             }
 
             setCurrentUser(userObj);
@@ -210,7 +210,7 @@ export default function App() {
       // 4. Verificar sessão existente no localStorage
       const token = localStorage.getItem('access_token');
       const savedUser = localStorage.getItem('media_user');
-      
+
       if (token && savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
@@ -240,7 +240,7 @@ export default function App() {
             return;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 6. Visitante deslogado
       setIsAuthenticated(false);
@@ -332,8 +332,8 @@ export default function App() {
         <LoginModal onLoginSuccess={handleLoginSuccess} closable={true} onClose={() => setShowLogin(false)} />
       )}
 
-      <Navbar 
-        activeTab={activeTab} 
+      <Navbar
+        activeTab={activeTab}
         setActiveTab={handleNavigate}
         hasActiveReport={!!activeReportData}
         isAuthenticated={isAuthenticated}

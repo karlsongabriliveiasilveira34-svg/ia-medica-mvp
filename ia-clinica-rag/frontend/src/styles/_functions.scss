@@ -1,0 +1,120 @@
+// ====================================================================
+// 📐 FUNÇÕES SASS: CONVERSÃO REM, ESPAÇAMENTO E CÁLCULO FLUIDO CLAMP
+// ====================================================================
+@use "sass:math";
+@use "sass:meta";
+
+$browser-base-font-size: 16px !default;
+
+/// Remove a unidade de um valor numérico no Sass
+/// @param {Number} $number - Número com unidade (ex: 24px, 1.5rem)
+/// @return {Number} Número puro sem unidade
+@function strip-unit($number) {
+  @if meta.type-of($number) == "number" and not math.is-unitless($number) {
+    @return math.div($number, ($number * 0 + 1));
+  }
+  @return $number;
+}
+
+/// Converte qualquer valor em Pixels (px) para REM com precisão
+/// @param {Number} $px - Valor em pixels (ex: 20px ou 20)
+/// @param {Number} $base - Tamanho base da fonte do root (padrão: 16px)
+/// @return {String/Number} Valor convertido em REM (ex: 1.25rem)
+@function rem($px, $base: $browser-base-font-size) {
+  $raw-px: strip-unit($px);
+  $raw-base: strip-unit($base);
+  
+  @if $raw-px == 0 {
+    @return 0;
+  }
+  
+  $rem-val: math.div($raw-px, $raw-base);
+  @return #{$rem-val}rem;
+}
+
+/// Converte valor em Pixels (px) para EM (útil para Media Queries e contextos locais)
+/// @param {Number} $px - Valor em pixels
+/// @param {Number} $base - Tamanho base do contexto (padrão: 16px)
+/// @return {String/Number} Valor convertido em EM (ex: 1.5em)
+@function em($px, $base: $browser-base-font-size) {
+  $raw-px: strip-unit($px);
+  $raw-base: strip-unit($base);
+  
+  @if $raw-px == 0 {
+    @return 0;
+  }
+  
+  $em-val: math.div($raw-px, $raw-base);
+  @return #{$em-val}em;
+}
+
+/// Gera uma expressão CSS clamp() fluida que calcula a transição suave
+/// entre duas medidas usando REM e Viewport Width (VW).
+/// 
+/// Fórmula Matemática:
+/// y = mx + b
+/// slope = (maxSize - minSize) / (maxVw - minVw)
+/// yAxisIntersection = -minVw * slope + minSize
+/// 
+/// @param {Number} $min-size - Tamanho mínimo (ex: 16px ou 1rem)
+/// @param {Number} $max-size - Tamanho máximo (ex: 28px ou 1.75rem)
+/// @param {Number} $min-vw - Largura mínima do viewport (padrão: 360px)
+/// @param {Number} $max-vw - Largura máxima do viewport (padrão: 1440px)
+/// @return {String} Expressão clamp(minRem, yAxisRem + slopeVw, maxRem)
+@function fluid($min-size, $max-size, $min-vw: 360px, $max-vw: 1440px) {
+  $min-px: strip-unit($min-size);
+  $max-px: strip-unit($max-size);
+  $min-vw-px: strip-unit($min-vw);
+  $max-vw-px: strip-unit($max-vw);
+  $base: strip-unit($browser-base-font-size);
+
+  // Se foram passados em rem, converte para px para o cálculo
+  @if meta.type-of($min-size) == "number" and math.unit($min-size) == "rem" {
+    $min-px: $min-px * $base;
+  }
+  @if meta.type-of($max-size) == "number" and math.unit($max-size) == "rem" {
+    $max-px: $max-px * $base;
+  }
+
+  $slope: math.div(($max-px - $min-px), ($max-vw-px - $min-vw-px));
+  $y-intersection: -$min-vw-px * $slope + $min-px;
+
+  $min-rem: math.div($min-px, $base);
+  $max-rem: math.div($max-px, $base);
+  $intersection-rem: math.div($y-intersection, $base);
+  $slope-vw: $slope * 100;
+
+  $min-out: #{$min-rem}rem;
+  $max-out: #{$max-rem}rem;
+  $preferred: calc(#{$intersection-rem}rem + #{$slope-vw}vw);
+
+  @if $min-rem > $max-rem {
+    @return clamp(#{$max-out}, #{$preferred}, #{$min-out});
+  }
+
+  @return clamp(#{$min-out}, #{$preferred}, #{$max-out});
+}
+
+/// Escala modular geométrica para espaçamentos consistentes em REM
+/// @param {Number} $step - Passo na escala (0 a 10)
+/// @return {String} Valor em REM
+@function spacing($step) {
+  $scale: (
+    0: 0,
+    1: 0.25rem,  // 4px
+    2: 0.5rem,   // 8px
+    3: 0.75rem,  // 12px
+    4: 1rem,     // 16px
+    5: 1.25rem,  // 20px
+    6: 1.5rem,   // 24px
+    7: 2rem,     // 32px
+    8: 2.5rem,   // 40px
+    9: 3rem,     // 48px
+    10: 4rem     // 64px
+  );
+
+  @if map-has-key($scale, $step) {
+    @return map-get($scale, $step);
+  }
+  @return 1rem;
+}
