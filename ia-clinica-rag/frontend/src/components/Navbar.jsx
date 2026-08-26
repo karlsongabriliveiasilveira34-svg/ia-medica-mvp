@@ -180,65 +180,74 @@ export function Navbar({
                 PIX
               </button>
 
-              {/* Avatar do Usuário Google com Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-1.5 p-1 rounded-full hover:bg-white/60 transition"
-                  title={user?.name || 'Perfil'}
-                >
-                  <img
-                    src={user?.photo || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80'}
-                    alt={user?.name || 'Avatar'}
-                    className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
-                  />
-                </button>
+              {/* Usuário Logado vs Botão de Login */}
+              {isAuthenticated && user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-1.5 p-1 rounded-full hover:bg-white/60 transition"
+                    title={user.name || 'Perfil'}
+                  >
+                    <img
+                      src={user.photo || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80'}
+                      alt={user.name || 'Avatar'}
+                      className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
+                    />
+                  </button>
 
-                {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white p-3 shadow-xl border border-[#17231f]/10 text-xs space-y-2 z-50 animate-fadeIn">
-                    <div className="border-b border-[#17231f]/10 pb-2 px-1">
-                      <strong className="block text-[#17231f] truncate">{user?.name || 'Dr. Karlson Gabriel'}</strong>
-                      <span className="text-[#5e6c65] text-[11px] block truncate">{user?.email || 'medico.demo@media.med.br'}</span>
-                      <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-[#213f34] text-white px-2 py-0.5 rounded-full">
-                        Plano {user?.plan?.toUpperCase() || 'MÉDICO'}
-                      </span>
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white p-3 shadow-xl border border-[#17231f]/10 text-xs space-y-2 z-50 animate-fadeIn">
+                      <div className="border-b border-[#17231f]/10 pb-2 px-1">
+                        <strong className="block text-[#17231f] truncate">{user.name || 'Usuário'}</strong>
+                        <span className="text-[#5e6c65] text-[11px] block truncate">{user.email}</span>
+                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-[#213f34] text-white px-2 py-0.5 rounded-full">
+                          Plano {user.plan ? user.plan.toUpperCase() : 'CONTA'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onOpenUsageModal && onOpenUsageModal();
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Gerenciar Plano & Cotas</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onOpenPixModal && onOpenPixModal();
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
+                      >
+                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Apoiar via PIX</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onLogout && onLogout();
+                        }}
+                        className="w-full text-left p-2 rounded-xl hover:bg-rose-50 font-semibold text-rose-700 flex items-center gap-2 border-t border-[#17231f]/10 pt-2"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sair da Conta</span>
+                      </button>
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onOpenUsageModal && onOpenUsageModal();
-                      }}
-                      className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
-                    >
-                      <Zap className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Gerenciar Plano & Cotas</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onOpenPixModal && onOpenPixModal();
-                      }}
-                      className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
-                    >
-                      <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Apoiar via PIX</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onLogout && onLogout();
-                      }}
-                      className="w-full text-left p-2 rounded-xl hover:bg-rose-50 font-semibold text-rose-700 flex items-center gap-2 border-t border-[#17231f]/10 pt-2"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sair da Conta</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setActiveTab('login')}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-sm transition"
+                >
+                  Entrar / Cadastro
+                </button>
+              )}
             </div>
           </div>
         )}

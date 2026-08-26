@@ -177,3 +177,45 @@ authRouter.get(["/api/auth/me", "/auth/me"], authenticate, (req, res) => {
     user: req.user
   });
 });
+
+// 9. TESTE DIAGNÓSTICO DE ENVIO SMTP
+authRouter.post(["/api/auth/test-email", "/auth/test-email"], async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ status: "error", message: "Informe um endereço de email válido." });
+    }
+
+    const { emailService } = await import("../services/email.service.js");
+    const result = await emailService.sendMail({
+      to: email,
+      subject: "🧪 Teste de Conexão SMTP — Plataforma MedIa",
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; background: #faf8f5; border-radius: 12px;">
+          <h2 style="color: #213f34;">✅ Conexão SMTP Validada com Sucesso!</h2>
+          <p>Este é um email de teste disparado pelo servidor MedIa para confirmar a entrega ponta a ponta.</p>
+          <p><strong>Destinatário:</strong> ${email}</p>
+          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+        </div>
+      `,
+      text: `Teste de Conexão SMTP MedIa executado com sucesso para ${email} às ${new Date().toISOString()}`
+    });
+
+    if (result.success) {
+      return res.json({
+        status: "success",
+        message: `Email de teste aceito pelo servidor SMTP para ${email}`,
+        messageId: result.messageId || null,
+        simulated: Boolean(result.simulated)
+      });
+    } else {
+      return res.status(502).json({
+        status: "error",
+        message: "Falha ao enviar email pelo SMTP",
+        error: result.error
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({ status: "error", message: err.message });
+  }
+});

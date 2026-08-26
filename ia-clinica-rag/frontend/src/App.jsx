@@ -51,16 +51,11 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(false);
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Dr. Karlson Gabriel',
-    email: 'medico.demo@media.med.br',
-    photo: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-    plan: 'medico'
-  });
+  const [currentUser, setCurrentUser] = useState(null);
   const [usageData, setUsageData] = useState({
-    usage: { highestPercentage: 14 },
+    usage: { highestPercentage: 0 },
     ui: { colorStatus: 'green' }
   });
   
@@ -82,6 +77,9 @@ export default function App() {
 
   // Carregar dados de uso da conta
   const refreshUsageData = () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+
     fetch('/api/user/usage')
       .then((r) => r.json())
       .then((data) => {
@@ -94,7 +92,10 @@ export default function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      // 1. Verificar se há token de ativação de email na URL (?verify_token=...)
+      // 1. Limpar tokens demo obsoletos
+      localStorage.removeItem('demo_token');
+
+      // 2. Verificar se há token de ativação de email na URL (?verify_token=...)
       const urlParams = new URLSearchParams(window.location.search);
       const verifyToken = urlParams.get('verify_token');
       if (verifyToken) {
@@ -122,26 +123,27 @@ export default function App() {
         }
       }
 
-      const token = localStorage.getItem('access_token') || localStorage.getItem('demo_token');
+      const token = localStorage.getItem('access_token');
       const savedUser = localStorage.getItem('media_user');
       
-      if (savedUser) {
+      if (token && savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
           setCurrentUser(parsed);
           setIsAuthenticated(true);
-        } catch (e) {}
-      } else if (token) {
-        setIsAuthenticated(true);
+          refreshUsageData();
+        } catch (e) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('media_user');
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        }
       } else {
-        // Usuário visitante inicial
+        // Visitante deslogado
         setIsAuthenticated(false);
         setCurrentUser(null);
       }
-
-      try {
-        refreshUsageData();
-      } catch (err) {}
     };
 
     checkAuthStatus();

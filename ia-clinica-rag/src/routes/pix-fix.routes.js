@@ -10,18 +10,7 @@ const BENEFICIARIO_PADRAO = "MedIa Tecnologia e Saude";
 const CIDADE_PADRAO = "SAO PAULO";
 
 // Store em memória de doações caso PostgreSQL não esteja ativo localmente
-const memoryDonations = [
-  {
-    txid: "TX1787719942264",
-    userId: "00000000-0000-0000-0000-000000000001",
-    userEmail: "medico.demo@media.med.br",
-    valor: 50.00,
-    descricao: "Apoio Patrono Clínico",
-    status: "confirmado",
-    chave_pix: "38984045635",
-    created_at: new Date(Date.now() - 86400000).toISOString()
-  }
-];
+const memoryDonations = [];
 
 /**
  * Função utilitária para gerar payload EMV padrão BACEN (PIX Copia e Cola)

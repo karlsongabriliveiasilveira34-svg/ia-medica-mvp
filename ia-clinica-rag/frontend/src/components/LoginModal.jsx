@@ -209,14 +209,6 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
     }
   };
 
-  // Login Rápido de Demonstração (Médico Demo)
-  const handleQuickDemoLogin = (role = 'medico') => {
-    setEmail(role === 'medico' ? 'medico.demo@media.med.br' : 'estudante.demo@media.med.br');
-    setPassword(role === 'medico' ? 'clinica2026' : 'senha123');
-    setRecaptchaChecked(true);
-    setRecaptchaToken(`demo_token_${Date.now()}`);
-  };
-
   return (
     <div
       className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
@@ -271,25 +263,8 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
             </div>
           </div>
 
-          {/* Atalho de Demonstração Rápida */}
-          <div className="mt-6 rounded-2xl bg-black/20 p-4 border border-white/10 text-xs">
-            <span className="font-bold text-amber-300 block mb-1">Preenchimento Rápido:</span>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('medico')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition"
-              >
-                Dr. Médico (Demo)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemoLogin('estudante')}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium transition"
-              >
-                Estudante (Demo)
-              </button>
-            </div>
+          <div className="mt-6 pt-4 border-t border-white/10 text-[11px] text-[#dce7e1]/80">
+            Acesso exclusivo para profissionais de saúde e acadêmicos de medicina.
           </div>
         </div>
 

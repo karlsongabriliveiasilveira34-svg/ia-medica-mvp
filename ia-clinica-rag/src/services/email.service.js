@@ -15,11 +15,11 @@ class EmailService {
   initTransporter() {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = parseInt(process.env.SMTP_PORT || '465', 10);
-    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-    const pass = process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD;
+    const user = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
+    const pass = (process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '').trim().replace(/\s+/g, '');
 
     if (!user || !pass) {
-      console.log('[EMAIL] ℹ️ SMTP não configurado no .env (SMTP_USER/SMTP_PASSWORD). Emails serão exibidos no console para desenvolvimento.');
+      console.log('[EMAIL] ℹ️ SMTP não configurado (SMTP_USER/SMTP_PASSWORD ausentes). Modo Simulação.');
       this.transporter = null;
       return;
     }
@@ -37,49 +37,64 @@ class EmailService {
           rejectUnauthorized: false
         }
       });
-      console.log(`[EMAIL] ✅ Transportador SMTP inicializado com sucesso (${host}:${port})`);
+
+      console.log(`[EMAIL] ✅ Transportador SMTP configurado com sucesso (${host}:${port})`);
+
+      // Testar conexão no boot
+      this.transporter.verify((error) => {
+        if (error) {
+          console.error(`[EMAIL] ⚠️ Handshake SMTP com falha:`, error.message);
+        } else {
+          console.log(`[EMAIL] 🟢 Handshake SMTP validado: servidor pronto para enviar.`);
+        }
+      });
     } catch (err) {
-      console.error('[EMAIL][ERROR] Falha ao inicializar SMTP:', err.message);
+      console.error('[EMAIL] erro:', err.message);
       this.transporter = null;
     }
   }
 
   getFromAddress() {
-    return process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER || 'MedIa <noreply@media.med.br>';
+    const sender = process.env.SMTP_FROM || process.env.SMTP_USER || process.env.EMAIL_USER || 'medico.demo@media.med.br';
+    return `MedIa <${sender}>`;
   }
 
   /**
-   * Envio genérico de email com log de debug seguro
+   * Envio genérico de email com log de debug seguro e estruturado
    */
   async sendMail({ to, subject, html, text }) {
-    console.log(`[EMAIL] 📤 Preparando envio para: ${to} | Assunto: "${subject}"`);
+    const cleanTo = (to || '').trim().toLowerCase();
+    console.log('[EMAIL] tentativa de envio');
+    console.log(`[EMAIL] destinatário: ${cleanTo}`);
 
-    // Ignorar envio real para domínios demo fictícios para evitar erro de DNS / bounce do Google
-    if (to.endsWith('@media.med.br') || to.endsWith('@exemplo.com') || to.endsWith('@demo.com') || to.includes('demo@')) {
-      console.log(`[EMAIL] ℹ️ Destinatário de demonstração detectado (${to}). Simulado no console para evitar erro de DNS/Bounce.`);
+    // Ignorar apenas domínios inexistentes sem registro MX
+    if (cleanTo.endsWith('@media.med.br') || cleanTo.endsWith('@exemplo.com') || cleanTo.endsWith('@teste.invalid')) {
+      console.log(`[EMAIL] ℹ️ Destinatário de demonstração detectado (${cleanTo}). Simulado no console.`);
       return { success: true, simulated: true };
     }
 
     if (!this.transporter) {
-      console.log(`[EMAIL] ⚠️ MODO DEV / SIMULAÇÃO DE EMAIL`);
-      console.log(`[EMAIL] Destinatário: ${to}`);
+      console.log('[EMAIL] ⚠️ Modo Simulação (Sem transporter SMTP ativo)');
       console.log(`[EMAIL] Assunto: ${subject}`);
-      console.log(`[EMAIL] Conteúdo resumido: ${text ? text.slice(0, 200) : html.slice(0, 200)}...`);
       return { success: true, simulated: true };
     }
+
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = parseInt(process.env.SMTP_PORT || '465', 10);
+    console.log(`[EMAIL] SMTP conectado (${host}:${port})`);
 
     try {
       const info = await this.transporter.sendMail({
         from: this.getFromAddress(),
-        to,
+        to: cleanTo,
         subject,
         html,
         text
       });
-      console.log(`[EMAIL] ✅ Email enviado com sucesso para ${to}. ID: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
+      console.log(`[EMAIL] mensagem aceita pelo servidor (ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, response: info.response };
     } catch (error) {
-      console.error(`[EMAIL][ERROR] Falha no envio para ${to}:`, error.message);
+      console.error(`[EMAIL] erro: ${error.message}`);
       return { success: false, error: error.message };
     }
   }
@@ -108,100 +123,34 @@ class EmailService {
           </p>
           
           <div style="text-align: center; margin: 28px 0;">
-            <a href="${verifyLink}" style="display: inline-block; background-color: #213f34; color: #f4f1ea; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 9999px; box-shadow: 0 4px 10px rgba(33,63,52,0.25);">
-              Verificar Meu Email Agora
+            <a href="${verifyLink}" style="display: inline-block; background-color: #213f34; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 14px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 14px rgba(33,63,52,0.25);">
+              Confirmar Meu Email
             </a>
           </div>
-
-          <p style="font-size: 12px; color: #8a9690; line-height: 1.5; margin-bottom: 0;">
-            Se o botão acima não funcionar, copie e cole o seguinte link no seu navegador:<br/>
-            <a href="${verifyLink}" style="color: #213f34; word-break: break-all;">${verifyLink}</a>
+          
+          <p style="font-size: 12px; color: #88968f; margin-top: 24px; border-top: 1px solid #f0ece1; pt-3;">
+            Se o botão não funcionar, copie e cole este link no seu navegador:<br/>
+            <span style="color: #213f34; word-break: break-all;">${verifyLink}</span>
           </p>
         </div>
-
-        <div style="text-align: center; margin-top: 24px; font-size: 11px; color: #8a9690;">
-          <p>Este link é válido por 24 horas. Se você não solicitou este cadastro, desconsidere esta mensagem.</p>
-          <p>© 2026 medIa Tecnologia e Saúde. Todos os direitos reservados.</p>
+        
+        <div style="text-align: center; margin-top: 24px; font-size: 11px; color: #88968f;">
+          <p>Este link expira em 24 horas. Se você não solicitou este cadastro, ignore este email.</p>
+          <p>&copy; 2026 MedIa Tecnologia & Saúde. Todos os direitos reservados.</p>
         </div>
       </div>
     `;
 
-    const text = `Olá, ${name}!\n\nConfirme seu email no MedIa através do link:\n${verifyLink}\n\nVálido por 24 horas.`;
-
     return this.sendMail({
       to: email,
-      subject: 'Ativação de Conta — medIa',
+      subject: '🔐 Confirme seu Email — Plataforma MedIa',
       html,
-      text
+      text: `Olá, ${name}! Confirme seu cadastro no MedIa acessando o link: ${verifyLink}`
     });
   }
 
   /**
-   * 2. Notificação de Novo Login & Detecção de Acesso Suspeito
-   */
-  async sendLoginNotificationEmail(email, name = 'Usuário', { ip = '127.0.0.1', userAgent = 'Navegador Web', timestamp = new Date() }, isSuspicious = false) {
-    const formattedDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeStyle: 'medium' }).format(timestamp);
-    const alertHeader = isSuspicious ? '⚠️ Novo Acesso em Dispositivo / Local Não Habitual' : '🔒 Novo Login Detectado';
-    const alertColor = isSuspicious ? '#b91c1c' : '#213f34';
-
-    const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h1 style="font-size: 24px; color: ${alertColor}; margin: 0; font-weight: 800;">${alertHeader}</h1>
-        </div>
-
-        <div style="background-color: #ffffff; padding: 24px; border-radius: 18px; border: 1px solid rgba(23,35,31,0.08);">
-          <p style="font-size: 14px; color: #405048; margin-top: 0;">
-            Olá, <strong>${name}</strong>.
-          </p>
-          <p style="font-size: 14px; color: #405048; line-height: 1.6;">
-            Identificamos um novo acesso bem-sucedido à sua conta medIa com os seguintes detalhes:
-          </p>
-
-          <table style="width: 100%; font-size: 13px; margin: 16px 0; border-collapse: collapse;">
-            <tr style="border-bottom: 1px solid #f0ece1;">
-              <td style="padding: 8px 0; color: #5e6c65; font-weight: 600;">Data e Hora:</td>
-              <td style="padding: 8px 0; color: #17231f; font-weight: bold;">${formattedDate}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #f0ece1;">
-              <td style="padding: 8px 0; color: #5e6c65; font-weight: 600;">Endereço IP:</td>
-              <td style="padding: 8px 0; color: #17231f; font-family: monospace;">${ip}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #5e6c65; font-weight: 600;">Dispositivo / Navegador:</td>
-              <td style="padding: 8px 0; color: #17231f;">${userAgent.slice(0, 90)}</td>
-            </tr>
-          </table>
-
-          ${isSuspicious ? `
-            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 14px; margin-top: 14px; color: #991b1b; font-size: 13px;">
-              <strong>Atenção:</strong> Este acesso ocorreu a partir de um endereço IP ou dispositivo diferente do seu padrão de uso. Se não foi você, recomendamos alterar sua senha imediatamente na plataforma.
-            </div>
-          ` : `
-            <p style="font-size: 13px; color: #5e6c65; margin-bottom: 0;">
-              Se foi você, nenhuma ação é necessária. Se você não reconhece este acesso, altere sua senha imediatamente.
-            </p>
-          `}
-        </div>
-
-        <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #8a9690;">
-          <p>© 2026 medIa Segurança e Privacidade. Mensagem automática de monitoramento de integridade.</p>
-        </div>
-      </div>
-    `;
-
-    const text = `Novo login na sua conta medIa:\nData: ${formattedDate}\nIP: ${ip}\nDispositivo: ${userAgent}\nSe não foi você, redefina sua senha.`;
-
-    return this.sendMail({
-      to: email,
-      subject: isSuspicious ? '⚠️ [ALERTA DE SEGURANÇA] Novo Login Suspeito no medIa' : '🔒 Notificação de Novo Login — medIa',
-      html,
-      text
-    });
-  }
-
-  /**
-   * 3. Email de Recuperação de Senha
+   * 2. Email de Redefinição de Senha
    */
   async sendPasswordResetEmail(email, token, name = 'Colega') {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
@@ -211,35 +160,82 @@ class EmailService {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">
         <div style="text-align: center; margin-bottom: 24px;">
           <h1 style="font-size: 28px; color: #213f34; margin: 0; font-weight: 800;">medIa</h1>
-          <p style="font-size: 13px; color: #5e6c65; margin-top: 4px;">Recuperação de Acesso</p>
+          <p style="font-size: 13px; color: #5e6c65; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Recuperação de Acesso</p>
         </div>
         
-        <div style="background-color: #ffffff; padding: 28px; border-radius: 18px; border: 1px solid rgba(23,35,31,0.08);">
+        <div style="background-color: #ffffff; padding: 28px; border-radius: 18px; border: 1px solid rgba(23,35,31,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
           <h2 style="font-size: 18px; color: #17231f; margin-top: 0;">Redefinição de Senha</h2>
           <p style="font-size: 14px; line-height: 1.6; color: #405048;">
-            Olá, <strong>${name}</strong>. Recebemos uma solicitação para redefinir a senha da sua conta medIa.
+            Olá, <strong>${name}</strong>! Uma solicitação de troca de senha foi gerada para sua conta no MedIa.
           </p>
           
           <div style="text-align: center; margin: 28px 0;">
-            <a href="${resetLink}" style="display: inline-block; background-color: #213f34; color: #f4f1ea; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 9999px;">
+            <a href="${resetLink}" style="display: inline-block; background-color: #213f34; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 14px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 14px rgba(33,63,52,0.25);">
               Redefinir Minha Senha
             </a>
           </div>
-
-          <p style="font-size: 12px; color: #8a9690; line-height: 1.5; margin-bottom: 0;">
-            Este link expira em 1 hora. Se você não solicitou a redefinição, desconsidere este email. Sua senha permanecerá inalterada.
+          
+          <p style="font-size: 12px; color: #88968f; margin-top: 24px; border-top: 1px solid #f0ece1; pt-3;">
+            Se o botão não funcionar, copie e cole este link no seu navegador:<br/>
+            <span style="color: #213f34; word-break: break-all;">${resetLink}</span>
           </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 24px; font-size: 11px; color: #88968f;">
+          <p>O token expira em 1 hora. Se você não solicitou a alteração, recomendamos verificar suas credenciais.</p>
+          <p>&copy; 2026 MedIa Tecnologia & Saúde.</p>
         </div>
       </div>
     `;
 
-    const text = `Recuperação de Senha medIa:\nPara redefinir sua senha, acesse:\n${resetLink}\nVálido por 1 hora.`;
+    return this.sendMail({
+      to: email,
+      subject: '🔑 Recuperação de Senha — MedIa',
+      html,
+      text: `Olá, ${name}! Para redefinir sua senha, acesse: ${resetLink}`
+    });
+  }
+
+  /**
+   * 3. Notificação de Novo Login em Dispositivo / IP Inédito
+   */
+  async sendNewDeviceLoginAlert(email, { ip, userAgent, location = 'Localização Protegida', time = new Date().toLocaleString('pt-BR') }) {
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="font-size: 28px; color: #213f34; margin: 0; font-weight: 800;">medIa</h1>
+          <p style="font-size: 13px; color: #5e6c65; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Alerta de Segurança</p>
+        </div>
+        
+        <div style="background-color: #ffffff; padding: 28px; border-radius: 18px; border: 1px solid rgba(23,35,31,0.08); box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+          <h2 style="font-size: 18px; color: #b45309; margin-top: 0;">Novo Acesso Detectado</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #405048;">
+            Identificamos um login recente na sua conta com os seguintes detalhes de conexão:
+          </p>
+          
+          <ul style="background-color: #faf8f5; border-radius: 12px; padding: 16px 24px; font-size: 13px; color: #17231f; line-height: 1.8; list-style-type: square;">
+            <li><strong>Data e Hora:</strong> ${time}</li>
+            <li><strong>Endereço IP:</strong> ${ip}</li>
+            <li><strong>Dispositivo:</strong> ${userAgent}</li>
+            <li><strong>Local:</strong> ${location}</li>
+          </ul>
+          
+          <p style="font-size: 13px; line-height: 1.6; color: #405048; margin-top: 18px;">
+            Se foi você, nenhuma ação é necessária. Se você não reconhece este acesso, altere sua senha imediatamente.
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 24px; font-size: 11px; color: #88968f;">
+          <p>&copy; 2026 MedIa Tecnologia & Saúde. Proteção LGPD e Segurança em Camadas.</p>
+        </div>
+      </div>
+    `;
 
     return this.sendMail({
       to: email,
-      subject: 'Recuperação de Senha — medIa',
+      subject: '🛡️ Novo Login Detectado na sua Conta MedIa',
       html,
-      text
+      text: `Novo login detectado em ${time} a partir do IP ${ip} (${userAgent}). Se não foi você, troque sua senha imediatamente.`
     });
   }
 }
