@@ -92,7 +92,7 @@ authRouter.post(
   }
 );
 
-// 3. CONFIRMAÇÃO DE EMAIL VIA TOKEN
+// 3. CONFIRMAÇÃO DE EMAIL VIA TOKEN COM LOGIN AUTOMÁTICO
 authRouter.post(["/api/auth/verify-email", "/auth/verify-email"], async (req, res) => {
   try {
     const { token } = req.body;
@@ -100,10 +100,22 @@ authRouter.post(["/api/auth/verify-email", "/auth/verify-email"], async (req, re
       return res.status(400).json({ status: "error", message: "Token de verificação ausente." });
     }
     const result = await AuthSecurityService.verifyEmailToken(token);
+
+    // Definir cookie HTTP-only de autenticação
+    res.cookie("auth_token", result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+    console.log("[AUTH][VERIFY] cookie enviado");
+
     return res.json({
       status: "success",
-      message: "Email verificado e ativado com sucesso! Você já pode fazer login.",
-      email: result.email
+      message: "Email verificado com sucesso! Sessão iniciada automaticamente.",
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      user: result.user
     });
   } catch (err) {
     return res.status(400).json({ status: "error", message: err.message });
@@ -168,7 +180,7 @@ authRouter.post(["/api/auth/refresh", "/auth/refresh"], async (req, res) => {
 });
 
 // 8. OBTER USUÁRIO ATUAL / ME
-authRouter.get(["/api/auth/me", "/auth/me"], authenticate, (req, res) => {
+authRouter.get(["/api/user", "/user", "/api/auth/me", "/auth/me"], authenticate, (req, res) => {
   if (!req.user) {
     return res.status(401).json({ status: "error", message: "Não autenticado." });
   }

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { pool } from "../config/database.js";
+import { pool, ensureUsersSchema } from "../config/database.js";
 import { env } from "../config/env.js";
 import { emailService } from "./email.service.js";
 
@@ -22,7 +22,7 @@ function createLocalAccount(name, email, plan, initialPass, crm = null, specialt
   return {
     id: crypto.randomUUID(),
     name,
-    email,
+    email: (email || "").trim().toLowerCase(),
     password_hash: hash,
     plan,
     app_mode: plan,
@@ -49,13 +49,15 @@ export class AuthSecurityService {
    * Cria conta com email_verificado = false e dispara email de verificação
    */
   static async registerUser({ name, email, password, crm = null, specialty = null, plan = "estudante" }) {
+    await ensureUsersSchema();
     const cleanEmail = (email || "").trim().toLowerCase();
-    console.log(`[AUTH] 📝 Registrando novo usuário: ${cleanEmail} (Plano: ${plan})`);
+    const cleanName = (name || "Colega").trim();
+    console.log(`[AUTH][REGISTER] email normalizado: ${cleanEmail}`);
 
-    // Verificar se usuário já existe
+    // 1. Verificar se usuário já existe
     let existingUser = null;
     try {
-      const dbCheck = await pool.query("SELECT id, email FROM users WHERE email = $1", [cleanEmail]);
+      const dbCheck = await pool.query("SELECT id, email, email_verificado FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
       if (dbCheck.rows.length > 0) existingUser = dbCheck.rows[0];
     } catch (e) {
       existingUser = memoryUsers.get(cleanEmail);
@@ -65,61 +67,98 @@ export class AuthSecurityService {
     }
 
     if (existingUser) {
-      console.warn(`[AUTH][ERROR] Tentativa de cadastro com email já existente: ${cleanEmail}`);
-      throw new Error("Este endereço de email já está cadastrado.");
+      if (existingUser.email_verificado) {
+        console.warn(`[AUTH][ERROR] Tentativa de cadastro com email já existente e verificado: ${cleanEmail}`);
+        throw new Error("Este endereço de email já está cadastrado. Faça login para continuar.");
+      } else {
+        console.log(`[AUTH][REGISTER] Usuário já registrado mas não verificado. Atualizando token de ativação para: ${cleanEmail}`);
+      }
     }
 
+    // 2. Hash seguro da senha com bcrypt
     const passwordHash = await bcrypt.hash(password, 10);
     const verificationToken = jwt.sign({ email: cleanEmail, purpose: "email_verification" }, JWT_SECRET, { expiresIn: "24h" });
 
-    let userId = null;
+    let userId = existingUser?.id || null;
 
-    try {
-      const query = `
-        INSERT INTO users (name, email, google_id, password_hash, plan, crm, specialty, email_verificado, token_verificacao, app_mode)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING id, name, email, plan, app_mode, email_verificado;
-      `;
-      const values = [
-        name,
-        cleanEmail,
-        `local_${Date.now()}`,
-        passwordHash,
-        plan,
-        crm,
-        specialty,
-        false, // SEMPRE INICIA NÃO VERIFICADO
-        verificationToken,
-        plan === "medico" ? "medico" : "estudante"
-      ];
-      const res = await pool.query(query, values);
-      userId = res.rows[0].id;
-    } catch (dbErr) {
-      userId = `mem_${Date.now()}`;
-      memoryUsers.set(cleanEmail, {
-        id: userId,
-        name,
-        email: cleanEmail,
-        password_hash: passwordHash,
-        plan,
-        crm,
-        specialty,
-        email_verificado: false,
-        token_verificacao: verificationToken,
-        app_mode: plan === "medico" ? "medico" : "estudante"
-      });
+    if (existingUser) {
+      // Atualizar hash e token de ativação para conta pendente
+      try {
+        await pool.query(
+          "UPDATE users SET name = $1, password_hash = $2, token_verificacao = $3, plan = $4, crm = $5, specialty = $6, updated_at = NOW() WHERE LOWER(email) = $7",
+          [cleanName, passwordHash, verificationToken, plan, crm, specialty, cleanEmail]
+        );
+      } catch (e) {
+        const mem = memoryUsers.get(cleanEmail);
+        if (mem) {
+          mem.name = cleanName;
+          mem.password_hash = passwordHash;
+          mem.token_verificacao = verificationToken;
+          mem.plan = plan;
+        }
+      }
+    } else {
+      // Inserir novo usuário
+      try {
+        const query = `
+          INSERT INTO users (name, email, password_hash, plan, crm, specialty, email_verificado, token_verificacao, app_mode)
+          VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
+          RETURNING id, name, email, plan, app_mode, email_verificado;
+        `;
+        const values = [
+          cleanName,
+          cleanEmail,
+          passwordHash,
+          plan,
+          crm,
+          specialty,
+          verificationToken,
+          plan === "medico" ? "medico" : "estudante"
+        ];
+        const res = await pool.query(query, values);
+        userId = res.rows[0].id;
+      } catch (dbErr) {
+        console.warn("[AUTH][REGISTER] Fallback para storage em memória:", dbErr.message);
+        userId = `mem_${Date.now()}`;
+        memoryUsers.set(cleanEmail, {
+          id: userId,
+          name: cleanName,
+          email: cleanEmail,
+          password_hash: passwordHash,
+          plan,
+          crm,
+          specialty,
+          email_verificado: false,
+          token_verificacao: verificationToken,
+          app_mode: plan === "medico" ? "medico" : "estudante"
+        });
+      }
     }
 
-    // Disparar envio de email assíncrono (não bloqueia o signup se o SMTP demorar)
-    emailService.sendVerificationEmail(cleanEmail, verificationToken, name).catch(err => {
+    // Sincronizar store em memória
+    memoryUsers.set(cleanEmail, {
+      id: userId,
+      name: cleanName,
+      email: cleanEmail,
+      password_hash: passwordHash,
+      plan,
+      crm,
+      specialty,
+      email_verificado: false,
+      token_verificacao: verificationToken,
+      app_mode: plan === "medico" ? "medico" : "estudante"
+    });
+
+    console.log(`[AUTH][REGISTER] usuário criado: ${userId}`);
+
+    // 3. Disparar envio de email assíncrono
+    emailService.sendVerificationEmail(cleanEmail, verificationToken, cleanName).catch(err => {
       console.error("[AUTH][ERROR] Falha no disparo do email de verificação:", err.message);
     });
 
-    console.log(`[AUTH] ✅ Conta criada com sucesso para ${cleanEmail}. Email não verificado.`);
-
     return {
       id: userId,
-      name,
+      name: cleanName,
       email: cleanEmail,
       plan,
       email_verificado: false,
@@ -128,42 +167,99 @@ export class AuthSecurityService {
   }
 
   /**
-   * 2. CONFIRMAÇÃO DE EMAIL
-   * Ativa a conta quando o usuário clica no link do email
+   * 2. CONFIRMAÇÃO DE EMAIL & LOGIN AUTOMÁTICO
+   * Valida o token, marca email_verificado = true e GERA A SESSÃO IMEDIATAMENTE
    */
   static async verifyEmailToken(token) {
     if (!token) throw new Error("Token de verificação inválido.");
-
-    console.log(`[AUTH] 📩 Validando token de ativação de email`);
+    console.log("[AUTH][VERIFY] token recebido");
 
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.purpose && decoded.purpose !== "email_verification") {
+        throw new Error("Finalidade do token inválida.");
+      }
     } catch (err) {
       console.warn("[AUTH][ERROR] Token de verificação inválido ou expirado:", err.message);
       throw new Error("Link de verificação expirado ou inválido.");
     }
 
-    const email = decoded.email;
+    const email = (decoded.email || "").trim().toLowerCase();
+    await ensureUsersSchema();
+
+    // Atualizar no banco de dados e obter usuário completo
+    let user = null;
+    try {
+      const res = await pool.query(
+        "UPDATE users SET email_verificado = TRUE, token_verificacao = NULL, updated_at = NOW() WHERE LOWER(email) = $1 RETURNING id, name, email, plan, app_mode, crm, specialty, email_verificado",
+        [email]
+      );
+      if (res.rows.length > 0) {
+        user = res.rows[0];
+      }
+    } catch (err) {
+      console.warn("[AUTH][VERIFY] Aviso ao atualizar banco de dados:", err.message);
+    }
+
+    // Atualizar também no storage em memória
+    const memUser = memoryUsers.get(email);
+    if (memUser) {
+      memUser.email_verificado = true;
+      memUser.token_verificacao = null;
+      if (!user) user = memUser;
+    }
+
+    if (!user) {
+      // Tentar buscar por select se o update não retornou linhas
+      try {
+        const selectRes = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [email]);
+        if (selectRes.rows.length > 0) user = selectRes.rows[0];
+      } catch (e) {}
+    }
+
+    if (!user) {
+      console.warn(`[AUTH][ERROR] Usuário não encontrado para o email: ${email}`);
+      throw new Error("Usuário associado ao token não foi encontrado.");
+    }
+
+    console.log(`[AUTH][VERIFY] usuário encontrado: ${user.id}`);
+    console.log("[AUTH][VERIFY] email confirmado");
+
+    // Gerar Sessão Autenticada Imediata (Login Automático)
+    const payload = {
+      id: user.id,
+      userId: user.id,
+      email: user.email,
+      name: user.name || "Colega",
+      plan: user.plan || "estudante",
+      app_mode: user.app_mode || user.plan || "estudante",
+      crm: user.crm || null,
+      specialty: user.specialty || null,
+      email_verificado: true
+    };
+
+    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const refreshToken = jwt.sign({ id: user.id, email: user.email }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     try {
-      await pool.query("UPDATE users SET email_verificado = TRUE, token_verificacao = NULL WHERE email = $1", [email]);
-    } catch (err) {
-      const user = memoryUsers.get(email);
-      if (user) {
-        user.email_verificado = true;
-        user.token_verificacao = null;
-      }
+      await pool.query(
+        "INSERT INTO sessions (user_id, refresh_token, expires_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        [user.id, refreshToken, expiresAt]
+      );
+    } catch (e) {
+      memorySessions.set(refreshToken, { userId: user.id, expiresAt });
     }
 
-    const memoryUser = memoryUsers.get(email);
-    if (memoryUser) {
-      memoryUser.email_verificado = true;
-      memoryUser.token_verificacao = null;
-    }
+    console.log("[AUTH][VERIFY] sessão criada");
 
-    console.log(`[AUTH] ✅ Email verificado com sucesso para ${email}!`);
-    return { success: true, email };
+    return {
+      success: true,
+      accessToken,
+      refreshToken,
+      user: payload
+    };
   }
 
   /**
@@ -171,10 +267,11 @@ export class AuthSecurityService {
    */
   static async resendVerificationEmail(email) {
     const cleanEmail = (email || "").trim().toLowerCase();
+    await ensureUsersSchema();
     let user = null;
 
     try {
-      const res = await pool.query("SELECT * FROM users WHERE email = $1", [cleanEmail]);
+      const res = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
       if (res.rows.length > 0) user = res.rows[0];
     } catch (e) {
       user = memoryUsers.get(cleanEmail);
@@ -186,13 +283,13 @@ export class AuthSecurityService {
     }
 
     if (user.email_verificado) {
-      return { success: true, message: "Este email já foi verificado anteriormente." };
+      return { success: true, message: "Este email já foi verificado anteriormente. Você pode entrar diretamente com sua senha." };
     }
 
     const verificationToken = jwt.sign({ email: cleanEmail, purpose: "email_verification" }, JWT_SECRET, { expiresIn: "24h" });
     
     try {
-      await pool.query("UPDATE users SET token_verificacao = $1 WHERE email = $2", [verificationToken, cleanEmail]);
+      await pool.query("UPDATE users SET token_verificacao = $1 WHERE LOWER(email) = $2", [verificationToken, cleanEmail]);
     } catch (e) {
       user.token_verificacao = verificationToken;
     }
@@ -206,11 +303,13 @@ export class AuthSecurityService {
    */
   static async loginUser({ email, password, ip = "127.0.0.1", userAgent = "Navegador Web" }) {
     const cleanEmail = (email || "").trim().toLowerCase();
-    console.log(`[AUTH] 🔑 Tentativa de login para: ${cleanEmail} (IP: ${ip})`);
+    console.log(`[AUTH][LOGIN] tentativa: ${cleanEmail}`);
+
+    await ensureUsersSchema();
 
     let user = null;
     try {
-      const res = await pool.query("SELECT * FROM users WHERE email = $1 LIMIT 1", [cleanEmail]);
+      const res = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
       if (res.rows.length > 0) user = res.rows[0];
     } catch (dbErr) {
       user = memoryUsers.get(cleanEmail);
@@ -224,23 +323,32 @@ export class AuthSecurityService {
       throw new Error("Credenciais inválidas. Verifique seu email e senha.");
     }
 
+    console.log(`[AUTH][LOGIN] usuário encontrado: ${user.id}`);
+
     // Validação da senha com bcrypt
+    if (!user.password_hash) {
+      console.warn(`[AUTH][ERROR] Usuário ${cleanEmail} sem password_hash configurado.`);
+      throw new Error("Credenciais inválidas. Verifique seu email e senha.");
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       console.warn(`[AUTH][ERROR] Senha incorreta para o usuário: ${cleanEmail}`);
       throw new Error("Credenciais inválidas. Verifique seu email e senha.");
     }
 
+    console.log("[AUTH][LOGIN] senha válida");
+
     // REGRA DE OURO: Bloquear login se email não foi verificado
     if (user.email_verificado === false) {
       console.warn(`[AUTH][ERROR] ❌ Login bloqueado: ${cleanEmail} ainda não verificou o email.`);
-      const err = new Error("Seu email ainda não foi verificado. Por favor, acesse o link enviado para sua caixa de entrada.");
+      const err = new Error("Seu email ainda não foi verificado. Por favor, acesse o link de ativação enviado para sua caixa de entrada.");
       err.code = "EMAIL_NOT_VERIFIED";
       err.email = cleanEmail;
       throw err;
     }
 
-    // 5. DETECÇÃO DE LOGIN SUSPEITO (IP ou User-Agent diferente do habitual)
+    // Atualizar histórico de login e IP
     const previousLogin = userLoginHistory.get(cleanEmail) || { last_ip: user.last_ip, last_user_agent: user.last_user_agent };
     let isSuspicious = false;
 
@@ -249,16 +357,15 @@ export class AuthSecurityService {
       console.log(`[AUTH] ⚠️ Acesso considerado suspeito: IP mudou de ${previousLogin.last_ip} para ${ip}`);
     }
 
-    // Atualizar histórico de login
     userLoginHistory.set(cleanEmail, { last_ip: ip, last_user_agent: userAgent, loginAt: new Date() });
     try {
-      await pool.query("UPDATE users SET last_login = NOW() WHERE id = $1", [user.id]);
+      await pool.query("UPDATE users SET last_login = NOW(), last_ip = $1, last_user_agent = $2 WHERE id = $3", [ip, userAgent, user.id]);
     } catch (e) {}
 
     // Disparar email de notificação de login de forma assíncrona
     emailService.sendLoginNotificationEmail(
       cleanEmail,
-      user.name || "Usuário",
+      user.name || "Colega",
       { ip, userAgent, timestamp: new Date() },
       isSuspicious
     ).catch(err => console.error("[AUTH][ERROR] Falha ao enviar notificação de login:", err.message));
@@ -266,10 +373,13 @@ export class AuthSecurityService {
     // Gerar Tokens JWT
     const payload = {
       id: user.id,
+      userId: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || "Colega",
       plan: user.plan || "estudante",
-      app_mode: user.app_mode || "estudante",
+      app_mode: user.app_mode || user.plan || "estudante",
+      crm: user.crm || null,
+      specialty: user.specialty || null,
       email_verificado: true
     };
 
@@ -279,41 +389,35 @@ export class AuthSecurityService {
 
     try {
       await pool.query(
-        "INSERT INTO sessions (user_id, refresh_token, expires_at) VALUES ($1, $2, $3)",
+        "INSERT INTO sessions (user_id, refresh_token, expires_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
         [user.id, refreshToken, expiresAt]
       );
     } catch (sessionErr) {
       memorySessions.set(refreshToken, { userId: user.id, expiresAt });
     }
 
+    console.log("[AUTH][LOGIN] sessão criada");
     console.log(`[AUTH] ✅ Login bem-sucedido e JWT emitido para ${cleanEmail} (Plano: ${user.plan})`);
 
     return {
       accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan || "estudante",
-        app_mode: user.app_mode || "estudante",
-        crm: user.crm,
-        specialty: user.specialty,
-        email_verificado: true
-      }
+      user: payload
     };
   }
 
   /**
-   * 6. ESQUECI MINHA SENHA (RECUPERAÇÃO)
+   * 5. ESQUECI MINHA SENHA (RECUPERAÇÃO)
    */
   static async requestPasswordReset(email) {
     const cleanEmail = (email || "").trim().toLowerCase();
     console.log(`[AUTH] 🔑 Solicitação de recuperação de senha para ${cleanEmail}`);
 
+    await ensureUsersSchema();
+
     let user = null;
     try {
-      const res = await pool.query("SELECT * FROM users WHERE email = $1", [cleanEmail]);
+      const res = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
       if (res.rows.length > 0) user = res.rows[0];
     } catch (e) {
       user = memoryUsers.get(cleanEmail);
@@ -322,7 +426,7 @@ export class AuthSecurityService {
 
     if (!user) {
       // Retorna sucesso para evitar enumeração de emails
-      return { success: true, message: "Se o email estiver cadastrado, as instruções serão enviadas." };
+      return { success: true, message: "Se o email estiver cadastrado, as instruções de recuperação serão enviadas." };
     }
 
     const resetToken = jwt.sign({ email: cleanEmail, purpose: "password_reset" }, JWT_SECRET, { expiresIn: "1h" });
@@ -333,7 +437,7 @@ export class AuthSecurityService {
   }
 
   /**
-   * 7. REDEFINIR SENHA COM TOKEN
+   * 6. REDEFINIR SENHA COM TOKEN
    */
   static async resetPasswordWithToken(token, newPassword) {
     if (!token || !newPassword || newPassword.length < 6) {
@@ -349,10 +453,12 @@ export class AuthSecurityService {
     }
 
     const newHash = await bcrypt.hash(newPassword, 10);
-    const email = decoded.email;
+    const email = (decoded.email || "").trim().toLowerCase();
+
+    await ensureUsersSchema();
 
     try {
-      await pool.query("UPDATE users SET password_hash = $1 WHERE email = $2", [newHash, email]);
+      await pool.query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE LOWER(email) = $2", [newHash, email]);
     } catch (e) {
       const user = memoryUsers.get(email);
       if (user) user.password_hash = newHash;
@@ -366,7 +472,7 @@ export class AuthSecurityService {
   }
 
   /**
-   * 8. RENOVAÇÃO DE ACCESS TOKEN VIA REFRESH TOKEN
+   * 7. RENOVAÇÃO DE ACCESS TOKEN VIA REFRESH TOKEN
    */
   static async refreshAccessToken(refreshToken) {
     if (!refreshToken) throw new Error("Refresh token obrigatório.");

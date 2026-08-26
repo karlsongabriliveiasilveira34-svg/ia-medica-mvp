@@ -1,9 +1,9 @@
 import { usageMeterService, PLANS_CONFIG } from "../services/usage-meter.service.js";
 import { googleAuthService } from "../services/google-auth.service.js";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
+import { env } from "../config/env.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret;
 
 /**
  * Controller de Consumo de Requisições, Tokens e Gestão de Planos

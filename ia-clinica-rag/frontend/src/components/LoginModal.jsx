@@ -69,7 +69,6 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
       const data = await response.json();
 
       if (response.ok && data.accessToken) {
-        localStorage.setItem('demo_token', data.accessToken);
         localStorage.setItem('access_token', data.accessToken);
         if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
         if (data.user) localStorage.setItem('media_user', JSON.stringify(data.user));

@@ -123,12 +123,29 @@ export default function App() {
             body: JSON.stringify({ token: verifyToken })
           });
           const verifyData = await verifyRes.json();
-          if (verifyRes.ok) {
+          if (verifyRes.ok && verifyData.accessToken && verifyData.user) {
+            // 1. Guardar tokens de autenticação
+            localStorage.setItem('access_token', verifyData.accessToken);
+            if (verifyData.refreshToken) {
+              localStorage.setItem('refresh_token', verifyData.refreshToken);
+            }
+            localStorage.setItem('media_user', JSON.stringify(verifyData.user));
+
+            // 2. Definir estado de autenticação imediato
+            setCurrentUser(verifyData.user);
+            setIsAuthenticated(true);
+            setShowLogin(false);
+
+            // 3. Limpar a URL sem recarregar a página
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            // 4. Exibir banner de boas-vindas
             setVerificationBanner({
               type: 'success',
-              message: '🎉 Seu email foi verificado com sucesso! Sua conta está 100% ativa.'
+              message: `🎉 Bem-vindo ao MedIA, ${verifyData.user.name || 'Colega'}! Seu email foi verificado e você já está autenticado.`
             });
-            setShowLogin(true);
+
+            refreshUsageData();
           } else {
             setVerificationBanner({
               type: 'error',
