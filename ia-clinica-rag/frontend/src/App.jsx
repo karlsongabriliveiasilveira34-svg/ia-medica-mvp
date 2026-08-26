@@ -230,7 +230,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#f4f1ea] flex flex-col items-center justify-center text-[#5e6c65]">
         <div className="w-9 h-9 border-2 border-[#213f34] border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium">Iniciando MedIa v2.0...</p>
+        <p className="text-sm font-medium">Iniciando MedIa...</p>
       </div>
     );
   }

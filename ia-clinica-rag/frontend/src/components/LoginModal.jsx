@@ -234,7 +234,7 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
               </span>
               <span className="font-editorial text-2xl font-bold tracking-[-0.03em] text-[#faf8f5]">medIa</span>
               <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 px-2.5 py-0.5 rounded-full text-emerald-300">
-                v2.0
+                v0.0.9
               </span>
             </div>
 
