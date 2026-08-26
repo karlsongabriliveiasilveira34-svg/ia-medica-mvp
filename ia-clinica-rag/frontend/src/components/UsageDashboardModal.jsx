@@ -61,8 +61,11 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
 
   const fetchUsage = () => {
     setLoading(true);
+    const token = localStorage.getItem('access_token');
+    const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
     Promise.all([
-      fetch('/api/user/usage').then((r) => r.json()),
+      fetch('/api/user/usage', { headers: authHeaders }).then((r) => r.json()),
       fetch('/api/plans').then((r) => r.json())
     ])
       .then(([usageRes, plansRes]) => {

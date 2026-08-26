@@ -43,7 +43,7 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // 4. Sanitização Global de Dados e Proteção XSS
 app.use(deepSanitizeMiddleware);
 
-// Cache de caminhos estáticos em memória no boot (evita I/O de disco por requisição)
+// Cache de caminhos e conteúdo estático em memória no boot (evita I/O de disco por requisição)
 const frontendDist = path.resolve(__dirname, "../frontend/dist");
 const frontendOut = path.resolve(__dirname, "../frontend/out");
 const knowledgeDir = path.resolve(__dirname, "../knowledge");
@@ -53,6 +53,7 @@ const hasDist = fs.existsSync(frontendDist);
 const hasOut = fs.existsSync(frontendOut);
 const hasKnowledge = fs.existsSync(knowledgeDir);
 const hasIndexHtml = fs.existsSync(indexHtmlPath);
+const indexHtmlContent = hasIndexHtml ? fs.readFileSync(indexHtmlPath, "utf8") : null;
 
 if (hasDist) app.use(express.static(frontendDist, { dotfiles: "ignore", maxAge: "1d" }));
 if (hasOut) app.use(express.static(frontendOut, { dotfiles: "ignore", maxAge: "1d" }));
@@ -61,14 +62,10 @@ if (hasKnowledge) app.use("/knowledge", express.static(knowledgeDir, { dotfiles:
 // Rotas da API
 app.use(apiRouter);
 
-// Handler seguro para rotas não encontradas (sem operações síncronas de I/O)
-app.use((req, res, next) => {
-  if (req.accepts("html") && !req.path.startsWith("/api") && hasIndexHtml) {
-    return res.sendFile(indexHtmlPath, (err) => {
-      if (err && !res.headersSent) {
-        res.status(404).json({ status: "error", message: "Rota não encontrada" });
-      }
-    });
+// Handler seguro para rotas não encontradas (atendido 100% da memória com rate limiter ativo)
+app.use(generalLimiter, (req, res, next) => {
+  if (req.accepts("html") && !req.path.startsWith("/api") && indexHtmlContent) {
+    return res.type("html").send(indexHtmlContent);
   }
   if (!res.headersSent) {
     res.status(404).json({ status: "error", message: `Rota ${req.method} ${req.path} não encontrada.` });

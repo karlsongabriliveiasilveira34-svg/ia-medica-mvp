@@ -91,8 +91,12 @@ class EmailService {
         html,
         text
       });
+      console.log(`[EMAIL] accepted: ${JSON.stringify(info.accepted || [cleanTo])}`);
+      console.log(`[EMAIL] rejected: ${JSON.stringify(info.rejected || [])}`);
+      console.log(`[EMAIL] messageId: ${info.messageId}`);
+      console.log(`[EMAIL] response: ${info.response || '250 OK'}`);
       console.log(`[EMAIL] mensagem aceita pelo servidor (ID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId, response: info.response };
+      return { success: true, messageId: info.messageId, response: info.response, accepted: info.accepted, rejected: info.rejected };
     } catch (error) {
       console.error(`[EMAIL] erro: ${error.message}`);
       return { success: false, error: error.message };

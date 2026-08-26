@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || crypto.randomBytes
  * Extrai e valida o token JWT do header Authorization.
  */
 export function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization || req.headers["x-auth-token"] || req.headers["x-demo-token"];
+  const authHeader = req.headers.authorization || req.headers["x-auth-token"];
 
   if (!authHeader) {
     req.user = null;
@@ -35,7 +35,7 @@ export function authenticate(req, res, next) {
  * Bloqueia acessos não autenticados com HTTP 401 Unauthorized.
  */
 export function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization || req.headers["x-auth-token"] || req.headers["x-demo-token"];
+  const authHeader = req.headers.authorization || req.headers["x-auth-token"];
 
   if (!authHeader) {
     return res.status(401).json({

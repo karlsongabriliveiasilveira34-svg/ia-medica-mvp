@@ -18,16 +18,18 @@ import { MedicalCalculatorsView } from './components/MedicalCalculatorsView';
 import { UsageDashboardModal } from './components/UsageDashboardModal';
 import { PixContributionModal } from './components/PixContributionModal';
 import { GlobalFeedbackModal } from './components/GlobalFeedbackModal';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { isAnalyticsAllowed } from './utils/cookieConsent';
 
-// Configuração de Interceptador Global do fetch para enviar Token de Autenticação
+// Configuração de Interceptador Global do fetch para enviar Token Real de Autenticação
 if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
   window.__fetch_intercepted__ = true;
   const originalFetch = window.fetch;
   window.fetch = async (...args) => {
     let [resource, config] = args;
-    const token = localStorage.getItem('demo_token');
+    const token = localStorage.getItem('access_token');
     
-    if (token && typeof resource === 'string' && resource.startsWith('/api') && !resource.includes('/api/auth/login') && !resource.includes('/api/auth/google')) {
+    if (token && typeof resource === 'string' && resource.startsWith('/api') && !resource.includes('/api/auth/login') && !resource.includes('/api/auth/register')) {
       config = config || {};
       const existingHeaders = config.headers instanceof Headers 
         ? Object.fromEntries(config.headers.entries()) 
@@ -41,8 +43,9 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
 
     const response = await originalFetch(resource, config);
 
-    if (response.status === 401 && typeof resource === 'string' && !resource.includes('/api/auth/')) {
-      localStorage.removeItem('demo_token');
+    if (response.status === 401 && typeof resource === 'string' && resource.startsWith('/api/') && !resource.includes('/api/auth/login')) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('media_user');
       window.dispatchEvent(new Event('auth_unauthorized'));
     }
 
@@ -80,10 +83,24 @@ export default function App() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
-    fetch('/api/user/usage')
-      .then((r) => r.json())
+    fetch('/api/user/usage', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then((r) => {
+        if (r.status === 401) {
+          // Token expirado ou inválido
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('media_user');
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          return null;
+        }
+        return r.json();
+      })
       .then((data) => {
-        if (data.status === 'success') setUsageData(data.data);
+        if (data && data.status === 'success') setUsageData(data.data);
       })
       .catch((e) => console.warn('Erro ao carregar uso:', e));
   };
@@ -395,8 +412,11 @@ export default function App() {
         activeTab={activeTab}
       />
 
-      {/* Vercel Analytics para rastreamento de usuários e acessos */}
-      <Analytics />
+      {/* Banner de Consentimento de Cookies & LGPD */}
+      <CookieConsentBanner />
+
+      {/* Vercel Analytics para rastreamento ativado SOMENTE com consentimento explícito */}
+      {isAnalyticsAllowed() && <Analytics />}
     </div>
   );
 }

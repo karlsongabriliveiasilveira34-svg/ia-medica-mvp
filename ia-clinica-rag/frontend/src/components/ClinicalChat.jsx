@@ -896,8 +896,13 @@ export function ClinicalChat({
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (typeof targetUrl === 'string') {
-                                        window.open(encodeURI(targetUrl), '_blank', 'noopener,noreferrer');
+                                      if (typeof targetUrl === 'string' && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://') || targetUrl.startsWith('/'))) {
+                                        try {
+                                          const parsed = new URL(targetUrl, window.location.origin);
+                                          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                            window.open(parsed.href, '_blank', 'noopener,noreferrer');
+                                          }
+                                        } catch (e) {}
                                       }
                                     }}
                                     className="text-slate-300 hover:text-white text-[10px] underline flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
@@ -969,8 +974,13 @@ export function ClinicalChat({
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      if (typeof cit.url === 'string') {
-                                        window.open(encodeURI(cit.url), '_blank', 'noopener,noreferrer');
+                                      if (typeof cit.url === 'string' && (cit.url.startsWith('http://') || cit.url.startsWith('https://'))) {
+                                        try {
+                                          const parsed = new URL(cit.url);
+                                          if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                            window.open(parsed.href, '_blank', 'noopener,noreferrer');
+                                          }
+                                        } catch (e) {}
                                       }
                                     }}
                                     className="px-2 py-0.5 rounded bg-teal-600/30 hover:bg-teal-500 text-teal-200 hover:text-white font-medium text-[10px] flex items-center gap-1 border border-teal-500/40 cursor-pointer"
