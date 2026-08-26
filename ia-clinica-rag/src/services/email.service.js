@@ -106,9 +106,18 @@ class EmailService {
   /**
    * 1. Email de Verificação de Conta
    */
-  async sendVerificationEmail(email, token, name = 'Colega') {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
-    const verifyLink = `${frontendUrl}/?verify_token=${token}`;
+  async sendVerificationEmail(email, token, name = 'Colega', baseUrl = null) {
+    let base = baseUrl || process.env.APP_URL || process.env.FRONTEND_URL;
+    if (!base && process.env.VERCEL_URL) {
+      base = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!base) {
+      base = 'http://localhost:5173';
+    }
+    base = base.replace(/\/+$/, '');
+
+    // Rota direta de ativação que suporta GET no navegador e redireciona já autenticado
+    const verifyLink = `${base}/api/auth/verify-email?token=${token}`;
 
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">
@@ -128,7 +137,7 @@ class EmailService {
           
           <div style="text-align: center; margin: 28px 0;">
             <a href="${verifyLink}" style="display: inline-block; background-color: #213f34; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 14px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 14px rgba(33,63,52,0.25);">
-              Confirmar Meu Email
+              Confirmar Meu Email & Entrar
             </a>
           </div>
           
@@ -149,16 +158,24 @@ class EmailService {
       to: email,
       subject: '🔐 Confirme seu Email — Plataforma MedIa',
       html,
-      text: `Olá, ${name}! Confirme seu cadastro no MedIa acessando o link: ${verifyLink}`
+      text: `Olá, ${name}! Confirme seu cadastro no MedIa e entre automaticamente acessando o link: ${verifyLink}`
     });
   }
 
   /**
    * 2. Email de Redefinição de Senha
    */
-  async sendPasswordResetEmail(email, token, name = 'Colega') {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
-    const resetLink = `${frontendUrl}/?reset_token=${token}`;
+  async sendPasswordResetEmail(email, token, name = 'Colega', baseUrl = null) {
+    let base = baseUrl || process.env.APP_URL || process.env.FRONTEND_URL;
+    if (!base && process.env.VERCEL_URL) {
+      base = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!base) {
+      base = 'http://localhost:5173';
+    }
+    base = base.replace(/\/+$/, '');
+
+    const resetLink = `${base}/?reset_token=${token}`;
 
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e8e2d7; border-radius: 24px; padding: 32px; color: #17231f;">

@@ -112,9 +112,57 @@ export default function App() {
       // 1. Limpar tokens demo obsoletos
       localStorage.removeItem('demo_token');
 
-      // 2. Verificar se há token de ativação de email na URL (?verify_token=...)
+      // 2. Verificar se há parâmetros de autenticação no HASH da URL (#access_token=...&verified=true)
+      if (window.location.hash && window.location.hash.includes('access_token=')) {
+        try {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const hashAccessToken = hashParams.get('access_token');
+          const hashRefreshToken = hashParams.get('refresh_token');
+          const hashUserRaw = hashParams.get('user');
+
+          if (hashAccessToken) {
+            localStorage.setItem('access_token', hashAccessToken);
+            if (hashRefreshToken) localStorage.setItem('refresh_token', hashRefreshToken);
+            let userObj = null;
+            if (hashUserRaw) {
+              try {
+                userObj = JSON.parse(decodeURIComponent(hashUserRaw));
+                localStorage.setItem('media_user', JSON.stringify(userObj));
+              } catch (e) {}
+            }
+
+            setCurrentUser(userObj);
+            setIsAuthenticated(true);
+            setShowLogin(false);
+
+            // Limpar o hash da URL
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+
+            setVerificationBanner({
+              type: 'success',
+              message: `🎉 Bem-vindo ao MedIA, ${userObj?.name || 'Colega'}! Seu email foi confirmado com sucesso e você já está autenticado.`
+            });
+
+            refreshUsageData();
+            return;
+          }
+        } catch (e) {
+          console.warn('Erro ao processar hash de autenticação:', e);
+        }
+      }
+
+      // 3. Verificar se há erro ou token de ativação na URL (?verify_token=... ou ?token=...)
       const urlParams = new URLSearchParams(window.location.search);
-      const verifyToken = urlParams.get('verify_token');
+      const urlError = urlParams.get('error');
+      if (urlError) {
+        setVerificationBanner({
+          type: 'error',
+          message: decodeURIComponent(urlError)
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      const verifyToken = urlParams.get('verify_token') || urlParams.get('token');
       if (verifyToken) {
         try {
           const verifyRes = await fetch('/api/auth/verify-email', {
@@ -146,17 +194,20 @@ export default function App() {
             });
 
             refreshUsageData();
+            return;
           } else {
             setVerificationBanner({
               type: 'error',
               message: verifyData.message || 'Link de verificação inválido ou expirado.'
             });
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (e) {
           setVerificationBanner({ type: 'error', message: 'Erro ao verificar email.' });
         }
       }
 
+      // 4. Verificar sessão existente no localStorage
       const token = localStorage.getItem('access_token');
       const savedUser = localStorage.getItem('media_user');
       
@@ -166,18 +217,34 @@ export default function App() {
           setCurrentUser(parsed);
           setIsAuthenticated(true);
           refreshUsageData();
+          return;
         } catch (e) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('media_user');
-          setIsAuthenticated(false);
-          setCurrentUser(null);
         }
-      } else {
-        // Visitante deslogado
-        setIsAuthenticated(false);
-        setCurrentUser(null);
       }
+
+      // 5. Se não houver no localStorage, checar sessão por Cookie HTTP-only via /api/user
+      try {
+        const meRes = await fetch('/api/user', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData && meData.user) {
+            setCurrentUser(meData.user);
+            setIsAuthenticated(true);
+            localStorage.setItem('media_user', JSON.stringify(meData.user));
+            refreshUsageData();
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // 6. Visitante deslogado
+      setIsAuthenticated(false);
+      setCurrentUser(null);
     };
 
     checkAuthStatus();

@@ -9,6 +9,20 @@ export const authRouter = Router();
 // Aplicar rate limiter específico para autenticação
 authRouter.use(["/api/auth", "/auth"], authLimiter);
 
+export function getBaseUrl(req) {
+  if (req) {
+    const origin = req.headers.origin;
+    if (origin && !origin.includes("localhost:5174")) return origin;
+    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    const proto = req.headers["x-forwarded-proto"] || (req.secure ? "https" : "http");
+    if (host) return `${proto}://${host}`;
+  }
+  if (process.env.APP_URL) return process.env.APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
+  return "http://localhost:5173";
+}
+
 // 1. CADASTRO DE NOVO USUÁRIO (SIGNUP) — COM RECAPTCHA E ENVIO DE EMAIL
 authRouter.post(
   ["/api/auth/register", "/auth/register", "/api/auth/signup"],
@@ -32,7 +46,8 @@ authRouter.post(
         });
       }
 
-      const result = await AuthSecurityService.registerUser({ name, email, password, crm, specialty, plan });
+      const baseUrl = getBaseUrl(req);
+      const result = await AuthSecurityService.registerUser({ name, email, password, crm, specialty, plan, baseUrl });
       return res.status(201).json({
         status: "success",
         message: "Cadastro realizado com sucesso! Enviamos um link de verificação para o seu email.",
@@ -92,7 +107,35 @@ authRouter.post(
   }
 );
 
-// 3. CONFIRMAÇÃO DE EMAIL VIA TOKEN COM LOGIN AUTOMÁTICO
+// 3. CONFIRMAÇÃO DE EMAIL VIA GET (CLIQUE DIRETO NO EMAIL DO USUÁRIO)
+authRouter.get(["/api/auth/verify-email", "/verify-email"], async (req, res) => {
+  const token = req.query.token || req.query.verify_token;
+  if (!token) {
+    return res.redirect("/?error=" + encodeURIComponent("Token de verificação ausente."));
+  }
+  try {
+    const result = await AuthSecurityService.verifyEmailToken(token);
+
+    // Definir cookie HTTP-only de autenticação
+    res.cookie("auth_token", result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+    console.log("[AUTH][VERIFY] cookie enviado via GET");
+
+    const userParam = encodeURIComponent(JSON.stringify(result.user));
+    console.log("[AUTH][VERIFY] redirecionamento realizado para a aplicação autenticada");
+    return res.redirect(`/#access_token=${result.accessToken}&refresh_token=${result.refreshToken}&verified=true&user=${userParam}`);
+  } catch (err) {
+    console.warn("[AUTH][VERIFY] Falha na validação do token:", err.message);
+    return res.redirect("/?error=" + encodeURIComponent(err.message));
+  }
+});
+
+// 3.1. CONFIRMAÇÃO DE EMAIL VIA POST (SPA / API)
 authRouter.post(["/api/auth/verify-email", "/auth/verify-email"], async (req, res) => {
   try {
     const { token } = req.body;
@@ -106,6 +149,7 @@ authRouter.post(["/api/auth/verify-email", "/auth/verify-email"], async (req, re
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
     console.log("[AUTH][VERIFY] cookie enviado");
