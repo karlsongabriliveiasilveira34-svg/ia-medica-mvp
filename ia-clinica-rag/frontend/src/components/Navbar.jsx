@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Database, FileText, MessageSquareText, Users, Baby, Smartphone, GraduationCap, Zap, DollarSign, LogOut, User, Sparkles, Stethoscope, BookOpen, Layers, HelpCircle, Cpu, Calculator, MessageSquarePlus, Gift, Bug } from 'lucide-react';
+import { ArrowRight, Database, FileText, MessageSquareText, Users, Baby, Smartphone, GraduationCap, Zap, DollarSign, LogOut, User, Sparkles, Stethoscope, BookOpen, Layers, HelpCircle, Cpu, Calculator, MessageSquarePlus, Gift, Bug, Menu } from 'lucide-react';
 import { MedIaIcon } from './MedIaLogo';
 
 export function Navbar({
@@ -12,6 +12,7 @@ export function Navbar({
   onOpenUsageModal,
   onOpenPixModal,
   onOpenFeedbackModal,
+  onOpenDrawer,
   onLogout
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -74,9 +75,18 @@ export function Navbar({
                 <Bug className="w-3.5 h-3.5 text-rose-600" />
                 <span>Feedback & Bugs</span>
               </button>
-              <button onClick={() => setActiveTab('roteamento')} className="group flex min-h-10 items-center gap-2 rounded-full bg-[#213f34] px-5 text-sm font-semibold text-white transition hover:bg-[#172f27]">
+              <button onClick={() => setActiveTab('roteamento')} className="group flex min-h-10 items-center gap-2 rounded-full bg-[#213f34] px-4 sm:px-5 text-sm font-semibold text-white transition hover:bg-[#172f27]">
                 Testar <span className="hidden sm:inline">a demo</span><ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
+              {onOpenDrawer && (
+                <button
+                  onClick={onOpenDrawer}
+                  className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl bg-[#e5dfd5] text-[#17231f] active:scale-95 transition"
+                  aria-label="Abrir Menu"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </>
         ) : (
@@ -255,6 +265,16 @@ export function Navbar({
                   className="px-3.5 py-1.5 rounded-xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-sm transition"
                 >
                   Entrar / Cadastro
+                </button>
+              )}
+
+              {onOpenDrawer && (
+                <button
+                  onClick={onOpenDrawer}
+                  className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg bg-[#e5dfd5] text-[#17231f] active:scale-95 transition"
+                  aria-label="Abrir Menu de Navegação"
+                >
+                  <Menu className="w-4 h-4" />
                 </button>
               )}
             </div>

@@ -19,6 +19,8 @@ import { UsageDashboardModal } from './components/UsageDashboardModal';
 import { PixContributionModal } from './components/PixContributionModal';
 import { GlobalFeedbackModal } from './components/GlobalFeedbackModal';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { MobileDrawer } from './components/MobileDrawer';
 import { isAnalyticsAllowed } from './utils/cookieConsent';
 
 // Configuração de Interceptador Global do fetch para enviar Token Real de Autenticação
@@ -70,6 +72,7 @@ export default function App() {
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixModalData, setPixModalData] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showMobileDrawer, setShowMobileDrawer] = useState(false);
 
   // Estados de Clínico e Laudos
   const [selectedCitation, setSelectedCitation] = useState(null);
@@ -345,10 +348,11 @@ export default function App() {
           setShowPixModal(true);
         }}
         onOpenFeedbackModal={() => setShowFeedbackModal(true)}
+        onOpenDrawer={() => setShowMobileDrawer(true)}
         onLogout={handleLogout}
       />
 
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         {activeTab === 'landing' && (
           <LandingPage
             onStartChat={() => handleNavigate('roteamento')}
@@ -494,6 +498,33 @@ export default function App() {
         onClose={() => setShowFeedbackModal(false)}
         user={currentUser}
         activeTab={activeTab}
+      />
+
+      {/* Gaveta Lateral Deslizante Nativa para Mobile */}
+      <MobileDrawer
+        isOpen={showMobileDrawer}
+        onClose={() => setShowMobileDrawer(false)}
+        activeTab={activeTab}
+        setActiveTab={handleNavigate}
+        isAuthenticated={isAuthenticated}
+        user={currentUser}
+        usageData={usageData}
+        onOpenUsageModal={() => setShowUsageModal(true)}
+        onOpenPixModal={(pixData) => {
+          setPixModalData(pixData || null);
+          setShowPixModal(true);
+        }}
+        onOpenFeedbackModal={() => setShowFeedbackModal(true)}
+        onLogout={handleLogout}
+      />
+
+      {/* Barra de Navegação Inferior Nativa para Mobile (Mobile Bottom Nav) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={handleNavigate}
+        onOpenDrawer={() => setShowMobileDrawer(true)}
+        hasActiveReport={!!activeReportData}
+        usageData={usageData}
       />
 
       {/* Banner de Consentimento de Cookies & LGPD */}
