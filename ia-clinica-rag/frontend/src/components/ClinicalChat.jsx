@@ -8,13 +8,22 @@ import { AudioConsultationRecorder } from './AudioConsultationRecorder';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { MedIaIcon } from './MedIaLogo';
 
-export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReportEditor }) {
+export function ClinicalChat({
+  onSelectCitation,
+  onSelectDiagnosis,
+  onOpenReportEditor,
+  onQueryProcessed,
+  initialAttachedContext,
+  onOpenUsageModal,
+  onOpenPixModal,
+  userPlan = 'medico'
+}) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState('auto');
-  const [userMode, setUserMode] = useState('doctor'); // 'doctor' ou 'student'
+  const [userMode, setUserMode] = useState(userPlan === 'estudante' ? 'student' : 'doctor'); // 'doctor' ou 'student'
   const [deepResearch, setDeepResearch] = useState(false); // Busca Padrão (500) vs Pesquisa Profunda (1.500)
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [recordedDecisions, setRecordedDecisions] = useState({});
@@ -29,6 +38,13 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const messagesEndRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  // Injetar contexto de documento anexado da biblioteca
+  useEffect(() => {
+    if (initialAttachedContext) {
+      setInput((prev) => prev ? `${prev}\n\n${initialAttachedContext}` : initialAttachedContext);
+    }
+  }, [initialAttachedContext]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -233,16 +249,26 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert("⚠️ O tamanho da imagem excede o limite máximo permitido de 10MB.");
+    if (userPlan === 'free') {
+      alert("⚠️ O Plano Free não possui envio de imagens ou arquivos. Faça upgrade para o Plano Estudante para desbloquear!");
+      e.target.value = '';
+      if (onOpenUsageModal) onOpenUsageModal();
+      return;
+    }
+
+    const maxMb = userPlan === 'estudante' ? 2 : (userPlan === 'clinica' ? 50 : 500);
+    const maxSizeBytes = maxMb * 1024 * 1024;
+
+    if (file.size > maxSizeBytes) {
+      alert(`⚠️ O tamanho do arquivo excede o limite máximo permitido de ${maxMb}MB para o seu Plano ${userPlan.toUpperCase()}.`);
       e.target.value = '';
       return;
     }
 
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'];
-    const hasValidExt = file.name.match(/\.(jpg|jpeg|png|webp|gif|bmp)$/i);
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'application/pdf'];
+    const hasValidExt = file.name.match(/\.(jpg|jpeg|png|webp|gif|bmp|pdf|docx|txt)$/i);
     if (!validTypes.includes(file.type.toLowerCase()) && !hasValidExt) {
-      alert("⚠️ Formato de imagem não suportado. Selecione um arquivo JPG, PNG, WEBP, GIF ou BMP.");
+      alert("⚠️ Formato de arquivo não suportado. Selecione JPG, PNG, WEBP, PDF ou DOCX.");
       e.target.value = '';
       return;
     }
@@ -353,6 +379,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
         };
 
         setMessages((prev) => [...prev, botMessage]);
+        if (onQueryProcessed) onQueryProcessed();
       } else {
         const errorMessage = {
           id: (Date.now() + 1).toString(),
@@ -442,39 +469,12 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
   return (
     <div className="media-chat flex h-[calc(100dvh-64px)] max-w-7xl flex-col mx-auto px-3 py-3 sm:px-6 sm:py-5">
       
-      {/* Top Header: Seletor de Especialidade + Seletor de Persona (Médico vs Estudante) */}
+      {/* Top Header: Seletor de Especialidade Clínico */}
       <div className="media-chat-controls flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-2">
         <SpecialtySelector
           selectedSpecialty={selectedSpecialty}
           onSelectSpecialty={setSelectedSpecialty}
         />
-
-        {/* Toggle de Persona: Modo Médico vs Estudante */}
-        <div className="media-segmented flex items-center bg-slate-900/90 p-1 rounded-full border border-slate-800 self-stretch sm:self-auto shadow-sm">
-          <button
-            onClick={() => setUserMode('doctor')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              userMode === 'doctor'
-                ? 'bg-[#213f34] text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Stethoscope className="w-3.5 h-3.5" />
-            <span>Modo Médico</span>
-          </button>
-
-          <button
-            onClick={() => setUserMode('student')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-              userMode === 'student'
-                ? 'bg-[#9d4f3f] text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>Modo Estudante</span>
-          </button>
-        </div>
       </div>
 
       {/* Barra de Ações da Sessão Conversacional com Gravação e Retomada de Caso */}
@@ -1066,9 +1066,41 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           </div>
         )}
 
+        {/* Barra de Status de Modo e Contador de Caracteres por Plano */}
+        <div className="flex items-center justify-between text-[11px] px-1 text-slate-400">
+          <span className="flex items-center gap-1.5">
+            {userMode === 'student' ? (
+              <span className="text-amber-400 font-semibold flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
+                <GraduationCap className="w-3.5 h-3.5" /> Modo Acadêmico & Fisiopatologia
+              </span>
+            ) : (
+              <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                <Stethoscope className="w-3.5 h-3.5" /> Copiloto Médico & Condutas
+              </span>
+            )}
+          </span>
+
+          {(() => {
+            const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
+            const isOver = maxChars !== Infinity && input.length > maxChars;
+
+            return (
+              <span className={`font-mono text-[10px] ${isOver ? 'text-rose-400 font-bold bg-rose-950/80 px-2 py-0.5 rounded-md' : input.length > maxChars * 0.8 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
+                {input.length} / {maxChars === Infinity ? 'Ilimitado' : `${maxChars} carac.`}
+                {isOver && ' ⚠️ Excedeu o limite!'}
+              </span>
+            );
+          })()}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
+            if (maxChars !== Infinity && input.length > maxChars) {
+              alert(`⚠️ Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}. Por favor, reduza o texto.`);
+              return;
+            }
             handleSendQuestion();
           }}
           className="media-composer-form flex gap-2"
@@ -1076,7 +1108,14 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           {/* Botão 1: Tirar Foto Direta com a Câmera */}
           <button
             type="button"
-            onClick={() => setShowCameraModal(true)}
+            onClick={() => {
+              if (userPlan === 'free') {
+                alert("⚠️ O envio e análise de imagens com a câmera está disponível a partir do Plano Estudante.");
+                if (onOpenUsageModal) onOpenUsageModal();
+                return;
+              }
+              setShowCameraModal(true);
+            }}
             disabled={loading}
             title="Tirar Foto com a Câmera (Lesão, ECG, Exame Físico)"
             className="media-attach-button bg-slate-900 hover:bg-emerald-950/80 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
@@ -1087,9 +1126,16 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
           {/* Botão 2: Anexar Imagem da Galeria / Arquivos */}
           <button
             type="button"
-            onClick={() => imageInputRef.current?.click()}
+            onClick={() => {
+              if (userPlan === 'free') {
+                alert("⚠️ O Plano Free não possui upload de arquivos. Faça upgrade para o Plano Estudante!");
+                if (onOpenUsageModal) onOpenUsageModal();
+                return;
+              }
+              imageInputRef.current?.click();
+            }}
             disabled={loading}
-            title="Anexar Arquivo da Galeria (JPG/PNG/WEBP)"
+            title="Anexar Arquivo da Galeria (JPG/PNG/WEBP/PDF)"
             className="media-attach-button bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
           >
             <ImageIcon className="w-5 h-5 text-teal-400 group-hover:scale-110 transition-transform" />
@@ -1098,7 +1144,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
             type="file"
             ref={imageInputRef}
             onChange={handleImageSelect}
-            accept="image/*"
+            accept="image/*,application/pdf"
             className="hidden"
           />
 
@@ -1138,7 +1184,7 @@ export function ClinicalChat({ onSelectCitation, onSelectDiagnosis, onOpenReport
 
           <button
             type="submit"
-            disabled={loading || (!input.trim() && !selectedImage)}
+            disabled={loading || (!input.trim() && !selectedImage) || (userPlan === 'free' && input.length > 500) || (userPlan === 'estudante' && input.length > 2000) || (userPlan === 'clinica' && input.length > 5000)}
             className="media-send-button bg-[#213f34] hover:bg-[#172f27] disabled:bg-slate-800 text-white font-semibold px-4 sm:px-5 py-3 rounded-2xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 shrink-0"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}

@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { query } from "../config/database.js";
 import { RetrievalAgent } from "../agents/retrieval.agent.js";
-import { SpecialistAgent } from "../agents/specialist.agent.js";
+import { OrchestratorAgent } from "../agents/orchestrator.agent.js";
 import { PreProcessorAgent } from "../agents/pre-processor.agent.js";
 import { calculatePediatricDose, calculateZScores, checkPediatricRedFlags } from "./pediatric.service.js";
 
@@ -11,7 +11,6 @@ import { calculatePediatricDose, calculateZScores, checkPediatricRedFlags } from
 class PreAnamneseService {
   constructor() {
     this.retrievalAgent = new RetrievalAgent();
-    this.specialistAgent = new SpecialistAgent();
     this.preProcessor = new PreProcessorAgent();
     
     // Armazenamento em memória como fallback rápido
@@ -243,10 +242,9 @@ class PreAnamneseService {
         topK: 5
       });
 
-      // 3. Síntese do Caso pelo Especialista
-      const aiResponse = await this.specialistAgent.analyze({
+      // 3. Síntese do Caso pelo Orquestrador Clínico
+      const aiResponse = await OrchestratorAgent.processQuery({
         question: queryContext,
-        contextChunks: retrievalResult.chunks || [],
         specialty: session.isPediatric ? "pediatria" : "clinica_geral",
         userMode: "doctor",
         deepResearch: false

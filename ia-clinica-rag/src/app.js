@@ -4,6 +4,8 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { apiRouter } from "./routes/api.routes.js";
+import { generalLimiter } from "./middleware/rate-limiter.middleware.js";
+import { deepSanitizeMiddleware } from "./middleware/security-sanitizer.middleware.js";
 
 // Polifyll para Web APIs exigidas por pdf-parse / canvas no Node.js 20+ (Vercel)
 if (typeof global.DOMMatrix === "undefined") {
@@ -18,10 +20,26 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 
-// Middlewares Globais
+// 1. Headers de Segurança HTTP (Anti-XSS, Anti-Clickjacking, No-Sniff)
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(self), microphone=(self), geolocation=()");
+  next();
+});
+
+// 2. Middlewares Globais de Rede e Payload
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+
+// 3. Sanitização Global de Dados e Proteção XSS
+app.use(deepSanitizeMiddleware);
+
+// 4. Rate Limiting Geral para Rotas da API
+app.use("/api", generalLimiter);
 
 // Servir arquivos estáticos do frontend e pasta de conhecimento (se existirem localmente)
 const frontendDist = path.join(__dirname, "../frontend/dist");

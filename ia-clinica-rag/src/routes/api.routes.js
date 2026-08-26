@@ -99,13 +99,55 @@ apiRouter.post("/api/pediatric/calculate-zscore", calculateZScoreHandler);
 apiRouter.post("/api/pediatric/validate-vaccines", validateVaccinesHandler);
 apiRouter.post("/api/pediatric/check-redflags", checkRedFlagsHandler);
 
+import {
+  getUserUsageHandler,
+  upgradePlanHandler,
+  listPlansHandler
+} from "../controllers/usage.controller.js";
+import {
+  getPixContributionHandler,
+  createPixOrderHandler,
+  confirmPixPaymentHandler
+} from "../controllers/pix.controller.js";
+import {
+  getStudentLibraryHandler,
+  attachDocumentToChatHandler,
+  generateQuizHandler
+} from "../controllers/student-library.controller.js";
+
+import { 
+  inputSecurityMiddleware, 
+  validateFeedbackInputMiddleware, 
+  validateCouponInputMiddleware 
+} from "../middleware/security-sanitizer.middleware.js";
+import { 
+  aiQueryLimiter, 
+  feedbackLimiter, 
+  couponLimiter 
+} from "../middleware/rate-limiter.middleware.js";
+
+// --- ROTAS DO MOTOR DE PLANOS, % DE USO E TOKENS (MEDIa v2.0) ---
+apiRouter.get("/api/user/usage", getUserUsageHandler);
+apiRouter.post("/api/plans/upgrade", couponLimiter, validateCouponInputMiddleware, upgradePlanHandler);
+apiRouter.get("/api/plans", listPlansHandler);
+
+// --- ROTAS DE CONTRIBUIÇÃO E ASSINATURA PIX ---
+apiRouter.get("/api/pix/contribute", getPixContributionHandler);
+apiRouter.post("/api/pix/order", createPixOrderHandler);
+apiRouter.post("/api/pix/confirm", confirmPixPaymentHandler);
+
+// --- ROTAS DA BIBLIOTECA ESTUDANTIL & QUIZ GENERATOR ---
+apiRouter.get("/api/student/library", getStudentLibraryHandler);
+apiRouter.post("/api/student/attach-to-chat", attachDocumentToChatHandler);
+apiRouter.post("/api/student/generate-quiz", generateQuizHandler);
+
 // --- ROTAS DA FILA DO DIA DO MÉDICO & ANAMNESE PRÉVIA ---
 apiRouter.get("/api/worklist", getDoctorWorklistHandler);
 apiRouter.post("/api/worklist/create-session", createPreAnamneseSessionHandler);
 apiRouter.get("/api/worklist/:id", getAnamneseDetailsHandler);
 
 // Endpoint principal do Agentic RAG Multiagente (suporta texto e/ou upload de imagem)
-apiRouter.post("/api/query", queryImageUpload.single("image"), handleQuery);
+apiRouter.post("/api/query", aiQueryLimiter, queryImageUpload.single("image"), inputSecurityMiddleware, handleQuery);
 
 // Agentes de Especialidades
 apiRouter.get("/api/agents", handleListAgents);
@@ -131,8 +173,8 @@ apiRouter.get("/api/consultations/:id", handleGetConsultation);
 apiRouter.put("/api/consultations/:id", handleUpdateConsultation);
 apiRouter.post("/api/consultations/:id/media", handleUploadConsultationMedia);
 
-// Feedback do Médico
-apiRouter.post("/api/feedback", handleSaveFeedback);
+// Feedback do Médico & Relato de Bugs
+apiRouter.post("/api/feedback", feedbackLimiter, validateFeedbackInputMiddleware, handleSaveFeedback);
 
 // --- ROTAS DE CONFORMIDADE LGPD & PRIVACY BY DESIGN (LEI 13.709/2018) ---
 // 1. Prova e Gestão de Consentimento do Titular (Art. 7º e 8º)

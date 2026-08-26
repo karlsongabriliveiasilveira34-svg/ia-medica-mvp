@@ -5,10 +5,16 @@ export function CitationModal({ citation, onClose }) {
   if (!citation) return null;
 
   const pageNum = citation.page || citation.pageNumber || 1;
-  const targetUrl = citation.url || `/knowledge/${encodeURIComponent(citation.filename)}#page=${pageNum}`;
+  const targetUrl = citation.url || 
+    (citation.doi ? `https://doi.org/${citation.doi}` : 
+    (citation.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/` :
+    (citation.filename ? `/knowledge/${encodeURIComponent(citation.filename)}#page=${pageNum}` : '#')));
 
   return (
-    <div className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm animate-fadeIn">
+    <div
+      className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
+    >
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden glass-panel">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/80">

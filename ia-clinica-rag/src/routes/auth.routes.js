@@ -1,52 +1,37 @@
 import { Router } from "express";
-import { env } from "../config/env.js";
+import { googleLoginHandler, demoLoginHandler, getCurrentUserHandler } from "../controllers/auth-google.controller.js";
 import { generateToken, verifyToken } from "../utils/token.util.js";
+import { googleAuthService } from "../services/google-auth.service.js";
+import { authLimiter } from "../middleware/rate-limiter.middleware.js";
 
 export const authRouter = Router();
 
-const handleLogin = (req, res) => {
-  const { password } = req.body || {};
+// Aplicar rate limiter específico para autenticação
+authRouter.use(["/api/auth", "/auth"], authLimiter);
 
-  if (!password || typeof password !== "string") {
-    return res.status(400).json({
-      status: "error",
-      message: "Por favor, informe a senha de acesso."
-    });
-  }
+// --- AUTENTICAÇÃO GOOGLE OAUTH 2.0 (SEM SENHA) ---
+authRouter.post(["/api/auth/google", "/auth/google"], googleLoginHandler);
+authRouter.post(["/api/auth/demo-login", "/auth/demo-login"], demoLoginHandler);
+authRouter.get(["/api/auth/me", "/auth/me"], getCurrentUserHandler);
 
-  if (password.trim() !== env.demoPassword.trim()) {
-    return res.status(401).json({
-      status: "error",
-      message: "Senha incorreta. Verifique a senha da clínica e tente novamente."
-    });
-  }
-
-  const token = generateToken({ role: "clinica_demo", authenticatedAt: new Date().toISOString() });
-
-  return res.json({
-    status: "success",
-    message: "Acesso autorizado com sucesso!",
-    token
-  });
-};
-
-const handleVerify = (req, res) => {
+// Verificação de Sessão (Compatibilidade)
+authRouter.get(["/api/auth/verify", "/auth/verify"], (req, res) => {
   const authHeader = req.headers.authorization || req.headers["x-demo-token"];
   if (!authHeader) {
     return res.json({ status: "success", authenticated: false });
   }
 
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  const googleDecoded = googleAuthService.verifySessionToken(token);
+  const oldDecoded = verifyToken(token);
+  const user = googleDecoded || oldDecoded;
 
-  const decoded = verifyToken(token);
   return res.json({
     status: "success",
-    authenticated: !!decoded,
-    user: decoded || null
+    authenticated: !!user,
+    user: user || null
   });
-};
+});
 
-authRouter.post(["/api/auth/login", "/auth/login"], handleLogin);
-authRouter.get(["/api/auth/verify", "/auth/verify"], handleVerify);
+// Fallback de login legado (redireciona para demo)
+authRouter.post(["/api/auth/login", "/auth/login"], demoLoginHandler);

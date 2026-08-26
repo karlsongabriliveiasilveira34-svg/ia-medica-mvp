@@ -29,7 +29,10 @@ export function ProbabilisticModal({ diagnosis, contextMessage, onClose, onStart
   };
 
   return (
-    <div className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-md animate-fadeIn text-slate-100">
+    <div
+      className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn text-slate-100"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
+    >
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden glass-panel flex flex-col max-h-[85vh]">
         
         {/* Header com Porcentagem e Hipótese */}

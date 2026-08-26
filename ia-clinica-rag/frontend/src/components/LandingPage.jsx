@@ -123,6 +123,23 @@ export function LandingPage({ onStartChat }) {
 
   return (
     <div className="bg-[#f4f1ea] pb-20 text-[#17231f] selection:bg-[#d8a68f] selection:text-[#17231f] sm:pb-0">
+      
+      {/* Banner Promocional Beta - Cupom 7 Dias Grátis */}
+      <div className="bg-gradient-to-r from-[#213f34] via-[#1c382e] to-[#2f5547] text-[#f4f1ea] px-4 py-2.5 text-center text-xs font-medium border-b border-amber-500/20 shadow-sm flex items-center justify-center gap-2 flex-wrap">
+        <span className="bg-amber-400 text-amber-950 font-black px-2 py-0.5 rounded-full uppercase text-[10px] shadow-sm">
+          🎁 LIBERADO PARA TODOS
+        </span>
+        <span>
+          Acesso Beta VIP: Use o cupom <strong className="text-amber-300 font-mono tracking-wider bg-black/30 px-1.5 py-0.5 rounded">BETA7DIAS</strong> e ganhe <strong>7 Dias de Plano Médico Grátis</strong>!
+        </span>
+        <button
+          onClick={onStartChat}
+          className="underline font-bold text-amber-300 hover:text-amber-200 ml-1 cursor-pointer"
+        >
+          Resgatar no App &rarr;
+        </button>
+      </div>
+
       <section className="relative overflow-hidden border-b border-[#17231f]/10">
         <div className="absolute inset-y-0 right-0 hidden w-[42%] border-l border-[#17231f]/10 bg-[#e8e2d7] lg:block" />
         <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-5 py-12 sm:px-8 sm:py-16 lg:min-h-[760px] lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-14 lg:py-24">
