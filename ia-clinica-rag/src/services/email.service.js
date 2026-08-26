@@ -54,6 +54,12 @@ class EmailService {
   async sendMail({ to, subject, html, text }) {
     console.log(`[EMAIL] 📤 Preparando envio para: ${to} | Assunto: "${subject}"`);
 
+    // Ignorar envio real para domínios demo fictícios para evitar erro de DNS / bounce do Google
+    if (to.endsWith('@media.med.br') || to.endsWith('@exemplo.com') || to.endsWith('@demo.com') || to.includes('demo@')) {
+      console.log(`[EMAIL] ℹ️ Destinatário de demonstração detectado (${to}). Simulado no console para evitar erro de DNS/Bounce.`);
+      return { success: true, simulated: true };
+    }
+
     if (!this.transporter) {
       console.log(`[EMAIL] ⚠️ MODO DEV / SIMULAÇÃO DE EMAIL`);
       console.log(`[EMAIL] Destinatário: ${to}`);
