@@ -13,8 +13,8 @@ export const PLANS_CONFIG = {
     flashcardsDailyLimit: 10, // 10 flashcards por dia
     questionsDailyLimit: 5, // 5 questões por dia
     tokensLimit: 4000,
-    maxCharsPerMsg: 500,
-    maxLinesPerMsg: 10,
+    maxCharsPerMsg: 2000, // 2.000 caracteres no Free
+    maxLinesPerMsg: 50,
     maxUploadsPerMonth: 0,
     maxDocSizeMb: 0,
     canDiagnose: false,
@@ -29,12 +29,13 @@ export const PLANS_CONFIG = {
       "Busca em base SciELO + PubMed",
       "10 requisições de IA / mês",
       "10 flashcards / dia",
-      "5 questões de simulado / dia"
+      "5 questões de simulado / dia",
+      "Até 2.000 caracteres por mensagem"
     ],
     lockedFeatures: [
       "Diagnósticos diferenciais com cálculo probabilístico",
       "Upload de exames e PDFs",
-      "Flashcards e questões ilimitadas",
+      "Flashcards e questões ampliadas",
       "Prescrições e calculadoras pediátricas"
     ]
   },
@@ -44,12 +45,12 @@ export const PLANS_CONFIG = {
     badgeColor: "#f59e0b", // Amber
     priceMonthly: 19.90,
     priceAnnual: 199.00,
-    requestsLimit: 250,
-    flashcardsDailyLimit: Infinity,
-    questionsDailyLimit: Infinity,
-    tokensLimit: 50000,
-    maxCharsPerMsg: 2000,
-    maxLinesPerMsg: 50,
+    requestsLimit: 300, // 300 requisições por mês
+    flashcardsDailyLimit: 150, // 150 flashcards por dia
+    questionsDailyLimit: 100, // 100 questões por dia
+    tokensLimit: 75000,
+    maxCharsPerMsg: 10000, // 10.000 caracteres no Estudante
+    maxLinesPerMsg: 250,
     maxUploadsPerMonth: 10,
     maxDocSizeMb: 2,
     canDiagnose: false,
@@ -61,9 +62,10 @@ export const PLANS_CONFIG = {
     hasExportPdf: false,
     hasMultiSpecialty: false,
     features: [
-      "250 requisições de IA / mês (50.000 tokens)",
-      "Flashcards ilimitados com repetição espaçada",
-      "Banco de questões e simulados ilimitados",
+      "300 requisições de IA / mês",
+      "150 flashcards / dia",
+      "100 questões de simulado / dia",
+      "Até 10.000 caracteres por mensagem",
       "Biblioteca médica e Quizzes automáticos",
       "Upload de até 10 documentos/mês (2MB cada)",
       "Histórico de conversas (30 dias)"
@@ -74,22 +76,22 @@ export const PLANS_CONFIG = {
       "Laudos com exportação em PDF"
     ]
   },
-  clinica: {
-    id: "clinica",
-    name: "Plano Clínica",
-    badgeColor: "#8b5cf6", // Purple
+  medico: {
+    id: "medico",
+    name: "Plano Médico",
+    badgeColor: "#e11d48", // Rose
     priceMonthly: 79.90,
     priceAnnual: 799.00,
-    requestsLimit: 1000,
-    flashcardsDailyLimit: Infinity,
-    questionsDailyLimit: Infinity,
-    tokensLimit: 200000,
-    maxCharsPerMsg: 5000,
-    maxLinesPerMsg: 200,
+    requestsLimit: 900, // 900 requisições por mês
+    flashcardsDailyLimit: Infinity, // Ilimitado flashcards
+    questionsDailyLimit: Infinity, // Ilimitado questões e provas
+    tokensLimit: 250000,
+    maxCharsPerMsg: 20000, // 20.000 caracteres no Médico
+    maxLinesPerMsg: 500,
     maxUploadsPerMonth: 50,
     maxDocSizeMb: 50,
     canDiagnose: true,
-    canPrescribe: false,
+    canPrescribe: true,
     canUploadDocs: true,
     hasStudentLibrary: true,
     hasPediatrics: true,
@@ -97,30 +99,29 @@ export const PLANS_CONFIG = {
     hasExportPdf: true,
     hasMultiSpecialty: true,
     features: [
-      "1.000 requisições / mês (200.000 tokens)",
-      "Até 5.000 caracteres por mensagem",
+      "900 requisições de IA / mês",
+      "Questões, simulados e provas ILIMITADOS",
+      "Flashcards ILIMITADOS",
+      "Até 20.000 caracteres por mensagem",
       "Diagnóstico diferencial baseado em evidências (%)",
       "Upload de até 50 documentos/mês (50MB cada)",
-      "Geração de laudos estruturados e exportação PDF",
-      "Fila do Dia com recepção e anamnese prévia"
+      "Geração de prescrições e posologias pediátricas",
+      "Laudos com exportação em PDF"
     ],
-    lockedFeatures: [
-      "Prescrições avançadas com interações graves",
-      "Análise multimodal de imagens radiológicas"
-    ]
+    lockedFeatures: []
   },
-  medico: {
-    id: "medico",
-    name: "Plano Médico (Premium)",
-    badgeColor: "#e11d48", // Rose
+  clinica: {
+    id: "clinica",
+    name: "Plano Clínica (Top / Enterprise)",
+    badgeColor: "#8b5cf6", // Purple
     priceMonthly: 299.90,
     priceAnnual: 2999.00,
-    requestsLimit: 5000,
-    flashcardsDailyLimit: Infinity,
-    questionsDailyLimit: Infinity,
-    tokensLimit: 500000,
-    maxCharsPerMsg: Infinity,
-    maxLinesPerMsg: Infinity,
+    requestsLimit: Infinity, // Ilimitado requisições
+    flashcardsDailyLimit: Infinity, // Ilimitado flashcards
+    questionsDailyLimit: Infinity, // Ilimitado questões
+    tokensLimit: Infinity,
+    maxCharsPerMsg: 50000, // 50.000 caracteres na Clínica
+    maxLinesPerMsg: 2000,
     maxUploadsPerMonth: 9999,
     maxDocSizeMb: 500,
     canDiagnose: true,
@@ -132,11 +133,12 @@ export const PLANS_CONFIG = {
     hasExportPdf: true,
     hasMultiSpecialty: true,
     features: [
-      "Mensagens e linhas ilimitadas (500.000 tokens/mês)",
+      "Requisições de IA ILIMITADAS",
+      "Flashcards e Questões ILIMITADOS",
+      "Até 50.000 caracteres por mensagem",
       "Multi-especialidade com roteamento automático",
       "Análise de imagens médicas e fotos da câmera",
-      "Geração de prescrições e posologias pediátricas",
-      "Decisões clínicas críticas (UTI e Emergência)",
+      "Fila do Dia com recepção e anamnese prévia",
       "Uploads ilimitados de documentos (até 500MB)",
       "Interoperabilidade HL7 FHIR e Webhooks de ERPs",
       "Suporte prioritário 24/7"
@@ -215,9 +217,9 @@ class UsageMeterService {
     const meter = this.getUserMeter(userId, planId);
 
     if (resource === "ai") {
-      const limit = plan.requestsLimit;
-      const used = meter.aiRequestsMonth || meter.requestsUsed || 0;
-      if (planId === "free" && used >= limit) {
+      const limit = plan.requestsLimit || 10;
+      const used = meter.aiRequestsMonth || 0;
+      if (limit !== Infinity && used >= limit) {
         return {
           allowed: false,
           resource: "ai",
@@ -225,7 +227,7 @@ class UsageMeterService {
           used,
           remaining: 0,
           resetAt: "no início do próximo mês",
-          message: `Você atingiu o limite gratuito de ${limit} requisições de IA por mês. Seu saldo será renovado no próximo mês. Faça upgrade para o Plano Estudante para continuar utilizando sem interrupções.`
+          message: `Você atingiu o limite de ${limit} requisições de IA por mês do ${plan.name}. Seu saldo será renovado no próximo mês. Faça upgrade de plano para continuar utilizando sem interrupções.`
         };
       }
       return {
@@ -233,14 +235,14 @@ class UsageMeterService {
         resource: "ai",
         limit,
         used,
-        remaining: Math.max(0, limit - used)
+        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
       };
     }
 
     if (resource === "flashcards") {
-      const limit = plan.flashcardsDailyLimit || 10;
+      const limit = plan.flashcardsDailyLimit !== undefined ? plan.flashcardsDailyLimit : 10;
       const used = meter.flashcardsDay || 0;
-      if (planId === "free" && used >= limit) {
+      if (limit !== Infinity && used >= limit) {
         return {
           allowed: false,
           resource: "flashcards",
@@ -248,7 +250,7 @@ class UsageMeterService {
           used,
           remaining: 0,
           resetAt: "amanhã às 00:00",
-          message: `Você atingiu o limite gratuito diário de ${limit} flashcards. Seu saldo será renovado amanhã às 00:00. Faça upgrade para o Plano Estudante para flashcards ilimitados.`
+          message: `Você atingiu o limite diário de ${limit} flashcards do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
         };
       }
       return {
@@ -256,14 +258,14 @@ class UsageMeterService {
         resource: "flashcards",
         limit,
         used,
-        remaining: Math.max(0, limit - used)
+        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
       };
     }
 
     if (resource === "questions") {
-      const limit = plan.questionsDailyLimit || 5;
+      const limit = plan.questionsDailyLimit !== undefined ? plan.questionsDailyLimit : 5;
       const used = meter.questionsDay || 0;
-      if (planId === "free" && used >= limit) {
+      if (limit !== Infinity && used >= limit) {
         return {
           allowed: false,
           resource: "questions",
@@ -271,7 +273,7 @@ class UsageMeterService {
           used,
           remaining: 0,
           resetAt: "amanhã às 00:00",
-          message: `Você atingiu o limite gratuito diário de ${limit} questões no simulado. Seu saldo será renovado amanhã às 00:00. Faça upgrade para o Plano Estudante para praticar sem limites.`
+          message: `Você atingiu o limite diário de ${limit} questões no simulado do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
         };
       }
       return {
@@ -279,7 +281,7 @@ class UsageMeterService {
         resource: "questions",
         limit,
         used,
-        remaining: Math.max(0, limit - used)
+        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
       };
     }
 

@@ -4,10 +4,10 @@
  */
 
 export const PLAN_CHARACTER_LIMITS = {
-  free: { maxChars: 500, maxLines: 10 },
-  estudante: { maxChars: 2000, maxLines: 50 },
-  clinica: { maxChars: 5000, maxLines: 200 },
-  medico: { maxChars: 10000, maxLines: 500 }
+  free: { maxChars: 2000, maxLines: 50 },
+  estudante: { maxChars: 10000, maxLines: 250 },
+  medico: { maxChars: 20000, maxLines: 500 },
+  clinica: { maxChars: 50000, maxLines: 2000 }
 };
 
 export const PLAN_FILE_LIMITS = {
@@ -243,11 +243,11 @@ export function validateCouponInputMiddleware(req, res, next) {
  */
 export function inputSecurityMiddleware(req, res, next) {
   const userPlan = req.user?.plan || 'free';
-  const { question } = req.body || {};
+  const rawText = req.body?.mensagem || req.body?.question || req.body?.text;
 
-  if (question && typeof question === 'string') {
-    // 1. Validação de tamanho
-    const lenCheck = validateMessageLength(question, userPlan);
+  if (rawText && typeof rawText === 'string') {
+    // 1. Validação de tamanho por plano
+    const lenCheck = validateMessageLength(rawText, userPlan);
     if (!lenCheck.valid) {
       return res.status(400).json({
         status: "error",
@@ -259,7 +259,10 @@ export function inputSecurityMiddleware(req, res, next) {
 
     // 2. Sanitização de injeção
     try {
-      req.body.question = sanitizeInput(question, userPlan);
+      const sanitized = sanitizeInput(rawText, userPlan);
+      if (req.body?.mensagem) req.body.mensagem = sanitized;
+      if (req.body?.question) req.body.question = sanitized;
+      if (req.body?.text) req.body.text = sanitized;
     } catch (sanErr) {
       return res.status(400).json({
         status: "error",

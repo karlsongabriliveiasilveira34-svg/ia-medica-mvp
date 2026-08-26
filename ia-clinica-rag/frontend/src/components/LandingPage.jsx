@@ -50,25 +50,43 @@ const cases = [
 const plans = [
   {
     name: 'Estudante',
-    monthly: '19,99',
-    annual: '15,99',
-    description: 'Para estudar casos e transformar diretrizes em raciocínio clínico.',
-    features: ['Modo de estudo', 'Consultas mensais', 'Fontes rastreáveis'],
+    monthly: '19,90',
+    annual: '15,90',
+    description: 'Para estudantes de medicina acelerarem a preparação para provas e residência.',
+    features: [
+      '300 requisições de IA / mês',
+      '150 flashcards / dia',
+      '100 questões no simulado / dia',
+      'Até 10.000 caracteres por mensagem',
+      'Biblioteca médica & Casos clínicos'
+    ],
   },
   {
-    name: 'Profissional',
+    name: 'Médico',
     monthly: '79,90',
     annual: '63,90',
-    description: 'Para ganhar contexto e velocidade durante a rotina clínica.',
-    features: ['Modo médico e estudante', 'Histórico de casos', 'Relatórios e exportação'],
+    description: 'Para médicos e residentes que necessitam de apoio clínico e precisão em plantões.',
+    features: [
+      '900 requisições de IA / mês',
+      'Flashcards e Provas ILIMITADOS',
+      'Até 20.000 caracteres por mensagem',
+      'Diagnósticos diferenciais baseados em evidências',
+      'Prescrições, posologias e calculadoras'
+    ],
     featured: true,
   },
   {
     name: 'Clínica',
-    monthly: '249,00',
-    annual: '199,00',
-    description: 'Para equipes que querem compartilhar uma base de conhecimento.',
-    features: ['Até 5 profissionais', 'Acervo compartilhado', 'Gestão centralizada'],
+    monthly: '299,90',
+    annual: '249,00',
+    description: 'Para clínicas e equipes que exigem capacidade máxima e fluxo sem restrições.',
+    features: [
+      'Requisições de IA ILIMITADAS',
+      'Flashcards e Estudos ILIMITADOS',
+      'Até 50.000 caracteres por mensagem',
+      'Multi-especialidades & Análise de imagens',
+      'Fila do Dia com triagem e recepção'
+    ],
   },
 ];
 

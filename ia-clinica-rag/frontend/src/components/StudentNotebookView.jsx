@@ -956,7 +956,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               {limitWarning}
             </p>
             <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 text-[11px] text-[#213f34] font-medium">
-              💡 Dica: O <strong>Plano Estudante</strong> inclui flashcards e questões ilimitadas, além de IA Preceptora e biblioteca completa.
+              💡 Dica: O <strong>Plano Estudante</strong> inclui 300 requisições de IA/mês, 150 flashcards/dia, 100 questões/dia e 10.000 caracteres por mensagem.
             </div>
             <div className="flex gap-2 pt-2">
               <button
