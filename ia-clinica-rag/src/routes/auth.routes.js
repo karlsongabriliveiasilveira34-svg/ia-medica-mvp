@@ -12,15 +12,15 @@ authRouter.use(["/api/auth", "/auth"], authLimiter);
 export function getBaseUrl(req) {
   if (req) {
     const origin = req.headers.origin;
-    if (origin && !origin.includes("localhost:5174")) return origin;
+    if (origin && !origin.includes("localhost")) return origin;
     const host = req.headers["x-forwarded-host"] || req.headers.host;
     const proto = req.headers["x-forwarded-proto"] || (req.secure ? "https" : "http");
-    if (host) return `${proto}://${host}`;
+    if (host && !host.includes("localhost")) return `${proto}://${host}`;
   }
-  if (process.env.APP_URL) return process.env.APP_URL;
+  if (process.env.APP_URL && !process.env.APP_URL.includes("localhost")) return process.env.APP_URL;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
-  return "http://localhost:5173";
+  if (process.env.FRONTEND_URL && !process.env.FRONTEND_URL.includes("localhost")) return process.env.FRONTEND_URL;
+  return "https://ia-medica-mvp.vercel.app";
 }
 
 // 1. CADASTRO DE NOVO USUÁRIO (SIGNUP) — COM RECAPTCHA E ENVIO DE EMAIL
@@ -173,7 +173,8 @@ authRouter.post(["/api/auth/resend-verification", "/auth/resend-verification"], 
     if (!email) {
       return res.status(400).json({ status: "error", message: "Informe seu endereço de email." });
     }
-    const result = await AuthSecurityService.resendVerificationEmail(email);
+    const baseUrl = getBaseUrl(req);
+    const result = await AuthSecurityService.resendVerificationEmail(email, baseUrl);
     return res.json({ status: "success", message: result.message });
   } catch (err) {
     return res.status(400).json({ status: "error", message: err.message });
@@ -190,7 +191,8 @@ authRouter.post(
       if (!email) {
         return res.status(400).json({ status: "error", message: "Informe seu email cadastrado." });
       }
-      const result = await AuthSecurityService.requestPasswordReset(email);
+      const baseUrl = getBaseUrl(req);
+      const result = await AuthSecurityService.requestPasswordReset(email, baseUrl);
       return res.json({ status: "success", message: result.message });
     } catch (err) {
       return res.status(400).json({ status: "error", message: err.message });

@@ -2,10 +2,26 @@ import { OrchestratorAgent } from "../agents/orchestrator.agent.js";
 import { getAgentById } from "../config/agents.config.js";
 import { query } from "../config/database.js";
 import { processAndSanitizeImage } from "../utils/image-sanitizer.util.js";
+import { usageMeterService } from "../services/usage-meter.service.js";
 
 export async function handleQuery(req, res) {
   try {
     let { question = "", specialty = "auto", topK, deepResearch = false, isDeepResearch = false, minSimilarity = 0.4, sessionId = null, userMode = "doctor", imageBase64, imageDataUrl } = req.body || {};
+
+    const userId = req.user?.id || req.user?.userId || req.ip || "anonimo";
+    const userPlan = req.user?.plan || "free";
+
+    // 0. Validar cota mensal do plano (Plano Free: 5 requisições/mês)
+    const usageSummary = usageMeterService.getUsageSummary(userId, userPlan);
+    if (!usageSummary.ui.canMakeRequest) {
+      return res.status(403).json({
+        status: "error",
+        code: "PLAN_LIMIT_REACHED",
+        message: `Você atingiu o limite de ${usageSummary.usage.requestsLimit} mensagens mensais do ${usageSummary.plan.name}. Faça upgrade de plano para continuar usando sem interrupções.`,
+        usage: usageSummary.usage,
+        plan: usageSummary.plan
+      });
+    }
 
     const activeDeepResearch = Boolean(deepResearch || isDeepResearch);
     const defaultTopK = activeDeepResearch ? 200 : 100;
@@ -125,6 +141,9 @@ export async function handleQuery(req, res) {
     } catch (err) {
       console.warn("⚠️ Aviso ao salvar resposta da IA no banco:", err.message);
     }
+
+    // Registrar consumo de requisição e tokens
+    usageMeterService.recordUsage(userId, userPlan, 350);
 
     return res.status(200).json({
       ...result,

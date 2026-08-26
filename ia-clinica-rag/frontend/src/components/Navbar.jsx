@@ -47,7 +47,7 @@ export function Navbar({
           </span>
           <span className="font-editorial text-2xl font-semibold tracking-[-0.03em] text-[#17231f]">medIa</span>
           <span className="text-[10px] font-bold uppercase tracking-wider bg-white/60 text-[#5e6c65] px-2 py-0.5 rounded-full border border-[#17231f]/10 hidden sm:inline-block">
-            v0.1.6
+            v0.1.7
           </span>
         </button>
 

@@ -146,7 +146,7 @@ class UsageMeterService {
   }
 
   /**
-   * Obtém ou inicializa o medidor de consumo do usuário
+   * Obtém ou inicializa o medidor de consumo do usuário (Inicia zerado em 0/5 no plano Free)
    */
   getUserMeter(userId, planId = "free") {
     if (!this.userUsage.has(userId)) {
@@ -154,27 +154,12 @@ class UsageMeterService {
       const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       const daysUntilReset = Math.ceil((resetDate - now) / (1000 * 60 * 60 * 24));
 
-      // Valores iniciais simulados para demonstração rica
-      let initialRequests = 1;
-      let initialTokens = 450;
-
-      if (planId === "estudante") {
-        initialRequests = 187;
-        initialTokens = 38500;
-      } else if (planId === "clinica") {
-        initialRequests = 420;
-        initialTokens = 84000;
-      } else if (planId === "medico") {
-        initialRequests = 1250;
-        initialTokens = 180000;
-      }
-
       this.userUsage.set(userId, {
         userId,
         planId,
-        requestsUsed: initialRequests,
-        tokensUsed: initialTokens,
-        uploadsUsed: planId === "free" ? 0 : 3,
+        requestsUsed: 0,
+        tokensUsed: 0,
+        uploadsUsed: 0,
         resetDate: resetDate.toLocaleDateString("pt-BR"),
         daysUntilReset: Math.max(1, daysUntilReset)
       });

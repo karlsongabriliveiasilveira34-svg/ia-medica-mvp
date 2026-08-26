@@ -111,8 +111,9 @@ class EmailService {
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
     }
-    if (!base) {
-      base = 'http://localhost:5173';
+    // Se não houver domínio configurado ou se apontar para localhost, usar o domínio oficial na Vercel
+    if (!base || base.includes("localhost")) {
+      base = 'https://ia-medica-mvp.vercel.app';
     }
     base = base.replace(/\/+$/, '');
 
@@ -170,8 +171,8 @@ class EmailService {
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
     }
-    if (!base) {
-      base = 'http://localhost:5173';
+    if (!base || base.includes("localhost")) {
+      base = 'https://ia-medica-mvp.vercel.app';
     }
     base = base.replace(/\/+$/, '');
 

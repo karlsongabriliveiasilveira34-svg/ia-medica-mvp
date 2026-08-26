@@ -269,7 +269,7 @@ export class AuthSecurityService {
   /**
    * 3. REENVIAR EMAIL DE VERIFICAÇÃO
    */
-  static async resendVerificationEmail(email) {
+  static async resendVerificationEmail(email, baseUrl = null) {
     const cleanEmail = (email || "").trim().toLowerCase();
     await ensureUsersSchema();
     let user = null;
@@ -298,7 +298,7 @@ export class AuthSecurityService {
       user.token_verificacao = verificationToken;
     }
 
-    await emailService.sendVerificationEmail(cleanEmail, verificationToken, user.name);
+    await emailService.sendVerificationEmail(cleanEmail, verificationToken, user.name, baseUrl);
     return { success: true, message: "Novo email de verificação enviado com sucesso!" };
   }
 
@@ -413,7 +413,7 @@ export class AuthSecurityService {
   /**
    * 5. ESQUECI MINHA SENHA (RECUPERAÇÃO)
    */
-  static async requestPasswordReset(email) {
+  static async requestPasswordReset(email, baseUrl = null) {
     const cleanEmail = (email || "").trim().toLowerCase();
     console.log(`[AUTH] 🔑 Solicitação de recuperação de senha para ${cleanEmail}`);
 
@@ -436,7 +436,7 @@ export class AuthSecurityService {
     const resetToken = jwt.sign({ email: cleanEmail, purpose: "password_reset" }, JWT_SECRET, { expiresIn: "1h" });
     memoryPasswordResetTokens.set(resetToken, { email: cleanEmail, expiresAt: Date.now() + 3600000 });
 
-    await emailService.sendPasswordResetEmail(cleanEmail, resetToken, user.name);
+    await emailService.sendPasswordResetEmail(cleanEmail, resetToken, user.name, baseUrl);
     return { success: true, message: "Instruções de recuperação enviadas para o seu email." };
   }
 
