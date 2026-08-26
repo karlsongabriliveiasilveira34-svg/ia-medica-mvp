@@ -1,16 +1,19 @@
 import { AuthSecurityService } from "../src/services/auth-security.service.js";
 import { getUserUsageHandler } from "../src/controllers/usage.controller.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 async function runAuthLifecycleTest() {
   console.log("==================================================");
   console.log("🧪 INICIANDO TESTE DE PONTA A PONTA DO FLUXO DE AUTH");
   console.log("==================================================");
 
+  const dynamicPassA = "A!" + crypto.randomBytes(12).toString("hex") + "9";
+
   const testUserA = {
     name: "Dra. Ana Paula",
     email: "ana.paula.medica@gmail.com",
-    password: "senhaSegura123!",
+    password: dynamicPassA,
     crm: "987654-RJ",
     specialty: "Cardiologia",
     plan: "medico"
@@ -105,10 +108,11 @@ async function runAuthLifecycleTest() {
 
   // 6. TESTE DE ISOLAMENTO: USUÁRIO B
   console.log("\n[6] Testando Usuário B para garantir isolamento de sessões...");
+  const dynamicPassB = "B!" + crypto.randomBytes(12).toString("hex") + "7";
   const testUserB = {
     name: "Dr. Roberto Santos",
     email: "roberto.santos@gmail.com",
-    password: "outraSenhaForte456!",
+    password: dynamicPassB,
     plan: "estudante"
   };
 
