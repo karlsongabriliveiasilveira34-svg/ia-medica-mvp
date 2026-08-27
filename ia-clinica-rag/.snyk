@@ -1,0 +1,11 @@
+# Snyk (https://snyk.io) policy file
+version: v1.25.0
+exclude:
+  global:
+    - node_modules/**
+    - frontend/node_modules/**
+    - frontend/dist/**
+    - frontend/android/**
+    - frontend/ios/**
+    - dist/**
+    - tests/**
