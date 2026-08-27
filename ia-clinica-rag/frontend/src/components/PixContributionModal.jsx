@@ -18,10 +18,18 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
   const [donationsHistory, setDonationsHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const suggestedAmounts = [15.00, 30.00, 50.00, 100.00];
+  const suggestedAmounts = [1.00, 5.00, 15.00, 30.00, 50.00, 100.00];
+  const [customInput, setCustomInput] = useState('');
+  const [inputError, setInputError] = useState('');
 
   // Gerar QR Code e Payload PIX Oficial
   const fetchPixOrder = async (selectedAmount) => {
+    const rawNum = Number(selectedAmount);
+    if (isNaN(rawNum) || rawNum < 1.00) {
+      setInputError('O valor mínimo de contribuição é R$ 1,00');
+      return;
+    }
+    setInputError('');
     setLoading(true);
     const token = localStorage.getItem('access_token') || localStorage.getItem('demo_token');
 
@@ -33,7 +41,7 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
-          valor: selectedAmount,
+          valor: rawNum,
           descricao: initialData?.purpose === 'upgrade' ? `Assinatura ${initialData?.planName || 'Plano'}` : 'Apoio Voluntário MedIa'
         })
       });
@@ -48,6 +56,8 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
           qrCodeUrl: data.qrCodeBase64,
           copyPasteCode: data.copiaECola || data.payloadPix
         });
+      } else if (data.message || data.erro) {
+        setInputError(data.message || data.erro);
       }
     } catch (err) {
       console.error('Erro ao gerar PIX:', err);
@@ -189,13 +199,16 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
               <label className="text-xs font-bold text-[#17231f] block mb-2">
                 Escolha o valor da contribuição:
               </label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {suggestedAmounts.map((val) => (
                   <button
                     key={val}
-                    onClick={() => handleSelectAmount(val)}
-                    className={`py-2.5 rounded-xl border text-xs font-black transition ${
-                      amount === val
+                    onClick={() => {
+                      setCustomInput('');
+                      handleSelectAmount(val);
+                    }}
+                    className={`py-2 rounded-xl border text-xs font-black transition ${
+                      amount === val && !customInput
                         ? 'border-[#213f34] bg-[#213f34] text-white shadow-sm'
                         : 'border-[#17231f]/10 bg-[#faf8f5] text-[#17231f] hover:border-[#213f34]/40'
                     }`}
@@ -203,6 +216,48 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
                     R$ {val.toFixed(2)}
                   </button>
                 ))}
+              </div>
+
+              {/* Digitação Livre de Outro Valor */}
+              <div className="mt-3">
+                <label className="text-[11px] font-semibold text-[#5e6c65] block mb-1">
+                  Ou digite um valor personalizado (mínimo R$ 1,00):
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-2 text-xs font-bold text-[#5e6c65]">R$</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.50"
+                      placeholder="Ex: 2.50 ou 20.00"
+                      value={customInput}
+                      onChange={(e) => {
+                        setCustomInput(e.target.value);
+                        setInputError('');
+                      }}
+                      className="w-full pl-9 pr-3 py-2 text-xs font-bold rounded-xl border border-[#17231f]/15 bg-[#faf8f5] focus:bg-white focus:outline-none focus:border-[#213f34]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const val = Number(customInput.replace(',', '.'));
+                      if (!val || isNaN(val) || val < 1.00) {
+                        setInputError('Por favor, informe um valor de no mínimo R$ 1,00.');
+                        return;
+                      }
+                      setAmount(val);
+                      fetchPixOrder(val);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172b22] transition shrink-0 shadow-sm"
+                  >
+                    Gerar PIX
+                  </button>
+                </div>
+                {inputError && (
+                  <p className="text-[11px] font-bold text-rose-600 mt-1.5 animate-fadeIn">{inputError}</p>
+                )}
               </div>
             </div>
 

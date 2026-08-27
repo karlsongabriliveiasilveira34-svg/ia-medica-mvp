@@ -210,7 +210,7 @@ O retorno DEVE ser um array JSON de objetos no seguinte formato:
 ]`;
 
       const response = await this.ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });

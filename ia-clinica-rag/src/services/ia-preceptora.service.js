@@ -49,21 +49,21 @@ export class IaPreceptoraService {
         let convId = conversationId;
         if (!convId) {
           const convRes = await pool.query(
-            "INSERT INTO conversations (user_id, modo, titulo) VALUES ($1, $2, $3) RETURNING id",
-            [userId, targetUserMode, textoLimpo.slice(0, 50)]
+            "INSERT INTO conversations (user_id, title) VALUES ($1, $2) RETURNING id",
+            [userId, textoLimpo.slice(0, 50)]
           );
           convId = convRes.rows[0]?.id;
         }
 
         if (convId) {
           await pool.query(
-            "INSERT INTO messages (conversation_id, user_id, role, conteudo) VALUES ($1, $2, 'user', $3), ($1, $2, 'model', $4)",
+            "INSERT INTO messages (conversation_id, user_id, role, content) VALUES ($1, $2, 'user', $3), ($1, $2, 'assistant', $4)",
             [convId, userId, textoLimpo, respostaFinal]
           );
         }
       }
     } catch (dbErr) {
-      // Falha silenciosa se DB offline
+      console.warn("[IA PRECEPTORA] Aviso ao persistir conversa no banco:", dbErr.message);
     }
 
     return {

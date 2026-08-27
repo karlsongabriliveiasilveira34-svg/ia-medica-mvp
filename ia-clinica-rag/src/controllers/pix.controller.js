@@ -7,12 +7,20 @@ import { googleAuthService } from "../services/google-auth.service.js";
 export async function getPixContributionHandler(req, res) {
   try {
     const { amount = 10.00, purpose = "contribuicao", planType = null } = req.query;
+    const rawVal = Number(amount);
+    if (isNaN(rawVal) || !isFinite(rawVal) || rawVal < 1.00) {
+      return res.status(400).json({
+        status: "error",
+        message: "O valor da contribuição PIX deve ser de no mínimo R$ 1,00."
+      });
+    }
+
     const authHeader = req.headers.authorization;
     const decoded = googleAuthService.verifySessionToken(authHeader);
 
     const order = pixService.createPixOrder({
       userId: decoded?.userId || "anonymous",
-      amount: Number(amount) || 10.00,
+      amount: rawVal,
       purpose,
       planType
     });
@@ -29,12 +37,20 @@ export async function getPixContributionHandler(req, res) {
 export async function createPixOrderHandler(req, res) {
   try {
     const { amount, purpose = "contribuicao", planType = null } = req.body || {};
+    const rawVal = Number(amount);
+    if (isNaN(rawVal) || !isFinite(rawVal) || rawVal < 1.00) {
+      return res.status(400).json({
+        status: "error",
+        message: "O valor da contribuição PIX deve ser de no mínimo R$ 1,00."
+      });
+    }
+
     const authHeader = req.headers.authorization;
     const decoded = googleAuthService.verifySessionToken(authHeader);
 
     const order = pixService.createPixOrder({
       userId: decoded?.userId || "anonymous",
-      amount: Number(amount) || 10.00,
+      amount: rawVal,
       purpose,
       planType
     });

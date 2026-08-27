@@ -85,10 +85,16 @@ class PixService {
    * Cria uma nova solicitação de contribuição ou pagamento PIX
    */
   createPixOrder({ userId, amount = 10.00, purpose = "contribuicao", planType = null }) {
+    const rawVal = Number(amount);
+    if (isNaN(rawVal) || !isFinite(rawVal) || rawVal < 1.00) {
+      throw new Error("O valor da contribuição PIX deve ser de no mínimo R$ 1,00.");
+    }
+    const cleanAmount = Math.round(rawVal * 100) / 100;
+
     const txId = `MED${Date.now().toString().slice(-8)}`;
     const copyPaste = this.generatePixCopyPaste({
       key: PIX_DEFAULT_KEY,
-      amount: amount.toString(),
+      amount: cleanAmount.toFixed(2),
       txId,
       message: purpose === "upgrade" ? `Plano MedIa ${planType}` : "Apoio Projeto MedIa"
     });
@@ -98,7 +104,7 @@ class PixService {
     const order = {
       orderId: `PIX-${Date.now().toString().slice(-6)}`,
       userId: userId || "anonymous",
-      amount: Number(amount),
+      amount: cleanAmount,
       currency: "BRL",
       pixKey: PIX_DEFAULT_KEY,
       displayKey: PIX_DISPLAY_KEY,
@@ -107,7 +113,7 @@ class PixService {
       purpose,
       planType,
       status: "pending",
-      suggestedAmounts: [5.00, 10.00, 25.00, 50.00],
+      suggestedAmounts: [1.00, 5.00, 15.00, 30.00, 50.00, 100.00],
       createdAt: new Date().toISOString()
     };
 

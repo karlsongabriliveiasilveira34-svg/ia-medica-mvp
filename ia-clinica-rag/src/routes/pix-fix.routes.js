@@ -81,8 +81,19 @@ pixFixRouter.get(["/api/pix/dados", "/pix/dados"], (req, res) => {
  */
 pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], authenticate, async (req, res) => {
   try {
-    const { valor, descricao = "Apoio MedIa", txid = `TX${Date.now()}` } = req.body;
-    const numValor = valor ? Number(valor) : 15.00;
+    const { valor, amount, descricao = "Apoio MedIa", txid = `TX${Date.now()}` } = req.body || {};
+    const rawVal = valor !== undefined ? valor : amount;
+    const numValor = Math.round(Number(rawVal) * 100) / 100;
+
+    if (isNaN(numValor) || !isFinite(numValor) || numValor < 1.00) {
+      return res.status(400).json({
+        sucesso: false,
+        status: "error",
+        erro: "O valor da contribuição PIX deve ser de no mínimo R$ 1,00.",
+        message: "O valor da contribuição PIX deve ser de no mínimo R$ 1,00."
+      });
+    }
+
     const userId = req.user?.id || req.user?.userId || "anonymous";
     const userEmail = req.user?.email || "anonimo@media.med.br";
 

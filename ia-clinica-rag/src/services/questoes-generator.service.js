@@ -569,6 +569,7 @@ Retorne estritamente um JSON no formato:
     let totalFlashcards = memoryFlashcards.length;
     let porEspecialidade = {};
     let porDeck = {};
+    let bancasSet = new Set(memoryQuestions.map(q => q.banca || "ENARE"));
 
     try {
       const countQ = await pool.query("SELECT COUNT(*) FROM questoes");
@@ -579,21 +580,45 @@ Retorne estritamente um JSON no formato:
 
       const groupQ = await pool.query("SELECT especialidade, COUNT(*) as qtd FROM questoes GROUP BY especialidade");
       groupQ.rows.forEach(r => {
-        porEspecialidade[r.especialidade] = parseInt(r.qtd, 10);
+        if (r.especialidade) porEspecialidade[r.especialidade] = parseInt(r.qtd, 10);
       });
 
       const groupF = await pool.query("SELECT deck_id, COUNT(*) as qtd FROM flashcards GROUP BY deck_id");
       groupF.rows.forEach(r => {
-        porDeck[r.deck_id] = parseInt(r.qtd, 10);
+        if (r.deck_id) porDeck[r.deck_id] = parseInt(r.qtd, 10);
       });
+
+      const bancasRes = await pool.query("SELECT DISTINCT banca FROM questoes WHERE banca IS NOT NULL");
+      if (bancasRes.rows.length > 0) {
+        bancasSet = new Set(bancasRes.rows.map(r => r.banca));
+      }
     } catch (err) {
       console.warn("[STUDY STATS] Fallback para estatísticas em memória:", err.message);
     }
 
+    if (Object.keys(porEspecialidade).length === 0) {
+      memoryQuestions.forEach(q => {
+        const esp = q.especialidade || q.area || "Geral";
+        porEspecialidade[esp] = (porEspecialidade[esp] || 0) + 1;
+      });
+    }
+
+    if (Object.keys(porDeck).length === 0) {
+      memoryFlashcards.forEach(f => {
+        const deck = f.deckId || f.deck_id || "geral";
+        porDeck[deck] = (porDeck[deck] || 0) + 1;
+      });
+    }
+
+    const totalDecks = Object.keys(porDeck).length || 8;
+    const totalBancas = bancasSet.size || 5;
+
     return {
       totalQuestions,
       totalFlashcards,
-      totalDecks: 8,
+      totalDecks,
+      totalBancas,
+      bancas: Array.from(bancasSet),
       porEspecialidade,
       porDeck
     };

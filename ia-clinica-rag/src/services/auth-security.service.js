@@ -5,8 +5,8 @@ import { pool, ensureUsersSchema } from "../config/database.js";
 import { env } from "../config/env.js";
 import { emailService } from "./email.service.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret || crypto.randomBytes(32).toString("hex");
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = env.jwtSecret || process.env.JWT_SECRET || "ia-clinica-secret-key-2026";
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "ia-clinica-refresh-secret-2026";
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 

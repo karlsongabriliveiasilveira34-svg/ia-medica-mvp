@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { query } from "../config/database.js";
+import { env } from "../config/env.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = env.jwtSecret || process.env.JWT_SECRET || "ia-clinica-secret-key-2026";
 
 /**
  * Serviço de Autenticação Google OAuth 2.0 & Gestão de Usuários (MedIa v2.0)

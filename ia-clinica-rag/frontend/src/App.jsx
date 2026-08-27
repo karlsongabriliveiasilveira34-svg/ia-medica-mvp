@@ -23,7 +23,12 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { MobileDrawer } from './components/MobileDrawer';
 import { isAnalyticsAllowed } from './utils/cookieConsent';
 
-// Configuração de Interceptador Global do fetch para enviar Token Real de Autenticação
+import { resolveApiUrl, isNativeMobile } from './config/api';
+import { App as CapacitorApp } from '@capacitor/app';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
+
+// Configuração de Interceptador Global do fetch para enviar Token Real e resolver URL de produção no Mobile
 if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
   window.__fetch_intercepted__ = true;
   const originalFetch = window.fetch;
@@ -31,7 +36,12 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
     let [resource, config] = args;
     const token = localStorage.getItem('access_token');
 
-    if (token && typeof resource === 'string' && resource.startsWith('/api') && !resource.includes('/api/auth/login') && !resource.includes('/api/auth/register')) {
+    // Resolve URL para o servidor na nuvem se estiver rodando no app nativo
+    if (typeof resource === 'string') {
+      resource = resolveApiUrl(resource);
+    }
+
+    if (token && typeof resource === 'string' && resource.includes('/api') && !resource.includes('/api/auth/login') && !resource.includes('/api/auth/register')) {
       config = config || {};
       const existingHeaders = config.headers instanceof Headers
         ? Object.fromEntries(config.headers.entries())
@@ -45,7 +55,7 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
 
     const response = await originalFetch(resource, config);
 
-    if (response.status === 401 && typeof resource === 'string' && resource.startsWith('/api/') && !resource.includes('/api/auth/login')) {
+    if (response.status === 401 && typeof resource === 'string' && resource.includes('/api/') && !resource.includes('/api/auth/login')) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('media_user');
       window.dispatchEvent(new Event('auth_unauthorized'));
@@ -252,6 +262,54 @@ export default function App() {
 
     checkAuthStatus();
   }, []);
+
+  // Integração com Hardware do Android (Capacitor: Back Button, StatusBar e Splash)
+  useEffect(() => {
+    if (!isNativeMobile()) return;
+
+    try {
+      StatusBar.setBackgroundColor({ color: '#213f34' }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      SplashScreen.hide().catch(() => {});
+    } catch (e) { }
+
+    const backListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (showMobileDrawer) {
+        setShowMobileDrawer(false);
+      } else if (showLogin) {
+        setShowLogin(false);
+      } else if (showUsageModal) {
+        setShowUsageModal(false);
+      } else if (showPixModal) {
+        setShowPixModal(false);
+      } else if (showFeedbackModal) {
+        setShowFeedbackModal(false);
+      } else if (selectedCitation) {
+        setSelectedCitation(null);
+      } else if (selectedDiagnosis) {
+        setSelectedDiagnosis(null);
+      } else if (activeTab !== 'landing' && activeTab !== 'roteamento') {
+        setActiveTab('roteamento');
+      } else if (canGoBack) {
+        window.history.back();
+      } else {
+        CapacitorApp.exitApp();
+      }
+    });
+
+    return () => {
+      backListener.then(l => l.remove()).catch(() => {});
+    };
+  }, [
+    showMobileDrawer,
+    showLogin,
+    showUsageModal,
+    showPixModal,
+    showFeedbackModal,
+    selectedCitation,
+    selectedDiagnosis,
+    activeTab
+  ]);
 
   const handleOpenReportEditor = (consultation, reportData) => {
     setActiveConsultation(consultation);

@@ -50,6 +50,8 @@ iaRouter.post(["/api/ia/chat", "/api/ia", "/ia/chat"], authenticate, aiQueryLimi
       status: "success",
       answer: result.resposta,
       resposta: result.resposta,
+      citations: result.citations || [],
+      differentialDiagnoses: result.differentialDiagnoses || [],
       modo: result.modo,
       conversationId: result.conversationId,
       timestamp: result.timestamp

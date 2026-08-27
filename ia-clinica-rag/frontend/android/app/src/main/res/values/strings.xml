@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MedIA</string>
+    <string name="title_activity_main">MedIA</string>
+    <string name="package_name">br.med.media.app</string>
+    <string name="custom_url_scheme">br.med.media.app</string>
+</resources>
