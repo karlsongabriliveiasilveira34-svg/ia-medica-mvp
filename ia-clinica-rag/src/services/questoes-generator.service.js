@@ -3,109 +3,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { pool, ensureUsersSchema } from "../config/database.js";
 import { env } from "../config/env.js";
 import { INITIAL_QUESTIONS, INITIAL_FLASHCARDS } from "../../frontend/src/data/medicalQuestionsAndCards.js";
+import {
+  normalizeQuestion,
+  normalizeFlashcard,
+  generateQuestionHash,
+  generateFlashcardHash,
+  calculateJaccardSimilarity
+} from "../adapters/question-flashcard.adapter.js";
 
 const apiKey = process.env.GEMINI_API_KEY || env.geminiApiKey || "";
 
-// Cache/Store em memória resiliente
-let memoryQuestions = INITIAL_QUESTIONS.map((q, idx) => ({
-  id: q.id || `q_mem_${idx + 1}`,
-  banca: q.exam || "ENARE",
-  especialidade: q.area || "Clínica Médica",
-  tema: q.topic || "Geral",
-  dificuldade: "media",
-  enunciado: q.question,
-  alternativas: q.options,
-  resposta_correta: q.correct !== undefined ? q.correct : 0,
-  explicacao: q.explanation || "Gabarito comentado baseado nas diretrizes oficiais vigentes."
-}));
-
-let memoryFlashcards = [...INITIAL_FLASHCARDS];
+// Cache/Store em memória resiliente com dados normalizados
+let memoryQuestions = INITIAL_QUESTIONS.map((q, idx) => normalizeQuestion(q, idx + 1)).filter(Boolean);
+let memoryFlashcards = INITIAL_FLASHCARDS.map((f, idx) => normalizeFlashcard(f, idx + 1)).filter(Boolean);
 let memoryAnswers = [];
-
-/**
- * Normaliza string para deduplicação semântica/léxica
- */
-function normalizeForComparison(text) {
-  if (!text || typeof text !== "string") return "";
-  const stopWords = new Set([
-    "o", "a", "os", "as", "um", "uma", "uns", "umas", "de", "do", "da", "dos", "das",
-    "em", "no", "na", "nos", "nas", "por", "para", "com", "sem", "sobre", "qual",
-    "quais", "como", "onde", "quando", "porque", "por que", "que", "se", "ou", "e",
-    "paciente", "apresenta", "apresentando", "quadro", "anos", "idade"
-  ]);
-
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter(word => word.length > 2 && !stopWords.has(word))
-    .join(" ");
-}
-
-/**
- * Calcula similaridade de Jaccard entre dois textos normalizados (0.0 a 1.0)
- */
-function calculateSimilarity(textA, textB) {
-  const normA = new Set(normalizeForComparison(textA).split(" "));
-  const normB = new Set(normalizeForComparison(textB).split(" "));
-
-  if (normA.size === 0 || normB.size === 0) return 0;
-
-  let intersection = 0;
-  for (const token of normA) {
-    if (normB.has(token)) intersection++;
-  }
-
-  const union = new Set([...normA, ...normB]).size;
-  return union === 0 ? 0 : intersection / union;
-}
-
-/**
- * Validação estrita de estrutura de uma questão médica
- */
-function validateQuestionStructure(q, specialty, topic, difficulty) {
-  if (!q || typeof q !== "object") return null;
-
-  const enunciado = typeof q.enunciado === "string" ? q.enunciado.trim() : (typeof q.question === "string" ? q.question.trim() : "");
-  if (!enunciado || enunciado.length < 25) return null;
-
-  let alternativas = Array.isArray(q.alternativas) ? q.alternativas : (Array.isArray(q.options) ? q.options : []);
-  if (!alternativas || alternativas.length < 4) return null;
-
-  alternativas = alternativas.slice(0, 4).map((alt, idx) => {
-    const str = String(alt || "").trim();
-    const prefix = String.fromCharCode(65 + idx) + ") ";
-    return str.startsWith(prefix) ? str : `${prefix}${str}`;
-  });
-
-  let respostaCorreta = q.resposta_correta !== undefined ? q.resposta_correta : q.correct;
-  if (typeof respostaCorreta === "string") {
-    const matchIdx = alternativas.findIndex(a => a.toLowerCase().includes(respostaCorreta.toLowerCase()));
-    respostaCorreta = matchIdx >= 0 ? matchIdx : 0;
-  } else {
-    respostaCorreta = Number(respostaCorreta);
-    if (isNaN(respostaCorreta) || respostaCorreta < 0 || respostaCorreta >= alternativas.length) {
-      respostaCorreta = 0;
-    }
-  }
-
-  const explicacao = typeof q.explicacao === "string" ? q.explicacao.trim() : (typeof q.explanation === "string" ? q.explanation.trim() : `Gabarito comentado: a alternativa correta é a conduta de 1ª linha recomendada nas diretrizes vigentes.`);
-
-  return {
-    id: q.id || `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    especialidade: q.especialidade || specialty || "Clínica Médica",
-    tema: q.tema || topic || "Caso Clínico",
-    enunciado,
-    alternativas,
-    resposta_correta: respostaCorreta,
-    explicacao,
-    banca: q.banca || "ENARE / Revalida INEP",
-    ano: q.ano || 2026,
-    dificuldade: q.dificuldade || difficulty || "media"
-  };
-}
+const seenQuestionHashes = new Set(memoryQuestions.map(q => q.hash));
 
 export class QuestoesGeneratorService {
   /**
@@ -148,67 +60,34 @@ export class QuestoesGeneratorService {
 
       // 2. Obter página de questões
       const queryParams = [...params, limitNum, offset];
-      const dataQuery = `SELECT * FROM questoes ${baseWhere} ORDER BY created_at DESC, id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      const dataQuery = `SELECT * FROM questoes ${baseWhere} ORDER BY id ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
       const res = await pool.query(dataQuery, queryParams);
 
       if (res.rows.length > 0 || total > 0) {
-        const formatted = res.rows.map(q => ({
-          id: q.id,
-          banca: q.banca,
-          exam: q.banca,
-          especialidade: q.especialidade,
-          area: q.especialidade,
-          tema: q.tema,
-          topic: q.tema,
-          dificuldade: q.dificuldade,
-          enunciado: q.enunciado,
-          question: q.enunciado,
-          alternativas: typeof q.alternativas === "string" ? JSON.parse(q.alternativas) : q.alternativas,
-          options: typeof q.alternativas === "string" ? JSON.parse(q.alternativas) : q.alternativas,
-          resposta_correta: q.resposta_correta,
-          correct: q.resposta_correta,
-          explicacao: q.explicacao,
-          explanation: q.explicacao,
-          created_at: q.created_at
-        }));
-
+        const questoes = res.rows.map((r, idx) => normalizeQuestion(r, offset + idx + 1)).filter(Boolean);
         return {
-          total,
+          total: total || questoes.length,
           page: pageNum,
           limit: limitNum,
-          hasNext: offset + formatted.length < total,
-          questoes: formatted
+          hasNext: offset + questoes.length < (total || questoes.length),
+          questoes
         };
       }
     } catch (err) {
       console.warn("[QUESTOES] Consulta no PostgreSQL em fallback para memória:", err.message);
     }
 
-function matchSpecialty(itemEsp, queryEsp) {
-  if (!queryEsp || queryEsp === "all") return true;
-  const a = (itemEsp || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const b = (queryEsp || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (a.includes(b) || b.includes(a)) return true;
-  if (
-    (a.includes("clinica") && b.includes("clinica")) ||
-    (a.includes("cirurg") && b.includes("cirurg")) ||
-    (a.includes("pediat") && b.includes("pediat")) ||
-    (a.includes("gineco") && b.includes("gineco")) ||
-    (a.includes("prevent") && b.includes("prevent")) ||
-    (a.includes("urgenc") && b.includes("urgenc"))
-  ) {
-    return true;
-  }
-  return false;
-}
-
     // Fallback resiliente em memória
     let filtered = memoryQuestions.filter(q => {
-      const matchEsp = matchSpecialty(q.especialidade || q.area, especialidade);
-      const matchBanca = !banca || banca === "all" ||
-        (q.banca && q.banca.toLowerCase().includes(banca.toLowerCase())) ||
-        (q.exam && q.exam.toLowerCase().includes(banca.toLowerCase()));
-      const matchDif = !dificuldade || dificuldade === "all" || q.dificuldade === dificuldade;
+      const espTarget = (q.subject || q.especialidade || q.area || "").toLowerCase();
+      const topicTarget = (q.topic || q.tema || "").toLowerCase();
+      const matchEsp = !especialidade || especialidade === "all" || espTarget.includes(especialidade.toLowerCase()) || topicTarget.includes(especialidade.toLowerCase());
+      
+      const bancaTarget = (q.source || q.banca || q.exam || "").toLowerCase();
+      const matchBanca = !banca || banca === "all" || bancaTarget.includes(banca.toLowerCase());
+
+      const difTarget = (q.difficulty || q.dificuldade || "").toLowerCase();
+      const matchDif = !dificuldade || dificuldade === "all" || difTarget === dificuldade.toLowerCase();
 
       if (userId && status === "nao_respondidas") {
         const jaRespondeu = memoryAnswers.some(a => a.userId === userId && String(a.questaoId) === String(q.id));
@@ -222,24 +101,7 @@ function matchSpecialty(itemEsp, queryEsp) {
     });
 
     const total = filtered.length;
-    const paginated = filtered.slice(offset, offset + limitNum).map(q => ({
-      id: q.id,
-      banca: q.banca || q.exam || "ENARE",
-      exam: q.banca || q.exam || "ENARE",
-      especialidade: q.especialidade || q.area || "Clínica Médica",
-      area: q.especialidade || q.area || "Clínica Médica",
-      tema: q.tema || q.topic || "Geral",
-      topic: q.tema || q.topic || "Geral",
-      dificuldade: q.dificuldade || "media",
-      enunciado: q.enunciado || q.question,
-      question: q.enunciado || q.question,
-      alternativas: q.alternativas || q.options,
-      options: q.alternativas || q.options,
-      resposta_correta: q.resposta_correta !== undefined ? q.resposta_correta : q.correct,
-      correct: q.resposta_correta !== undefined ? q.resposta_correta : q.correct,
-      explicacao: q.explicacao || q.explanation,
-      explanation: q.explicacao || q.explanation
-    }));
+    const paginated = filtered.slice(offset, offset + limitNum).map((q, idx) => normalizeQuestion(q, offset + idx + 1)).filter(Boolean);
 
     return {
       total,
@@ -461,9 +323,23 @@ Retorne estritamente um JSON no formato:
       const rawBatch = await this.callGeminiForQuestions(prompt);
       for (const item of rawBatch) {
         if (validQuestions.length >= TARGET_COUNT) break;
-        const validated = validateQuestionStructure(item, especialidade, tema, dificuldadeEspecifica);
-        if (validated) {
-          validQuestions.push(validated);
+        const normalized = normalizeQuestion({
+          ...item,
+          subject: especialidade,
+          topic: tema,
+          difficulty: dificuldadeEspecifica,
+          source: "ENARE / MedIa Inédita",
+          sourceUrl: "https://enare.ebserh.gov.br"
+        }, validQuestions.length + 1);
+
+        if (normalized) {
+          // Deduplicação estrita por hash SHA-256 e similaridade de Jaccard
+          if (seenQuestionHashes.has(normalized.hash)) continue;
+          const isDuplicate = validQuestions.some(existing => calculateJaccardSimilarity(existing.question, normalized.question) > 0.80);
+          if (isDuplicate) continue;
+
+          seenQuestionHashes.add(normalized.hash);
+          validQuestions.push(normalized);
         }
       }
     }
@@ -475,14 +351,14 @@ Retorne estritamente um JSON no formato:
           `INSERT INTO questoes (banca, especialidade, tema, dificuldade, enunciado, alternativas, resposta_correta, explicacao)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING`,
           [
-            q.banca || "ENARE / MedIa Inédita",
-            q.especialidade,
-            q.tema,
-            q.dificuldade,
-            q.enunciado,
-            JSON.stringify(q.alternativas),
-            q.resposta_correta,
-            q.explicacao
+            q.source || q.banca || "ENARE / MedIa Inédita",
+            q.subject || q.especialidade,
+            q.topic || q.tema,
+            q.difficulty || q.dificuldade,
+            q.question || q.enunciado,
+            JSON.stringify(q.options || q.alternativas),
+            q.correctAnswer !== undefined ? q.correctAnswer : q.resposta_correta,
+            q.explanation || q.explicacao
           ]
         );
       } catch (e) {}
@@ -525,18 +401,12 @@ Retorne estritamente um JSON no formato:
       const total = parseInt(countRes.rows[0]?.count || "0", 10);
 
       if (res.rows.length > 0) {
+        const flashcards = res.rows.map((r, idx) => normalizeFlashcard(r, offset + idx + 1)).filter(Boolean);
         return {
-          total: total || res.rows.length,
+          total: total || flashcards.length,
           page,
           limit,
-          flashcards: res.rows.map(r => ({
-            id: r.id,
-            deckId: r.deck_id,
-            area: r.area,
-            front: r.frente,
-            back: r.verso,
-            hint: r.dica
-          }))
+          flashcards
         };
       }
     } catch (err) {
@@ -548,14 +418,16 @@ Retorne estritamente um JSON no formato:
       filtered = filtered.filter(f => f.deckId === deckId || f.deck_id === deckId);
     }
     if (area && area !== "all") {
-      filtered = filtered.filter(f => f.area === area);
+      filtered = filtered.filter(f => f.area === area || f.subject === area);
     }
+
+    const paginated = filtered.slice(offset, offset + limit).map((f, idx) => normalizeFlashcard(f, offset + idx + 1)).filter(Boolean);
 
     return {
       total: filtered.length,
       page,
       limit,
-      flashcards: filtered.slice(offset, offset + limit)
+      flashcards: paginated
     };
   }
 
