@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { pool, ensureUsersSchema } from "../config/database.js";
 import { env } from "../config/env.js";
 import { INITIAL_QUESTIONS, INITIAL_FLASHCARDS } from "../../frontend/src/data/medicalQuestionsAndCards.js";
-import { RUMEDQ_FLASHCARDS, DEPT_Q_BANK_QUESTIONS } from "../database/rumedq-deptq.seed.js";
+import { RUMEDQ_FLASHCARDS, DEPT_Q_BANK_QUESTIONS, MEDMCQA_QUESTIONS } from "../database/rumedq-deptq.seed.js";
 import {
   normalizeQuestion,
   normalizeFlashcard,
@@ -14,8 +14,8 @@ import {
 
 const apiKey = process.env.GEMINI_API_KEY || env.geminiApiKey || "";
 
-// Concatenação e normalização universal dos acervos oficiais (ENARE, Revalida, Dept-Q-Bank, RuMedQ)
-const allRawQuestions = [...INITIAL_QUESTIONS, ...DEPT_Q_BANK_QUESTIONS];
+// Concatenação e normalização universal dos acervos oficiais (ENARE, Revalida, Dept-Q-Bank, MedMCQA, RuMedQ)
+const allRawQuestions = [...INITIAL_QUESTIONS, ...DEPT_Q_BANK_QUESTIONS, ...(MEDMCQA_QUESTIONS || [])];
 const allRawFlashcards = [...INITIAL_FLASHCARDS, ...RUMEDQ_FLASHCARDS];
 
 let memoryQuestions = allRawQuestions.map((q, idx) => normalizeQuestion(q, idx + 1)).filter(Boolean);

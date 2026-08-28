@@ -17,6 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const RUMEDQ_JSON_FILE = path.resolve(__dirname, "rumedq-dataset.json");
 const DEPTQ_JSON_FILE = path.resolve(__dirname, "deptq-dataset.json");
+const MEDMCQA_JSON_FILE = path.resolve(__dirname, "medmcqa-dataset.json");
 
 let loadedRumedQCards = [];
 try {
@@ -37,6 +38,18 @@ try {
 } catch (e) {
   console.warn("Aviso ao carregar deptq-dataset.json:", e.message);
 }
+
+let loadedMedMCQAQuestions = [];
+try {
+  if (fs.existsSync(MEDMCQA_JSON_FILE)) {
+    const rawMData = fs.readFileSync(MEDMCQA_JSON_FILE, "utf8");
+    loadedMedMCQAQuestions = JSON.parse(rawMData);
+  }
+} catch (e) {
+  console.warn("Aviso ao carregar medmcqa-dataset.json:", e.message);
+}
+
+export const MEDMCQA_QUESTIONS = loadedMedMCQAQuestions;
 
 export const RUMEDQ_FLASHCARDS = loadedRumedQCards.length > 0 ? loadedRumedQCards : [
   // 1. CARDIOLOGIA & ECG (Deck 'cardio')
