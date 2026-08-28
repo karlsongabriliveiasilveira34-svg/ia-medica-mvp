@@ -35,6 +35,11 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('todas'); // 'todas', 'nao_respondidas', 'erradas'
   const [questionsList, setQuestionsList] = useState(INITIAL_QUESTIONS);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [pageJumpInput, setPageJumpInput] = useState('');
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [userStats, setUserStats] = useState({ correct: 0, wrong: 0, totalAnswered: 0, aproveitamento: 0 });
@@ -44,7 +49,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const [studyStats, setStudyStats] = useState({
     totalQuestions: 0,
     totalFlashcards: 0,
-    totalDecks: 8,
+    totalDecks: 9,
     porEspecialidade: {},
     porDeck: {}
   });
@@ -74,7 +79,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   };
 
   useEffect(() => {
-    const fetchStatsAndCards = async () => {
+    const fetchStats = async () => {
       try {
         const statsRes = await fetch('/api/study/stats');
         if (statsRes.ok) {
@@ -83,31 +88,24 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
           if (sData.totalQuestions) setTotalQuestionsInDb(sData.totalQuestions);
         }
       } catch (e) {}
-
-      try {
-        const cardsRes = await fetch('/api/flashcards?limit=200');
-        if (cardsRes.ok) {
-          const cData = await cardsRes.json();
-          if (cData.flashcards && cData.flashcards.length > 0) {
-            setFlashcardsList(cData.flashcards);
-          }
-        }
-      } catch (e) {}
     };
 
-    fetchStatsAndCards();
+    fetchStats();
+    fetchUserStudyProgress();
   }, []);
 
-  // 2. Carregar questões reais da API ao iniciar ou mudar filtros
+  // 2. Carregar questões reais da API com suporte a paginação pelo acervo completo
   useEffect(() => {
     const fetchQuestions = async () => {
+      setIsLoadingQuestions(true);
       try {
         const token = localStorage.getItem('access_token');
         const queryParams = new URLSearchParams();
         if (selectedQuestionArea !== 'all') queryParams.append('especialidade', selectedQuestionArea);
         if (selectedExamBank !== 'all') queryParams.append('banca', selectedExamBank);
         if (selectedStatusFilter !== 'todas') queryParams.append('status', selectedStatusFilter);
-        queryParams.append('limit', '50');
+        queryParams.append('page', String(currentPage));
+        queryParams.append('limit', String(pageSize));
 
         const res = await fetch(`/api/questoes?${queryParams.toString()}`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -115,7 +113,10 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
 
         if (res.ok) {
           const data = await res.json();
-          if (data.total !== undefined) setTotalQuestionsInDb(data.total);
+          if (data.total !== undefined) {
+            setTotalQuestionsInDb(data.total);
+            setTotalPages(data.totalPages || Math.ceil(data.total / pageSize) || 1);
+          }
           if (data.questoes && data.questoes.length > 0) {
             const formatted = data.questoes.map(q => ({
               id: q.id,
@@ -132,12 +133,13 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
         }
       } catch (err) {
         console.warn('Usando banco inicial de questões:', err.message);
+      } finally {
+        setIsLoadingQuestions(false);
       }
     };
 
     fetchQuestions();
-    fetchUserStudyProgress();
-  }, [selectedQuestionArea, selectedExamBank, selectedStatusFilter]);
+  }, [selectedQuestionArea, selectedExamBank, selectedStatusFilter, currentPage, pageSize]);
 
   // 3. Submissão de resposta conectada ao backend com persistência e controle de limites
   const handleSelectOption = async (idx) => {
@@ -239,18 +241,45 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   };
 
   // ==========================================
-  // ESTADO DOS FLASHCARDS & BARALHOS (10.420+ Cards)
+  // ESTADO DOS FLASHCARDS & BARALHOS (4.754+ Cards)
   // ==========================================
   const [selectedDeckId, setSelectedDeckId] = useState('cardio');
   const [flashcardsList, setFlashcardsList] = useState(INITIAL_FLASHCARDS);
   const [cardIndex, setCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [studyMode, setStudyMode] = useState('daily'); // 'daily', 'new', 'hard', 'all'
   const [cardStats, setCardStats] = useState({ reviewedToday: 18, retentionRate: 91, streakDays: 7 });
 
+  // Carregar flashcards do baralho selecionado diretamente da API oficial
+  useEffect(() => {
+    const fetchDeckFlashcards = async () => {
+      setIsLoadingFlashcards(true);
+      try {
+        const query = selectedDeckId === 'all' ? 'limit=500' : `deckId=${selectedDeckId}&limit=500`;
+        const res = await fetch(`/api/flashcards?${query}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.flashcards && data.flashcards.length > 0) {
+            setFlashcardsList(data.flashcards);
+            setCardIndex(0);
+            setIsFlipped(false);
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar flashcards do baralho:', err.message);
+      } finally {
+        setIsLoadingFlashcards(false);
+      }
+    };
+
+    fetchDeckFlashcards();
+  }, [selectedDeckId]);
+
   const activeDeck = FLASHCARD_DECKS.find(d => d.id === selectedDeckId) || FLASHCARD_DECKS[0];
-  const activeDeckCards = flashcardsList.filter(c => c.deckId === selectedDeckId);
-  const currentCard = activeDeckCards[cardIndex % activeDeckCards.length] || INITIAL_FLASHCARDS[0];
+  const activeDeckCards = flashcardsList.filter(c => !selectedDeckId || selectedDeckId === 'all' || c.deckId === selectedDeckId || c.deck_id === selectedDeckId);
+  const totalDeckCards = activeDeckCards.length > 0 ? activeDeckCards : flashcardsList;
+  const currentCard = totalDeckCards[cardIndex % (totalDeckCards.length || 1)] || INITIAL_FLASHCARDS[0];
 
   // Resposta no estilo Anki (Repetição Espaçada com Validação de Limites)
   const handleRateCard = async (intervalText) => {
@@ -463,29 +492,40 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             </div>
           </div>
 
-          {/* Seleção de Grande Área Médica */}
+          {/* Seleção de Grande Área Médica com Contagens Reais */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-            {SPECIALTY_AREAS.map((area) => (
-              <button
-                key={area.id}
-                onClick={() => {
-                  setSelectedQuestionArea(area.id);
-                  setCurrentQuestionIndex(0);
-                  setSelectedAnswer(null);
-                  setShowExplanation(false);
-                }}
-                className={`p-3 rounded-2xl border text-left transition-all ${
-                  selectedQuestionArea === area.id
-                    ? 'bg-[#213f34] text-white border-[#213f34] shadow-md scale-[1.02]'
-                    : 'bg-white text-[#17231f] border-[#17231f]/10 hover:border-[#213f34]/40'
-                }`}
-              >
-                <span className="text-xs font-bold block truncate">{area.name}</span>
-                <span className={`text-[10px] ${selectedQuestionArea === area.id ? 'text-emerald-200' : 'text-[#5e6c65]'}`}>
-                  {area.totalQuestions} questões
-                </span>
-              </button>
-            ))}
+            {SPECIALTY_AREAS.map((area) => {
+              let count = 0;
+              if (area.id === 'all') count = studyStats.totalQuestions || totalQuestionsInDb || 5047;
+              else if (area.id === 'clinica') count = studyStats.porEspecialidade?.['Clínica Médica'] || 518;
+              else if (area.id === 'cirurgia') count = studyStats.porEspecialidade?.['Cirurgia Geral & Trauma'] || 451;
+              else if (area.id === 'pediatria') count = studyStats.porEspecialidade?.['Pediatria & Puericultura'] || 229;
+              else if (area.id === 'go') count = studyStats.porEspecialidade?.['Ginecologia & Obstetrícia'] || 281;
+              else if (area.id === 'preventiva') count = studyStats.porEspecialidade?.['Medicina Preventiva & SUS'] || 343;
+
+              return (
+                <button
+                  key={area.id}
+                  onClick={() => {
+                    setSelectedQuestionArea(area.id);
+                    setCurrentPage(1);
+                    setCurrentQuestionIndex(0);
+                    setSelectedAnswer(null);
+                    setShowExplanation(false);
+                  }}
+                  className={`p-3 rounded-2xl border text-left transition-all ${
+                    selectedQuestionArea === area.id
+                      ? 'bg-[#213f34] text-white border-[#213f34] shadow-md scale-[1.02]'
+                      : 'bg-white text-[#17231f] border-[#17231f]/10 hover:border-[#213f34]/40'
+                  }`}
+                >
+                  <span className="text-xs font-bold block truncate">{area.name}</span>
+                  <span className={`text-[10px] ${selectedQuestionArea === area.id ? 'text-emerald-200' : 'text-[#5e6c65]'}`}>
+                    {count.toLocaleString()} questões
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Card Principal da Questão */}
@@ -501,7 +541,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   </span>
                 </div>
                 <span className="text-xs text-[#5e6c65] block">
-                  Banco de Provas Oficiais • Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{activeQuestions.length}</strong> no simulado ativo ({studyStats.totalQuestions || totalQuestionsInDb || questionsList.length} no acervo)
+                  Banco de Provas Oficiais • Questão <strong>{(currentPage - 1) * pageSize + currentQuestionIndex + 1}</strong> de <strong>{totalQuestionsInDb || 5047}</strong> no acervo (Página {currentPage} de {totalPages})
                 </span>
               </div>
 
@@ -571,44 +611,144 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               </div>
             )}
 
-            {/* Barra de Navegação Inferior de Questões (Sempre Visível) */}
-            <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#17231f]/10">
-              <span className="text-[11px] text-[#5e6c65]">
-                Questão <strong>{currentQuestionIndex + 1}</strong> de <strong>{activeQuestions.length}</strong> no simulado ativo
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedAnswer(null);
-                    setShowExplanation(false);
-                    setCurrentQuestionIndex(prev => Math.max(0, prev - 1));
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-white border border-[#17231f]/10 text-xs font-bold hover:bg-gray-50 flex items-center gap-1 shadow-sm"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" /> Anterior
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedAnswer(null);
-                    setShowExplanation(false);
-                    const randomIdx = Math.floor(Math.random() * activeQuestions.length);
-                    setCurrentQuestionIndex(randomIdx);
-                  }}
-                  className="px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
-                  title="Embaralhar questões"
-                >
-                  <Shuffle className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedAnswer(null);
-                    setShowExplanation(false);
-                    setCurrentQuestionIndex(prev => (prev + 1) % activeQuestions.length);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1 shadow-sm"
-                >
-                  Próxima Questão <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+            {/* Barra de Navegação Inferior de Questões e Paginação Completa */}
+            <div className="pt-4 space-y-3 border-t border-[#17231f]/10">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span className="text-xs text-[#5e6c65]">
+                  Questão <strong>{(currentPage - 1) * pageSize + currentQuestionIndex + 1}</strong> de <strong>{totalQuestionsInDb || 5047}</strong> • Pág. <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
+                </span>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                      if (currentQuestionIndex > 0) {
+                        setCurrentQuestionIndex(prev => prev - 1);
+                      } else if (currentPage > 1) {
+                        setCurrentPage(prev => prev - 1);
+                        setCurrentQuestionIndex(pageSize - 1);
+                      }
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white border border-[#17231f]/10 text-xs font-bold hover:bg-gray-50 flex items-center gap-1 shadow-sm"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                      const randomIdx = Math.floor(Math.random() * (questionsList.length || 1));
+                      setCurrentQuestionIndex(randomIdx);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
+                    title="Embaralhar questões desta página"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                      if (currentQuestionIndex < questionsList.length - 1) {
+                        setCurrentQuestionIndex(prev => prev + 1);
+                      } else if (currentPage < totalPages) {
+                        setCurrentPage(prev => prev + 1);
+                        setCurrentQuestionIndex(0);
+                      } else {
+                        setCurrentQuestionIndex(0);
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1 shadow-sm"
+                  >
+                    Próxima Questão <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Controles de Navegação de Página (Paginação em Bloco para todo o acervo) */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dashed border-[#17231f]/10 text-xs bg-[#faf8f5] p-3 rounded-2xl">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => {
+                      setCurrentPage(1);
+                      setCurrentQuestionIndex(0);
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold bg-white disabled:opacity-40"
+                  >
+                    ⏮ 1ª Pág
+                  </button>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => {
+                      setCurrentPage(p => Math.max(1, p - 1));
+                      setCurrentQuestionIndex(0);
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold bg-white disabled:opacity-40"
+                  >
+                    ◀ Pág Ant
+                  </button>
+                  <span className="text-[11px] font-bold text-[#17231f] px-2">
+                    Página <strong>{currentPage}</strong> / {totalPages}
+                  </span>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => {
+                      setCurrentPage(p => Math.min(totalPages, p + 1));
+                      setCurrentQuestionIndex(0);
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold bg-white disabled:opacity-40"
+                  >
+                    Próx Pág ▶
+                  </button>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => {
+                      setCurrentPage(totalPages);
+                      setCurrentQuestionIndex(0);
+                      setSelectedAnswer(null);
+                      setShowExplanation(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold bg-white disabled:opacity-40"
+                  >
+                    Última ⏭
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[#5e6c65]">Ir para:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={totalPages}
+                    placeholder="Nº"
+                    value={pageJumpInput}
+                    onChange={(e) => setPageJumpInput(e.target.value)}
+                    className="w-14 px-2 py-1 text-xs border rounded-lg bg-white text-center font-bold"
+                  />
+                  <button
+                    onClick={() => {
+                      const num = parseInt(pageJumpInput, 10);
+                      if (num >= 1 && num <= totalPages) {
+                        setCurrentPage(num);
+                        setCurrentQuestionIndex(0);
+                        setSelectedAnswer(null);
+                        setShowExplanation(false);
+                        setPageJumpInput('');
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-[#213f34] text-white text-[11px] font-bold rounded-lg hover:bg-[#172f27]"
+                  >
+                    Ir
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -674,7 +814,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   Baralho Ativo: {activeDeck.title}
                 </span>
                 <span className="text-xs text-[#5e6c65] block mt-1">
-                  Card <strong>{(cardIndex % activeDeckCards.length) + 1}</strong> de <strong>{activeDeckCards.length}</strong> carregados (Total no baralho: {activeDeck.cardsCount})
+                  Card <strong>{(cardIndex % (totalDeckCards.length || 1)) + 1}</strong> de <strong>{totalDeckCards.length}</strong> disponíveis no baralho
                 </span>
               </div>
               
@@ -751,10 +891,11 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               <button
                 onClick={() => {
                   setIsFlipped(false);
-                  const randomIdx = Math.floor(Math.random() * activeDeckCards.length);
+                  const randomIdx = Math.floor(Math.random() * (totalDeckCards.length || 1));
                   setCardIndex(randomIdx);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
+                title="Embaralhar flashcards deste baralho"
               >
                 <Shuffle className="w-3.5 h-3.5" /> Embaralhar
               </button>
@@ -762,9 +903,9 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               <button
                 onClick={() => {
                   setIsFlipped(false);
-                  setCardIndex(prev => (prev + 1) % activeDeckCards.length);
+                  setCardIndex(prev => (prev + 1) % (totalDeckCards.length || 1));
                 }}
-                className="px-3.5 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] flex items-center gap-1"
+                className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1 shadow-sm"
               >
                 Próximo Card <ChevronRight className="w-3.5 h-3.5" />
               </button>
