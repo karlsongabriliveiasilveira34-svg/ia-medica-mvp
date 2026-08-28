@@ -8,8 +8,8 @@ import { emailService } from "./email.service.js";
 const fallbackRefreshSecret = crypto.randomBytes(32).toString("hex");
 const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || fallbackRefreshSecret;
-const JWT_EXPIRES_IN = "15m";
-const REFRESH_EXPIRES_IN = "7d";
+const JWT_EXPIRES_IN = "3d";
+const REFRESH_EXPIRES_IN = "30d";
 
 // Store em memória para persistência local caso o banco Postgres local esteja desligado
 const memoryUsers = new Map();
