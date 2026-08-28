@@ -230,7 +230,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
         setCurrentQuestionIndex(0);
         setSelectedAnswer(null);
         setShowExplanation(false);
-        setGenerationSuccessMessage(`🎉 5 novas questões de ${areaName} geradas com sucesso!`);
+        setGenerationSuccessMessage(`5 novas questões de ${areaName} geradas com sucesso!`);
         setTimeout(() => setGenerationSuccessMessage(''), 4000);
       }
     } catch (err) {
@@ -253,6 +253,93 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [studyMode, setStudyMode] = useState('daily'); // 'daily', 'new', 'hard', 'all'
   const [cardStats, setCardStats] = useState({ reviewedToday: 18, retentionRate: 91, streakDays: 7 });
+
+  // ==========================================
+  // ESTADO DO SIMULADO OFICIAL DE RESIDÊNCIA
+  // ==========================================
+  const [simuladoActive, setSimuladoActive] = useState(false);
+  const [simuladoQuestions, setSimuladoQuestions] = useState([]);
+  const [simuladoCurrentIdx, setSimuladoCurrentIdx] = useState(0);
+  const [simuladoAnswers, setSimuladoAnswers] = useState({});
+  const [simuladoSecondsLeft, setSimuladoSecondsLeft] = useState(1800);
+  const [simuladoFinished, setSimuladoFinished] = useState(false);
+  const [isLoadingSimulado, setIsLoadingSimulado] = useState(false);
+
+  // Timer regressivo do Simulado
+  useEffect(() => {
+    let timer = null;
+    if (simuladoActive && !simuladoFinished && simuladoSecondsLeft > 0) {
+      timer = setInterval(() => {
+        setSimuladoSecondsLeft(prev => {
+          if (prev <= 1) {
+            setSimuladoFinished(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [simuladoActive, simuladoFinished, simuladoSecondsLeft]);
+
+  // Iniciar Simulado Oficial da Especialidade Selecionada
+  const handleStartSpecialtySimulado = async (specId, count = 20) => {
+    setIsLoadingSimulado(true);
+    setSimuladoActive(true);
+    setSimuladoFinished(false);
+    setSimuladoCurrentIdx(0);
+    setSimuladoAnswers({});
+    setSimuladoSecondsLeft(count * 90);
+
+    try {
+      const areaMap = {
+        cardio: 'clinica',
+        cirurgia: 'cirurgia',
+        pediatria: 'pediatria',
+        go: 'go',
+        preventiva: 'preventiva'
+      };
+      const area = areaMap[specId] || specId;
+      const res = await fetch(`/api/questoes?especialidade=${area}&limit=${count}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questoes && data.questoes.length > 0) {
+          const formatted = data.questoes.map(q => ({
+            id: q.id,
+            exam: q.banca || q.exam || 'ENARE / R1',
+            area: (q.especialidade || q.area || 'clinica').toLowerCase(),
+            topic: q.tema || q.topic || 'Residência Médica',
+            question: q.enunciado || q.question,
+            options: typeof q.alternativas === 'string' ? JSON.parse(q.alternativas) : (q.alternativas || q.options),
+            correct: q.resposta_correta !== undefined ? q.resposta_correta : q.correct,
+            explanation: q.explicacao || q.explanation
+          }));
+          setSimuladoQuestions(formatted);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar simulado da especialidade:', err);
+    } finally {
+      setIsLoadingSimulado(false);
+    }
+  };
+
+  // Praticar Questões da Especialidade no Banco
+  const handleStartSpecialtyPractice = (specId) => {
+    const areaMap = {
+      cardio: 'clinica',
+      cirurgia: 'cirurgia',
+      pediatria: 'pediatria',
+      go: 'go',
+      preventiva: 'preventiva'
+    };
+    setSelectedQuestionArea(areaMap[specId] || specId);
+    setActiveStudentSubtab('quizzes');
+    setCurrentPage(1);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowExplanation(false);
+  };
 
   // Carregar dados de roadmap da especialidade selecionada
   useEffect(() => {
@@ -782,7 +869,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-[#17231f]/10 shadow-sm">
             <div>
               <h2 className="font-editorial text-2xl font-bold text-[#17231f]">
-                {flashcardTabMode === 'decks' ? 'Baralhos de Flashcards Médicos' : '🏥 Roadmap de Especialização & Residência'}
+                {flashcardTabMode === 'decks' ? 'Baralhos de Flashcards Médicos' : 'Roadmap de Especialização & Residência'}
               </h2>
               <p className="text-xs text-[#5e6c65]">
                 {flashcardTabMode === 'decks'
@@ -795,23 +882,25 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             <div className="flex items-center gap-2 bg-[#faf8f5] p-1.5 rounded-2xl border border-[#17231f]/10 self-start sm:self-auto">
               <button
                 onClick={() => setFlashcardTabMode('decks')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   flashcardTabMode === 'decks'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f]'
                 }`}
               >
-                🗂️ Baralhos ({studyStats.totalFlashcards || 5003})
+                <Layers className="w-3.5 h-3.5" />
+                <span>Baralhos ({studyStats.totalFlashcards || 5003})</span>
               </button>
               <button
                 onClick={() => setFlashcardTabMode('roadmap')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   flashcardTabMode === 'roadmap'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f]'
                 }`}
               >
-                🏥 Roadmap Residência (4 Fases)
+                <Award className="w-3.5 h-3.5" />
+                <span>Roadmap Residência (4 Fases)</span>
               </button>
             </div>
           </div>
@@ -863,7 +952,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               <div className="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-3xl border border-[#17231f]/10 shadow-sm text-center space-y-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-[#17231f]/10 pb-4">
                   <div className="text-left">
-                    <span className="text-xs font-bold text-amber-950 bg-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
+                    <span className="text-xs font-bold text-[#213f34] bg-emerald-100 px-3 py-1 rounded-full uppercase tracking-wider border border-emerald-300">
                       Baralho Ativo: {activeDeck.title}
                     </span>
                     <span className="text-xs text-[#5e6c65] block mt-1">
@@ -947,7 +1036,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                       const randomIdx = Math.floor(Math.random() * (totalDeckCards.length || 1));
                       setCardIndex(randomIdx);
                     }}
-                    className="px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
+                    className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
                     title="Embaralhar flashcards deste baralho"
                   >
                     <Shuffle className="w-3.5 h-3.5" /> Embaralhar
@@ -976,15 +1065,18 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               {/* Seletor de Programa de Residência Médica */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {[
-                  { id: 'cardio', name: 'Cardiologia & ECG', deck: 'cardio', count: 141 },
-                  { id: 'cirurgia', name: 'Cirurgia Geral & Trauma', deck: 'cirurgia', count: 776 },
-                  { id: 'pediatria', name: 'Pediatria & Puericultura', deck: 'pediatria', count: 323 },
-                  { id: 'go', name: 'Ginecologia & Obstetrícia', deck: 'go', count: 303 },
-                  { id: 'preventiva', name: 'Medicina Preventiva & SUS', deck: 'preventiva', count: 303 }
+                  { id: 'cardio', name: 'Cardiologia & ECG', deck: 'cardio', count: 141, qCount: 518 },
+                  { id: 'cirurgia', name: 'Cirurgia Geral & Trauma', deck: 'cirurgia', count: 776, qCount: 451 },
+                  { id: 'pediatria', name: 'Pediatria & Puericultura', deck: 'pediatria', count: 323, qCount: 229 },
+                  { id: 'go', name: 'Ginecologia & Obstetrícia', deck: 'go', count: 303, qCount: 281 },
+                  { id: 'preventiva', name: 'Medicina Preventiva & SUS', deck: 'preventiva', count: 303, qCount: 343 }
                 ].map((prog) => (
                   <button
                     key={prog.id}
-                    onClick={() => setSelectedResidencySpec(prog.id)}
+                    onClick={() => {
+                      setSelectedResidencySpec(prog.id);
+                      setSimuladoActive(false);
+                    }}
                     className={`p-4 rounded-3xl border text-left transition-all ${
                       selectedResidencySpec === prog.id
                         ? 'bg-[#213f34] text-white border-[#213f34] shadow-md scale-[1.02]'
@@ -993,75 +1085,276 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   >
                     <span className="text-xs font-bold block truncate">{prog.name}</span>
                     <span className={`text-[10px] ${selectedResidencySpec === prog.id ? 'text-emerald-200' : 'text-[#5e6c65]'}`}>
-                      {prog.count} flashcards vinculados
+                      {prog.count} flashcards • {prog.qCount} questões
                     </span>
                   </button>
                 ))}
               </div>
 
-              {/* Visão Estruturada das 4 Fases de Preparação */}
-              <div className="space-y-4">
-                <div className="bg-white p-6 rounded-3xl border border-[#17231f]/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <span className="text-xs font-extrabold uppercase tracking-widest text-[#213f34] bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
-                      Plano Curricular de 18 Meses
-                    </span>
-                    <h3 className="text-xl font-bold text-[#17231f] mt-2">
-                      Roadmap Oficial: {roadmapData?.nome || 'Especialização Médica'}
-                    </h3>
-                    <p className="text-xs text-[#5e6c65] mt-1 max-w-xl">
-                      {roadmapData?.descricao || 'Cronograma estruturado para aprovação nas provas de residência médica (ENARE, USP, UNIFESP, AMRIGS).'}
-                    </p>
+              {/* Visão do Simulado Interativo da Especialidade */}
+              {simuladoActive ? (
+                <div className="bg-white p-6 md:p-8 rounded-3xl border border-[#17231f]/10 shadow-sm space-y-6 animate-fadeIn">
+                  
+                  {/* Header do Simulado com Cronômetro */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#17231f]/10 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black uppercase tracking-wider bg-[#213f34] text-white px-3 py-1 rounded-full">
+                          Simulado Oficial R1 / ENARE
+                        </span>
+                        <span className="text-xs font-bold text-[#17231f]">
+                          {roadmapData?.nome || 'Especialização'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-[#5e6c65] block mt-1">
+                        Questão <strong>{simuladoCurrentIdx + 1}</strong> de <strong>{simuladoQuestions.length || 20}</strong>
+                      </span>
+                    </div>
+
+                    {/* Timer e Botão de Encerrar */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-2xl text-rose-950 font-mono font-bold text-xs">
+                        <Clock className="w-4 h-4 text-rose-700" />
+                        <span>
+                          {Math.floor(simuladoSecondsLeft / 60).toString().padStart(2, '0')}:{(simuladoSecondsLeft % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => setSimuladoFinished(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-xs transition"
+                      >
+                        Finalizar Simulado
+                      </button>
+
+                      <button
+                        onClick={() => setSimuladoActive(false)}
+                        className="text-xs text-[#5e6c65] hover:text-[#17231f] font-bold"
+                      >
+                        Fechar ✕
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedDeckId(selectedResidencySpec);
-                      setFlashcardTabMode('decks');
-                      setCardIndex(0);
-                      setIsFlipped(false);
-                    }}
-                    className="px-5 py-3 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition shadow-md flex items-center gap-2 shrink-0"
-                  >
-                    <Layers className="w-4 h-4" />
-                    Estudar Flashcards Desta Especialidade
-                  </button>
-                </div>
+                  {/* Tela de Resultado Final do Simulado */}
+                  {simuladoFinished ? (
+                    <div className="space-y-6 text-center py-4">
+                      {(() => {
+                        let correctCount = 0;
+                        simuladoQuestions.forEach((q, idx) => {
+                          if (simuladoAnswers[idx] === q.correct) correctCount++;
+                        });
+                        const pct = Math.round((correctCount / (simuladoQuestions.length || 1)) * 100);
 
-                {/* Grade das 4 Fases */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(roadmapData?.fases || [
-                    { fase: 1, nome: "Fase 1: Fundamentação", meses: "Meses 1-3", descricao: "Anatomia, fisiologia e semiologia fundamental da especialidade." },
-                    { fase: 2, nome: "Fase 2: Aprofundamento", meses: "Meses 4-8", descricao: "Fisiopatologia, condutas diagnósticas e casos clínicos progressivos." },
-                    { fase: 3, nome: "Fase 3: Especialização Clínica", meses: "Meses 9-15", descricao: "Casos complexos, exames complementares e terapêutica avançada." },
-                    { fase: 4, nome: "Fase 4: Consolidação & Provas", meses: "Meses 16-18", descricao: "Simulados oficiais, revisão de erros e preparação para o R1." }
-                  ]).map((fase) => (
-                    <div key={fase.fase} className="bg-white p-5 rounded-3xl border border-[#17231f]/10 shadow-sm space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black bg-emerald-100 text-emerald-900 px-3 py-1 rounded-full border border-emerald-300">
-                          {fase.meses}
-                        </span>
-                        <span className="text-xs font-bold text-[#5e6c65]">Fase {fase.fase}</span>
-                      </div>
-                      
-                      <h4 className="text-sm font-bold text-[#17231f]">{fase.nome}</h4>
-                      <p className="text-xs text-[#5e6c65] leading-relaxed">{fase.descricao}</p>
-
-                      {fase.modulos && fase.modulos.length > 0 && (
-                        <div className="pt-2 border-t border-[#17231f]/5 space-y-1.5 text-xs">
-                          <span className="text-[10px] font-bold uppercase text-[#5e6c65]">Módulos Curriculares:</span>
-                          {fase.modulos.map((m, mIdx) => (
-                            <div key={mIdx} className="flex items-center gap-1.5 text-[#17231f]">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                              <span className="text-[11px] truncate">{m.nome}</span>
+                        return (
+                          <div className="max-w-xl mx-auto space-y-4">
+                            <div className="w-16 h-16 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mx-auto text-emerald-800">
+                              <Award className="w-8 h-8" />
                             </div>
-                          ))}
-                        </div>
-                      )}
+                            <h3 className="text-2xl font-bold text-[#17231f]">
+                              Resultado do Simulado: {pct}% de Aproveitamento
+                            </h3>
+                            <p className="text-xs text-[#5e6c65]">
+                              Você acertou <strong>{correctCount}</strong> de <strong>{simuladoQuestions.length}</strong> questões de prova de residência.
+                            </p>
+
+                            <div className="flex items-center justify-center gap-3 pt-2">
+                              <button
+                                onClick={() => handleStartSpecialtySimulado(selectedResidencySpec, 20)}
+                                className="px-5 py-2.5 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition shadow-sm flex items-center gap-1.5"
+                              >
+                                <RefreshCw className="w-4 h-4" /> Fazer Novo Simulado
+                              </button>
+                              <button
+                                onClick={() => setSimuladoActive(false)}
+                                className="px-5 py-2.5 rounded-2xl bg-[#faf8f5] text-[#17231f] border border-[#17231f]/10 font-bold text-xs hover:bg-gray-100 transition"
+                              >
+                                Voltar ao Roadmap
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
-                  ))}
+                  ) : (
+                    /* Tela da Questão Ativa do Simulado */
+                    simuladoQuestions[simuladoCurrentIdx] ? (
+                      <div className="space-y-5">
+                        
+                        {/* Seletor Rápido de Questões do Simulado (Grid 1..20) */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                          {simuladoQuestions.map((_, qIdx) => {
+                            const isAnswered = simuladoAnswers[qIdx] !== undefined;
+                            const isCurrent = simuladoCurrentIdx === qIdx;
+                            return (
+                              <button
+                                key={qIdx}
+                                onClick={() => setSimuladoCurrentIdx(qIdx)}
+                                className={`w-7 h-7 rounded-lg text-xs font-bold flex items-center justify-center transition-all shrink-0 ${
+                                  isCurrent
+                                    ? 'bg-[#213f34] text-white ring-2 ring-[#213f34]'
+                                    : (isAnswered ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[#faf8f5] text-[#5e6c65] border border-[#17231f]/10')
+                                }`}
+                              >
+                                {qIdx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Enunciado da Questão */}
+                        <p className="text-sm md:text-base text-[#17231f] font-medium leading-relaxed bg-[#faf8f5] p-5 rounded-2xl border border-[#17231f]/10">
+                          {simuladoQuestions[simuladoCurrentIdx].question}
+                        </p>
+
+                        {/* Alternativas */}
+                        <div className="space-y-2.5">
+                          {simuladoQuestions[simuladoCurrentIdx].options.map((opt, optIdx) => {
+                            const isSelected = simuladoAnswers[simuladoCurrentIdx] === optIdx;
+                            return (
+                              <button
+                                key={optIdx}
+                                onClick={() => {
+                                  setSimuladoAnswers(prev => ({
+                                    ...prev,
+                                    [simuladoCurrentIdx]: optIdx
+                                  }));
+                                }}
+                                className={`w-full p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-medium transition-all ${
+                                  isSelected
+                                    ? 'bg-emerald-50 border-emerald-600 text-emerald-950 font-bold shadow-sm ring-1 ring-emerald-600'
+                                    : 'bg-white border-[#17231f]/10 text-[#17231f] hover:border-[#213f34]/40'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Navegação Entre Questões do Simulado */}
+                        <div className="flex items-center justify-between pt-3 border-t border-[#17231f]/10">
+                          <button
+                            onClick={() => setSimuladoCurrentIdx(prev => Math.max(0, prev - 1))}
+                            disabled={simuladoCurrentIdx === 0}
+                            className="px-4 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 disabled:opacity-40 flex items-center gap-1"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                          </button>
+
+                          <button
+                            onClick={() => setSimuladoCurrentIdx(prev => Math.min(simuladoQuestions.length - 1, prev + 1))}
+                            disabled={simuladoCurrentIdx === simuladoQuestions.length - 1}
+                            className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] disabled:opacity-40 flex items-center gap-1"
+                          >
+                            Próxima <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-xs text-[#5e6c65]">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-[#213f34]" />
+                        Carregando questões do simulado oficial...
+                      </div>
+                    )
+                  )}
                 </div>
-              </div>
+              ) : (
+                /* Visão Estruturada das 4 Fases de Preparação */
+                <div className="space-y-4">
+                  <div className="bg-white p-6 rounded-3xl border border-[#17231f]/10 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-xs font-extrabold uppercase tracking-widest text-[#213f34] bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300">
+                        Plano Curricular de 18 Meses
+                      </span>
+                      <h3 className="text-xl font-bold text-[#17231f] mt-2">
+                        Roadmap Oficial: {roadmapData?.nome || 'Especialização Médica'}
+                      </h3>
+                      <p className="text-xs text-[#5e6c65] mt-1 max-w-xl">
+                        {roadmapData?.descricao || 'Cronograma estruturado para aprovação nas provas de residência médica (ENARE, USP, UNIFESP, AMRIGS).'}
+                      </p>
+                    </div>
+
+                    {/* Grupo de 3 Ações de Estudo da Especialidade */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setSelectedDeckId(selectedResidencySpec);
+                          setFlashcardTabMode('decks');
+                          setCardIndex(0);
+                          setIsFlipped(false);
+                        }}
+                        className="px-4 py-2.5 rounded-2xl bg-white text-[#17231f] border border-[#17231f]/10 font-bold text-xs hover:bg-[#faf8f5] transition shadow-sm flex items-center gap-1.5"
+                      >
+                        <Layers className="w-4 h-4 text-[#213f34]" />
+                        Flashcards
+                      </button>
+
+                      <button
+                        onClick={() => handleStartSpecialtyPractice(selectedResidencySpec)}
+                        className="px-4 py-2.5 rounded-2xl bg-white text-[#17231f] border border-[#17231f]/10 font-bold text-xs hover:bg-[#faf8f5] transition shadow-sm flex items-center gap-1.5"
+                      >
+                        <BookOpen className="w-4 h-4 text-[#213f34]" />
+                        Praticar Questões
+                      </button>
+
+                      <button
+                        onClick={() => handleStartSpecialtySimulado(selectedResidencySpec, 20)}
+                        className="px-4 py-2.5 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition shadow-md flex items-center gap-1.5"
+                      >
+                        <Clock className="w-4 h-4 text-emerald-300" />
+                        Iniciar Simulado R1
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grade das 4 Fases com Checkpoints e Ação Direta */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(roadmapData?.fases || [
+                      { fase: 1, nome: "Fase 1: Fundamentação", meses: "Meses 1-3", descricao: "Anatomia, fisiologia e semiologia fundamental da especialidade." },
+                      { fase: 2, nome: "Fase 2: Aprofundamento", meses: "Meses 4-8", descricao: "Fisiopatologia, condutas diagnósticas e casos clínicos progressivos." },
+                      { fase: 3, nome: "Fase 3: Especialização Clínica", meses: "Meses 9-15", descricao: "Casos complexos, exames complementares e terapêutica avançada." },
+                      { fase: 4, nome: "Fase 4: Consolidação & Provas", meses: "Meses 16-18", descricao: "Simulados oficiais, revisão de erros e preparação para o R1." }
+                    ]).map((fase) => (
+                      <div key={fase.fase} className="bg-white p-5 rounded-3xl border border-[#17231f]/10 shadow-sm space-y-3 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black bg-emerald-100 text-emerald-900 px-3 py-1 rounded-full border border-emerald-300">
+                              {fase.meses}
+                            </span>
+                            <span className="text-xs font-bold text-[#5e6c65]">Fase {fase.fase}</span>
+                          </div>
+                          
+                          <h4 className="text-sm font-bold text-[#17231f]">{fase.nome}</h4>
+                          <p className="text-xs text-[#5e6c65] leading-relaxed">{fase.descricao}</p>
+
+                          {fase.modulos && fase.modulos.length > 0 && (
+                            <div className="pt-2 border-t border-[#17231f]/5 space-y-1.5 text-xs">
+                              <span className="text-[10px] font-bold uppercase text-[#5e6c65]">Módulos Curriculares:</span>
+                              {fase.modulos.map((m, mIdx) => (
+                                <div key={mIdx} className="flex items-center gap-1.5 text-[#17231f]">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                                  <span className="text-[11px] truncate">{m.nome}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Ação da Fase: Quiz / Simulado */}
+                        <div className="pt-2 border-t border-[#17231f]/5 flex items-center justify-between text-xs">
+                          <button
+                            onClick={() => handleStartSpecialtySimulado(selectedResidencySpec, 10)}
+                            className="text-xs font-bold text-[#213f34] hover:text-[#172f27] flex items-center gap-1 transition"
+                          >
+                            <Award className="w-3.5 h-3.5" /> Fazer Quiz desta Fase (10 questões)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1250,7 +1543,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               {limitWarning}
             </p>
             <div className="p-3 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 text-[11px] text-[#213f34] font-medium">
-              💡 Dica: O <strong>Plano Estudante</strong> inclui 300 requisições de IA/mês, 150 flashcards/dia, 100 questões/dia e 10.000 caracteres por mensagem.
+              Nota: O <strong>Plano Estudante</strong> inclui 300 requisições de IA/mês, 150 flashcards/dia, 100 questões/dia e 10.000 caracteres por mensagem.
             </div>
             <div className="flex gap-2 pt-2">
               <button

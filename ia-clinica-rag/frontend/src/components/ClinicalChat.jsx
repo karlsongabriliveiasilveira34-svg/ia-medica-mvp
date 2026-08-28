@@ -250,7 +250,7 @@ export function ClinicalChat({
     if (!file) return;
 
     if (userPlan === 'free') {
-      alert("⚠️ O Plano Free não possui envio de imagens ou arquivos. Faça upgrade para o Plano Estudante para desbloquear!");
+      alert("O Plano Free não possui envio de imagens ou arquivos. Faça upgrade para o Plano Estudante para desbloquear!");
       e.target.value = '';
       if (onOpenUsageModal) onOpenUsageModal();
       return;
@@ -260,7 +260,7 @@ export function ClinicalChat({
     const maxSizeBytes = maxMb * 1024 * 1024;
 
     if (file.size > maxSizeBytes) {
-      alert(`⚠️ O tamanho do arquivo excede o limite máximo permitido de ${maxMb}MB para o seu Plano ${userPlan.toUpperCase()}.`);
+      alert(`O tamanho do arquivo excede o limite máximo permitido de ${maxMb}MB para o seu Plano ${userPlan.toUpperCase()}.`);
       e.target.value = '';
       return;
     }
@@ -268,7 +268,7 @@ export function ClinicalChat({
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'application/pdf'];
     const hasValidExt = file.name.match(/\.(jpg|jpeg|png|webp|gif|bmp|pdf|docx|txt)$/i);
     if (!validTypes.includes(file.type.toLowerCase()) && !hasValidExt) {
-      alert("⚠️ Formato de arquivo não suportado. Selecione JPG, PNG, WEBP, PDF ou DOCX.");
+      alert("Formato de arquivo não suportado. Selecione JPG, PNG, WEBP, PDF ou DOCX.");
       e.target.value = '';
       return;
     }
@@ -382,7 +382,7 @@ export function ClinicalChat({
         const errorMessage = {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
-          text: `⚠️ **Aviso do Sistema**: ${data.message || 'Falha ao processar requisição médica.'}`,
+          text: `Aviso do Sistema: ${data.message || 'Falha ao processar requisição médica.'}`,
           citations: [],
           isError: true,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -396,8 +396,8 @@ export function ClinicalChat({
         id: (Date.now() + 1).toString(),
         sender: 'bot',
         text: isTimeout
-          ? '⏱️ **Tempo de Resposta Excedido**: O processamento demorou mais de 90 segundos. Por favor, tente novamente em alguns instantes.'
-          : '⚠️ **Erro de Conexão**: Não foi possível comunicar com o servidor da plataforma.',
+          ? 'Tempo de Resposta Excedido: O processamento demorou mais de 90 segundos. Por favor, tente novamente em alguns instantes.'
+          : 'Erro de Conexão: Não foi possível comunicar com o servidor da plataforma.',
         citations: [],
         isError: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -818,7 +818,7 @@ export function ClinicalChat({
                   {selectedImage.name}
                 </span>
                 <span className="text-[10px] text-emerald-800 font-semibold">
-                  {selectedImage.fromCamera ? '📷 Foto da Câmera' : '📁 Imagem Anexada'} • {selectedImage.sizeKb} KB
+                  {selectedImage.fromCamera ? 'Foto da Câmera' : 'Imagem Anexada'} • {selectedImage.sizeKb} KB
                 </span>
               </div>
             </div>
@@ -854,7 +854,7 @@ export function ClinicalChat({
             return (
               <span className={`font-mono text-[10px] ${isOver ? 'text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-md' : 'text-[#5e6c65]'}`}>
                 {input.length} / {maxChars === Infinity ? 'Ilimitado' : `${maxChars} carac.`}
-                {isOver && ' ⚠️ Limite excedido'}
+                {isOver && ' (Limite excedido)'}
               </span>
             );
           })()}
@@ -866,7 +866,7 @@ export function ClinicalChat({
             e.preventDefault();
             const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
             if (maxChars !== Infinity && input.length > maxChars) {
-              alert(`⚠️ Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}.`);
+              alert(`Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}.`);
               return;
             }
             handleSendQuestion();
@@ -879,7 +879,7 @@ export function ClinicalChat({
               type="button"
               onClick={() => {
                 if (userPlan === 'free') {
-                  alert("⚠️ O envio de fotos está disponível a partir do Plano Estudante.");
+                  alert("O envio de fotos está disponível a partir do Plano Estudante.");
                   if (onOpenUsageModal) onOpenUsageModal();
                   return;
                 }
@@ -896,7 +896,7 @@ export function ClinicalChat({
               type="button"
               onClick={() => {
                 if (userPlan === 'free') {
-                  alert("⚠️ O upload de arquivos está disponível a partir do Plano Estudante.");
+                  alert("O upload de arquivos está disponível a partir do Plano Estudante.");
                   if (onOpenUsageModal) onOpenUsageModal();
                   return;
                 }
