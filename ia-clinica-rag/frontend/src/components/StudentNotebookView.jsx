@@ -8,6 +8,7 @@ import {
 import { 
   EXAM_BANKS, SPECIALTY_AREAS, FLASHCARD_DECKS, INITIAL_QUESTIONS, INITIAL_FLASHCARDS 
 } from '../data/medicalQuestionsAndCards';
+import { UnimontesRoadmapView } from './UnimontesRoadmapView';
 
 export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDocumentToChat, onOpenChatWithTopic }) {
   // Sincronizar subaba com o activeTab do Navbar
@@ -869,20 +870,37 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-[#17231f]/10 shadow-sm">
             <div>
               <h2 className="font-editorial text-2xl font-bold text-[#17231f]">
-                {flashcardTabMode === 'decks' ? 'Baralhos de Flashcards Médicos' : 'Roadmap de Especialização & Residência'}
+                {flashcardTabMode === 'decks'
+                  ? 'Baralhos de Flashcards Médicos'
+                  : (flashcardTabMode === 'unimontes'
+                      ? 'Roadmap Medicina UNIMONTES (12 Períodos)'
+                      : 'Roadmap de Especialização & Residência')}
               </h2>
               <p className="text-xs text-[#5e6c65]">
                 {flashcardTabMode === 'decks'
                   ? `Acervo de ${studyStats.totalFlashcards || flashcardsList.length} cartões organizados por especialidade médica com algoritmo SM-2.`
-                  : 'Cronograma curricular estruturado em 4 Fases para aprovação nas provas de Residência Médica.'}
+                  : (flashcardTabMode === 'unimontes'
+                      ? 'Grade curricular completa da graduação médica UNIMONTES com livros OER, vídeos curados e casos clínicos.'
+                      : 'Cronograma curricular estruturado em 4 Fases para aprovação nas provas de Residência Médica.')}
               </p>
             </div>
 
             {/* Botões de Alternância */}
-            <div className="flex items-center gap-2 bg-[#faf8f5] p-1.5 rounded-2xl border border-[#17231f]/10 self-start sm:self-auto">
+            <div className="flex flex-wrap items-center gap-1.5 bg-[#faf8f5] p-1.5 rounded-2xl border border-[#17231f]/10 self-start sm:self-auto">
+              <button
+                onClick={() => setFlashcardTabMode('unimontes')}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  flashcardTabMode === 'unimontes'
+                    ? 'bg-[#213f34] text-white shadow-sm'
+                    : 'text-[#5e6c65] hover:text-[#17231f]'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Graduação UNIMONTES</span>
+              </button>
               <button
                 onClick={() => setFlashcardTabMode('decks')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                   flashcardTabMode === 'decks'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f]'
@@ -893,7 +911,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
               </button>
               <button
                 onClick={() => setFlashcardTabMode('roadmap')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                   flashcardTabMode === 'roadmap'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f]'
@@ -1356,6 +1374,13 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                 </div>
               )}
             </div>
+          )}
+
+          {/* ===================================================== */}
+          {/* MODO 3: GRADUAÇÃO COMPLETA MEDICINA UNIMONTES (12 PERÍODOS) */}
+          {/* ===================================================== */}
+          {flashcardTabMode === 'unimontes' && (
+            <UnimontesRoadmapView onOpenChatWithTopic={onOpenChatWithTopic} />
           )}
         </div>
       )}
