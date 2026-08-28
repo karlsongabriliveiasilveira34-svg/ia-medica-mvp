@@ -10,24 +10,23 @@ import crypto from "crypto";
  */
 
 /**
- * Normaliza uma string removendo acentos, pontuações e stop-words para comparação
+ * Normaliza uma string preservando caracteres alfanuméricos globais (Unicode) e stop-words
  */
 export function normalizeTextForComparison(text) {
   if (!text || typeof text !== "string") return "";
   const stopWords = new Set([
     "o", "a", "os", "as", "um", "uma", "uns", "umas", "de", "do", "da", "dos", "das",
     "em", "no", "na", "nos", "nas", "por", "para", "com", "sem", "sobre", "qual",
-    "quais", "como", "onde", "quando", "porque", "por que", "que", "se", "ou", "e",
-    "paciente", "apresenta", "apresentando", "quadro", "anos", "idade"
+    "quais", "como", "onde", "quando", "porque", "por que", "que", "se", "ou", "e"
   ]);
 
   return text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .split(/\s+/)
-    .filter(word => word.length > 2 && !stopWords.has(word))
+    .filter(word => word.length >= 1 && !stopWords.has(word))
     .join(" ");
 }
 
