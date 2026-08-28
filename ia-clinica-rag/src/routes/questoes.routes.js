@@ -28,8 +28,11 @@ questoesRouter.get(["/api/questoes", "/questoes", "/api/questions", "/questions"
       count: resultado.questoes.length,
       page: resultado.page,
       limit: resultado.limit,
+      totalPages: resultado.totalPages,
       hasNext: resultado.hasNext,
-      questoes: resultado.questoes
+      questoes: resultado.questoes,
+      data: resultado.questoes,
+      pagination: resultado.pagination
     });
   } catch (err) {
     console.error("[QUESTOES ROUTE][ERROR] Erro ao listar questões:", err.message);

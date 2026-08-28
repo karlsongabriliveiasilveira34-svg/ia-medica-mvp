@@ -292,6 +292,138 @@ export const RAW_MEDMCQA_QUESTIONS = [
     exp: "O Princípio da Equidade reconhece que todas as pessoas têm direito à saúde (Universalidade), mas possuem necessidades distintas. Equidade significa tratar desigualmente os desiguais na medida de suas desigualdades, direcionando recursos prioritariamente às populações mais vulneráveis para diminuir as disparidades sociais em saúde.",
     subject_name: "Preventive & Social Medicine",
     topic_name: "Health Systems / Principles of SUS and Equity"
+  },
+
+  // 10. HEMATOLOGIA & ONCOLOGIA CLÍNICA
+  {
+    id: "medmcqa_hemato_01",
+    question: "Mulher de 34 anos é admitida no pronto-socorro com petéquias difusas, gengivorragia, febre de 38,4°C, confusão mental flutuante e oligúria. Exames laboratoriais revelam: Hemoglobina 6,8 g/dL, Plaquetas 18.000/mm³, LDH 1.850 U/L (muito elevado), Bilirrubina Indireta 3,2 mg/dL, Creatinina 2,4 mg/dL e presença abundante de esquizócitos no esfregaço de sangue periférico (> 2%). O teste de Coombs Direto é negativo e o Coagulograma (TP e TTPA) é estritamente normal. Qual a principal hipótese diagnóstica e a terapia de emergência mandatória?",
+    opa: "Púrpura Trombocitopênica Trombótica (PTT / Deficiência de ADAMTS13); Plasmaférese Terapêutica de Emergência com reposição de Plasma Fresco Congelado + Corticoterapia",
+    opb: "Coagulação Intravascular Disseminada (CIVD); Transfusão de plaquetas em bólus",
+    opc: "Púrpura Trombocitopênica Imunológica (PTI); Apenas Imunoglobulina venosa sem plasmaférese",
+    opd: "Leucemia Mieloide Aguda; Iniciar Quimioterapia de indução 7+3 imediatamente",
+    cop: 0,
+    exp: "A presença da clássica pêntade diagnóstica (ou díade de anemia hemolítica microangiopática com esquizócitos + trombocitopenia grave) associada a sintomas neurológicos, febre e disfunção renal com coagulograma normal é patognomônica de PTT (deficiência congênita ou adquirida por autoanticorpos contra a protease ADAMTS13). A conduta mandatória de emergência com nível 1A de evidência é a Plasmaférese Terapêutica precoce diária, que reduz a mortalidade de 90% para menos de 15%. Transfusão de plaquetas é formalmente contraindicada pelo risco de trombose microvascular fulminante.",
+    subject_name: "Medicine",
+    topic_name: "Hematology / Thrombotic Thrombocytopenic Purpura (TTP)"
+  },
+  {
+    id: "medmcqa_hemato_02",
+    question: "Homem de 66 anos procura atendimento por dor lombar mecânica progressiva há 4 meses e astenia. Ao exame: descorado 2+/4+. Exames laboratoriais: Hemoglobina 8,8 g/dL (normocítica e normocrômica), Creatinina 2,1 mg/dL, Cálcio sérico total corrigido de 12,2 mg/dL (Hipercalcemia) e VHS 110 mm/1ª hora. A radiografia de crânio e coluna revela múltiplas lesões osteolíticas em saca-bocado ('punched-out') sem reação osteoblástica esclerótica ao redor. Qual a hipótese diagnóstica primária confirmada pelos critérios 'CRAB'?",
+    opa: "Mieloma Múltiplo",
+    opb: "Osteoporose senil grave",
+    opc: "Metástase óssea osteoblástica de adenocarcinoma de próstata",
+    opd: "Hiperparatireoidismo primário por adenoma",
+    cop: 0,
+    exp: "O quadro é a manifestação clássica dos critérios 'CRAB' do Mieloma Múltiplo: C = Hipercalcemia (Calcium > 11 mg/dL); R = Insuficiência Renal (Renal dysfunction Cr > 2.0); A = Anemia (Hb < 10); B = Lesões osteolíticas líticas (Bone lesions). A confirmação diagnóstica envolve eletroforese e imunofixação de proteínas séricas/urinárias (pico monoclonal) e mielograma/biópsia de medula óssea demonstrando plasmócitos clonais >= 10%.",
+    subject_name: "Medicine",
+    topic_name: "Hematology & Oncology / Multiple Myeloma and CRAB criteria"
+  },
+
+  // 11. DERMATOLOGIA CLÍNICA
+  {
+    id: "medmcqa_dermato_01",
+    question: "Mulher de 45 anos desenvolve bolhas flácidas e dolorosas no tronco, axilas e mucosa jugal oral que se rompem facilmente, deixando extensas áreas exulceradas e exsudativas ('em carne viva'). A pressão tangencial com o dedo sobre a pele aparentemente sã adjacente provoca descolamento epidérmico com facilidade (Sinal de Nikolsky positivo). A imunofluorescência direta demonstra deposição intraepidérmica de IgG e C3 com padrão em rede / 'malha de pescador' contra desmogleína 3. Qual o diagnóstico e a classe terapêutica de 1ª linha?",
+    opa: "Pênfigo Vulgar; Corticoterapia sistêmica em alta dose (Prednisona 1-2 mg/kg/dia) associada a imunossupressores (Azatioprina, Micofenolato ou Rituximabe)",
+    opb: "Penfigoide Bolhoso; Apenas anti-histamínicos orais",
+    opc: "Dermatite Herpetiforme associada a doença celíaca; Dieta isenta de glúten e dapsona isolada",
+    opd: "Eritema Multiforme menor; Aciclovir tópico",
+    cop: 0,
+    exp: "O Pênfigo Vulgar é uma doença bolhosa autoimune grave caracterizada por acantólise intraepidérmica suprabasal decorrente de autoanticorpos IgG contra as desmogleínas 1 e 3 dos desmossomos. Clinicamente apresenta bolhas flácidas de fácil rotura, acometimento mucoso precoce (boca) e Sinal de Nikolsky positivo. O tratamento exige corticoterapia sistêmica em altas doses para controlar a doença e reduzir a morbimortalidade.",
+    subject_name: "Dermatology",
+    topic_name: "Dermatology / Autoimmune Bullous Diseases (Pemphigus Vulgaris)"
+  },
+  {
+    id: "medmcqa_dermato_02",
+    question: "Homem de 50 anos, de pele clara (fototipo I de Fitzpatrick), procura o dermatologista para avaliação de uma lesão pigmentada no dorso que notou crescimento recente. Ao exame dermatoscópico aplica-se a regra do ABCDE do melanoma cutâneo. Qual das seguintes características clínicas abaixo NÃO faz parte dos critérios clássicos da regra do ABCDE?",
+    opa: "Dermatoglifos preservados e halo eritematoso simétrico",
+    opb: "Assimetria morfológica da lesão (A)",
+    opc: "Bordas irregulares, serrilhadas ou mal delimitadas (B)",
+    opd: "Coloração variada com múltiplos tons de preto, castanho, azul e vermelho (C)",
+    cop: 0,
+    exp: "A regra do ABCDE para triagem clínica do Melanoma Cutâneo consiste em: A = Assimetria; B = Bordas irregulares; C = Cores múltiplas e heterogêneas; D = Diâmetro > 6 mm; E = Evolução (mudança de tamanho, forma ou cor ao longo do tempo). A presença de dermatoglifos preservados e halo simétrico não faz parte dos critérios de suspeição de malignidade.",
+    subject_name: "Dermatology",
+    topic_name: "Dermatology / Cutaneous Melanoma Screening (ABCDE Rule)"
+  },
+
+  // 12. PSIQUIATRIA & SAÚDE MENTAL
+  {
+    id: "medmcqa_psiq_01",
+    question: "Homem de 29 anos é trazido pela família ao pronto-socorro psiquiátrico com quadro iniciado há 10 dias de euforia desmedida, elação, diminuição da necessidade de sono (dormindo apenas 2 horas por noite sem cansaço), taquipsiquismo, logorreia com pressão para falar, gastos financeiros impulsivos desproporcionais e delírios de grandeza (afirma ser conselheiro financeiro de chefes de Estado). Não há histórico de uso de substâncias ilícitas. Qual o diagnóstico e o tratamento de primeira linha para a fase aguda?",
+    opa: "Transtorno Afetivo Bipolar tipo I (Episódio Maníaco Agudo com sintomas psicóticos); Estabilizador do Humor (Lítio ou Valproato de Sódio) associado a Antipsicótico Atípico (Olanzapina, Quetiapina ou Risperidona)",
+    opb: "Transtorno Depressivo Maior Recorrente; Iniciar Fluoxetina em dose máxima imediatamente",
+    opc: "Transtorno de Ansiedade Generalizada; Prescrever apenas Clonazepam oral para dormir",
+    opd: "Transtorno de Personalidade Histriônica; Psicoterapia isolada sem indicação medicamentosa",
+    cop: 0,
+    exp: "O quadro clínico preenche os critérios diagnósticos do DSM-5 para Episódio Maníaco do Transtorno Bipolar tipo I: humor anormalmente elevado/expansivo por pelo menos 1 semana com >= 3 a 4 sintomas (insônia, loquacidade, fuga de ideias, grandiosidade e impulsividade) associado a prejuízo social grave e sintomas psicóticos. O tratamento de escolha na mania aguda é a associação de um estabilizador do humor (Carbonato de Lítio ou Divalproato) com um antipsicótico de 2ª geração.",
+    subject_name: "Psychiatry",
+    topic_name: "Psychiatry / Bipolar Disorder Type I and Acute Mania"
+  },
+  {
+    id: "medmcqa_psiq_02",
+    question: "Homem de 35 anos com esquizofrenia refratária em uso recente de Haloperidol em alta dose é admitido na UTI torporoso, com hipertermia grave (40,5°C), rigidez muscular generalizada intensa ('em cano de chumbo'), sudorese profusa, taquicardia (FC 138 bpm), pressão arterial lábil e níveis séricos de Creatina Fosfoquinase (CPK) extremamente elevados (14.500 U/L). Qual a principal hipótese diagnóstica e a conduta farmacológica específica?",
+    opa: "Síndrome Neuroléptica Maligna (SNM); Suspensão imediata do antipsicótico + Suporte intensivo e administração de Dantroleno Sódico intravenoso e/ou agonistas dopaminérgicos (Bromocriptina / Amantadina)",
+    opb: "Síndrome Serotoninérgica; Administrar Ciproheptadina e manter o antipsicótico",
+    opc: "Hipertermia Maligna por anestésico volátil; Indicar hemodiálise de urgência sem suspender haloperidol",
+    opd: "Catatonia letal periódica; Iniciar eletroconvulsoterapia ambulatorial após 30 dias",
+    cop: 0,
+    exp: "A Síndrome Neuroléptica Maligna (SNM) é uma reação idiossincrática grave decorrente do bloqueio dopaminérgico agudo por antipsicóticos (especialmente os típicos de alta potência como o Haloperidol). A tétrade clássica inclui: 1) Rigidez muscular em cano de chumbo; 2) Hipertermia; 3) Instabilidade autonômica; 4) Rebaixamento do sensório e rabdomiólise com elevação maciça de CPK. A conduta exige suspensão imediata do neuroléptico, suporte em UTI e Dantroleno ou Bromocriptina.",
+    subject_name: "Psychiatry",
+    topic_name: "Psychiatry / Neuroleptic Malignant Syndrome"
+  },
+
+  // 13. ORTOPEDIA & TRAUMATOLOGIA
+  {
+    id: "medmcqa_orto_01",
+    question: "Homem de 28 anos sofre fratura fechada de tíbia e fíbula tratada com imobilização gessada. Após 10 horas, passa a queixar-se de dor excruciante na perna afetada, desproporcional à lesão, que não cede mesmo com doses elevadas de morfina intravenosa. Ao exame físico: perna com edema tenso, endurecida e a dor piora drasticamente à dorsiflexão passiva do hálux (estiramento passivo da musculatura do compartimento anterior). Os pulsos distais ainda estão palpáveis. A medida da pressão intracompartimental é de 42 mmHg (Delta P < 20 mmHg). Qual o diagnóstico e a intervenção cirúrgica mandatória?",
+    opa: "Síndrome Compartimental Aguda; Fasciotomia descompressiva de urgência dos 4 compartimentos da perna",
+    opb: "Trombose Venosa Profunda aguda; Iniciar anticoagulação plena com enoxaparina e manter o gesso",
+    opc: "Osteomielite aguda pós-traumática; Coleta de hemoculturas e antibioticoterapia venosa",
+    opd: "Dor neuropática reflexa; Apenas bloqueio anestésico periférico ambulatorial",
+    cop: 0,
+    exp: "A Síndrome Compartimental Aguda ocorre quando a pressão intersticial dentro de um compartimento osteofascial fechado ultrapassa a pressão de perfusão capilar, levando a isquemia muscular e necrose nervosa irreversível em poucas horas. O sinal mais precoce e sensível é a dor intensa desproporcional agravada pelo estiramento passivo dos músculos do compartimento. A presença de pulsos distais NÃO descarta a síndrome. A conduta mandatória de emergência é a Fasciotomia descompressiva cirúrgica imediata.",
+    subject_name: "Orthopaedics",
+    topic_name: "Orthopaedics & Trauma / Acute Compartment Syndrome"
+  },
+
+  // 14. OFTALMOLOGIA & OTORRINOLARINGOLOGIA
+  {
+    id: "medmcqa_oftalmo_01",
+    question: "Mulher de 62 anos dá entrada no pronto-socorro com dor ocular súbita, unilateral e intolerável no olho direito, associada a cefaleia ipsilateral intensa, náuseas, vômitos, turvação visual e visualização de 'halos coloridos ao redor das luzes'. Ao exame oftalmológico: olho direito hiperemiado, córnea opaca ('em vidro fosco'), câmara anterior rasa e pupila em média midríase fixa que não reage à luz. A tonometria de aplanação revela Pressão Intraocular (PIO) de 54 mmHg no olho direito (VR 10-21 mmHg). Qual o diagnóstico e a conduta medicamentosa inicial de emergência?",
+    opa: "Glaucoma Agudo de Ângulo Fechado; Hipotensores oculares tópicos combinados (Beta-bloqueador/Timolol + Alfa-2 agonista/Brimonidina) + Inibidor da Anidrase Carbônica sistêmico (Acetazolamida VO/IV) + Diurético osmótico (Manitol 20% IV) e Miose com Pilocarpina 2%",
+    opb: "Uveíte Anterior Aguda não hipertensiva; Prescrever colírio de Atropina para dilatação máxima da pupila",
+    opc: "Conjuntivite bacteriana hiperaguda; Colírio de Ciprofloxacino isolado e alta",
+    opd: "Descolamento de Retina regmatogênico; Repouso no leito e observação sem medicação hipotensora",
+    cop: 0,
+    exp: "O Glaucoma Agudo de Ângulo Fechado é uma emergência oftalmológica caracterizada pelo bloqueio pupilar com fechamento do ângulo iridocorneano e elevação abrupta da PIO (> 40-50 mmHg), podendo causar cegueira irreversível por lesão do nervo óptico em poucas horas. O tratamento clínico de urgência visa reduzir rapidamente a PIO com drogas que diminuem a produção de humor aquoso (Timolol, Acetazolamida), osmóticos para desidratar o vítreo (Manitol) e mióticos (Pilocarpina) para abrir o seio camerular, seguido de Iridotomia periférica a laser bilateral definitiva.",
+    subject_name: "Ophthalmology",
+    topic_name: "Ophthalmology / Acute Angle-Closure Glaucoma"
+  },
+  {
+    id: "medmcqa_oto_01",
+    question: "Mulher de 54 anos refere episódios súbitos de tontura rotatória intensa (sensação de que o quarto está girando) com duração de 20 a 40 segundos, desencadeados especificamente ao deitar-se na cama ou ao virar a cabeça para a direita. Não há zumbido, perda auditiva ou déficits neurológicos. A Manobra diagnóstica de Dix-Hallpike realizada para a direita reproduz a vertigem acompanhada de nistagmo posicional torsional com batimento para cima, apresentando latência de 5 segundos e fatigabilidade. Qual o diagnóstico e a conduta de escolha com maior taxa de resolução imediata?",
+    opa: "Vertigem Posicional Paroxística Benigna (VPPB) de canal semicircular posterior direito; Manobra de Reposicionamento Canalítico de Epley no consultório",
+    opb: "Doença de Ménière bilateral; Dieta hipossódica e diurético tiazídico contínuo",
+    opc: "Neurite Vestibular aguda; Corticoterapia oral por 3 semanas sem manobras físicas",
+    opd: "Acidente Vascular Encefálico de tronco; Tomografia de crânio com contraste e internação em UTI",
+    cop: 0,
+    exp: "A VPPB é a causa mais frequente de vertigem periférica, decorrente de debris de otólitos (canalitíase) deslocados do utrículo para o canal semicircular posterior. O quadro típico são episódios breves (< 1 min) desencadeados por mudanças de posição da cabeça, com Dix-Hallpike positivo (nistagmo com latência e fadiga). O tratamento de escolha com taxa de cura > 90% na 1ª sessão é a Manobra de Reposicionamento de Epley, não sendo indicado uso rotineiro de depressores labirínticos.",
+    subject_name: "ENT",
+    topic_name: "Otorhinolaryngology / Benign Paroxysmal Positional Vertigo (BPPV)"
+  },
+
+  // 15. ANESTESIOLOGIA & CUIDADOS CRÍTICOS
+  {
+    id: "medmcqa_anest_01",
+    question: "Durante uma cirurgia ortopédica eletiva sob anestesia geral balanceada com Sevoflurano e Succinilcolina, paciente de 24 anos desenvolve subitamente elevação inexplicada do CO2 expirado (EtCO2 > 75 mmHg) na capnografia, taquicardia sinusal (FC 155 bpm), rigidez muscular intensa do masseter e hipertermia fulminante (temperatura corporal atingindo 41,2°C). Qual a síndrome farmacogenética deflagrada e o antídoto farmacológico específico de ação imediata?",
+    opa: "Hipertermia Maligna (mutação no receptor de rianodina RYR1); Interrupção imediata dos anestésicos voláteis/succinilcolina + Hiperventilação com O2 a 100% + Administração de Dantroleno Sódico intravenoso (2,5 mg/kg em bólus)",
+    opb: "Intoxicação por anestésico local (LAST); Emulsão lipídica a 20% venosa",
+    opc: "Crise de Feocromocitoma intraoperatório; Fentolamina venosa em bólus",
+    opd: "Choque anafilático a antibiótico; Adrenalina intramuscular e hidrocortisona",
+    cop: 0,
+    exp: "A Hipertermia Maligna é uma condição autossômica dominante caracterizada por hipermetabolismo muscular descontrolado deflagrado por anestésicos inalatórios halogenados (Sevoflurano, Isoflurano, Desflurano) e bloqueadores despolarizantes (Succinilcolina). O sinal mais precoce é a elevação do EtCO2 seguida de rigidez e hipertermia extrema. O tratamento específico imediato é o Dantroleno Sódico IV (que bloqueia a liberação de cálcio pelo receptor de rianodina RYR1 no retículo sarcoplasmático), associado à suspensão imediata dos agentes desencadeantes e resfriamento ativo.",
+    subject_name: "Anaesthesia",
+    topic_name: "Anesthesiology / Malignant Hyperthermia and Dantrolene"
   }
 ];
 

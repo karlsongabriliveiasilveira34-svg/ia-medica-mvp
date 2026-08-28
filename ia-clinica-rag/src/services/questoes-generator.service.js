@@ -27,10 +27,10 @@ export class QuestoesGeneratorService {
   /**
    * 1. LISTA QUESTÕES COM PAGINAÇÃO, FILTROS E CONEXÃO REAL AO BANCO
    */
-  static async listQuestions({ especialidade, tema, banca, dificuldade, status = "todas", userId = null, page = 1, limit = 20 }) {
+  static async listQuestions({ especialidade, tema, banca, dificuldade, status = "todas", userId = null, page = 1, limit = 50 }) {
     await ensureUsersSchema();
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const limitNum = Math.max(1, parseInt(limit, 10) || 50);
     const offset = (pageNum - 1) * limitNum;
 
     try {
@@ -69,12 +69,23 @@ export class QuestoesGeneratorService {
 
       if (res.rows.length > 0 || total > 0) {
         const questoes = res.rows.map((r, idx) => normalizeQuestion(r, offset + idx + 1)).filter(Boolean);
+        const finalTotal = total || questoes.length;
+        const totalPages = Math.ceil(finalTotal / limitNum) || 1;
         return {
-          total: total || questoes.length,
+          total: finalTotal,
           page: pageNum,
           limit: limitNum,
-          hasNext: offset + questoes.length < (total || questoes.length),
-          questoes
+          totalPages,
+          hasNext: offset + questoes.length < finalTotal,
+          questoes,
+          data: questoes,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: finalTotal,
+            totalPages,
+            hasNext: offset + questoes.length < finalTotal
+          }
         };
       }
     } catch (err) {
@@ -106,13 +117,23 @@ export class QuestoesGeneratorService {
 
     const total = filtered.length;
     const paginated = filtered.slice(offset, offset + limitNum).map((q, idx) => normalizeQuestion(q, offset + idx + 1)).filter(Boolean);
+    const totalPages = Math.ceil(total / limitNum) || 1;
 
     return {
       total,
       page: pageNum,
       limit: limitNum,
+      totalPages,
       hasNext: offset + paginated.length < total,
-      questoes: paginated
+      questoes: paginated,
+      data: paginated,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNext: offset + paginated.length < total
+      }
     };
   }
 
