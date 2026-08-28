@@ -62,7 +62,41 @@ export const RAW_DEPT_Q_BANK = [
   },
   {
     id: "deptq_med_03",
-    question: "Paciente de 45 anos, com cirrose hepática de etiologia alcoólica (Child-Pugh B), procura atendimento por aumento do volume abdominal e dor difusa há 2 dias. Nega febre ou sangramentos. Ao exame: afebril, abdome globoso, com descompressão brusca duvidosa. Realizada paracentese diagnóstica cujo líquido ascítico revelou: 480 leucócitos/mm³ com 78% de polimorfonucleares (PMN = 374/mm³) e albumina do líquido de 0,8 g/dL (GASA = 1,4 g/dL). Qual o diagnóstico e conduta adequada?",
+    question: "Homem de 68 anos, hipertenso e diabético, é atendido por palpitações taquicárdicas há 2 semanas. O ECG confirma Fibrilação Atrial com resposta ventricular média de 115 bpm. O ecocardiograma transtorácico revela fração de ejeção do VE preservada (60%) e átrio esquerdo aumentado (46 mm). O escore CHA2DS2-VASc calculado é 3 (Idade 65-74 = 1, Hipertensão = 1, Diabetes = 1). Qual a conduta indicada para a prevenção de eventos tromboembólicos?",
+    options: [
+      "Anticoagulação oral de longo prazo com Anticoagulante Oral Direto (DOAC: Apixabana, Rivaroxabana ou Dabigatrana) ou Varfarina com alvo de RNI 2.0-3.0",
+      "Prescrição isolada de AAS 100 mg/dia associado a Clopidogrel 75 mg/dia por 6 meses",
+      "Apenas controle de frequência com Beta-bloqueador sem necessidade de anticoagulação",
+      "Cardioversão elétrica imediata sem necessidade de anticoagulação prévia ou ecocardiograma transesofágico"
+    ],
+    correctAnswer: 0,
+    explanation: "Em pacientes com Fibrilação Atrial não valvar e escore CHA2DS2-VASc >= 2 em homens ou >= 3 em mulheres, a anticoagulação oral plena é formalmente recomendada (Classe I) para prevenção de AVC isquêmico e embolia sistêmica. Os anticoagulantes orais diretos (DOACs) são preferíveis à Varfarina devido ao melhor perfil de segurança (menor taxa de hemorragia intracraniana) e não necessidade de monitorização de RNI.",
+    subject: "Clínica Médica",
+    topic: "Cardiologia / Arritmias e Fibrilação Atrial",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_med_04",
+    question: "Homem de 58 anos em tratamento para insuficiência renal crônica estágio 4 comparece ao pronto-socorro com fraqueza muscular ascendente e parestesias. O ECG de 12 derivações revela ondas T apiculadas, simétricas e em 'tenda', associadas a alargamento do intervalo PR e achatamento da onda P. O potássio sérico de urgência é 7,4 mEq/L. Qual o primeiro medicamento a ser administrado imediatamente para proteger o miocárdio?",
+    options: [
+      "Gluconato de Cálcio a 10% IV (10 a 20 mL infundidos em 2 a 5 minutos sob monitorização eletrocardiográfica)",
+      "Insulina Regular 10 UI em 50 mL de Glicose a 50% IV em bólus",
+      "Furosemida 80 mg IV em bólus rápido associada a Poliestirenossulfonato de Cálcio (Sorcal)",
+      "Bicarbonato de Sódio a 8,4% 100 mL IV se pH > 7,45"
+    ],
+    correctAnswer: 0,
+    explanation: "A Hipercalemia Grave (K+ > 6,5 mEq/L ou com alterações no ECG) constitui emergência cardiológica pelo alto risco de fibrilação ventricular ou assistolia. O primeiro passo mandatório é a estabilização da membrana miocárdica com Gluconato de Cálcio a 10% IV (ou Cloreto de Cálcio se em PCR). O cálcio não reduz o potássio sérico, mas antagoniza a toxicidade cardíaca em 1-3 minutos. Medidas de shift intracelular (glicoinsulina, beta-2 agonistas) e espoliação (diuréticos, resinas, hemodiálise) devem ser realizadas na sequência.",
+    subject: "Clínica Médica",
+    topic: "Nefrologia / Distúrbios Hidroeletrolíticos e Hipercalemia",
+    difficulty: "facil",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_med_05",
+    question: "Mulher de 45 anos, com cirrose hepática Child-Pugh B, procura atendimento com aumento do volume abdominal e dor difusa há 2 dias. Realizada paracentese diagnóstica cujo líquido ascítico revelou: 480 leucócitos/mm³ com 78% de neutrófilos (PMN = 374/mm³) e albumina do líquido de 0,8 g/dL (GASA = 1,4 g/dL). Qual o diagnóstico e conduta terapêutica indicada?",
     options: [
       "Peritonite Bacteriana Espontânea (PBE); iniciar Cefotaxima ou Ceftriaxona IV + Albumina humana a 20% (1,5 g/kg no D1 e 1 g/kg no D3)",
       "Ascite não complicada; apenas aumentar a dose de Espironolactona e Furosemida ambulatorial",
@@ -78,35 +112,52 @@ export const RAW_DEPT_Q_BANK = [
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
   },
   {
-    id: "deptq_med_04",
-    question: "Homem de 28 anos, previamente hígido, é admitido no pronto-socorro com febre alta (39,2°C), cefaleia holocraniana intensa, vômitos e rigidez de nuca com sinais de Kernig e Brudzinski positivos. Não há déficits focais nem sinais de hipertensão intracraniana. Qual a sequência de conduta imediata preconizada pelas diretrizes?",
+    id: "deptq_med_06",
+    question: "Homem de 24 anos com Diabetes Mellitus tipo 1 dá entrada no pronto-socorro com náuseas, vômitos incoercíveis, dor abdominal e respiração profunda e ruidosa (padrão de Kussmaul) há 24 horas. Exames laboratoriais: Glicemia 420 mg/dL, pH arterial 7,18, Bicarbonato 10 mEq/L, Anion Gap 22 mEq/L, Cetonemia positiva e Potássio sérico 4,8 mEq/L. Qual a conduta inicial prioritária?",
     options: [
-      "Coleta de hemoculturas e punção lombar (LCR) imediatas, seguidas prontamente pelo início de Ceftriaxona 2g 12/12h + Dexametasona IV antes ou junto da 1ª dose de antibiótico",
-      "Realização obrigatória de Tomografia de Crânio antes de qualquer procedimento e aguardar 4 horas pelo laudo para puncionar",
-      "Prescrição isolada de sintomáticos e antitérmicos com reavaliação ambulatorial em 48 horas",
-      "Iniciar apenas Ampicilina oral e aguardar o resultado das culturas do líquor para internar"
+      "Hidratação venosa vigorosa com Soro Fisiológico a 0,9% (1.000 a 1.500 mL na primeira hora) + Reposição profilática de Potássio antes ou junto da Insulina Regular IV contínua (0,1 U/kg/h)",
+      "Bicarbonato de Sódio 8,4% em infusão rápida contínua até o pH atingir 7,40 e suspensão da insulina",
+      "Insulina NPH subcutânea em alta dose e alta hospitalar após normalização da glicemia",
+      "Antibioticoterapia de amplo espectro imediata antes de qualquer hidratação venosa"
     ],
     correctAnswer: 0,
-    explanation: "Na suspeita clínica evidente de Meningite Bacteriana Aguda sem contraindicações à punção lombar (sem déficit focal, sem coma, sem papiledema), deve-se realizar a coleta do líquor e iniciar imediatamente antibioticoterapia empírica parenteral (Ceftriaxona) associada à Dexametasona IV administrada antes ou junto com a primeira dose de antibiótico para reduzir sequelas neurológicas e perda auditiva por S. pneumoniae.",
+    explanation: "Trata-se de Cetoacidose Diabética (CAD) clássica (Glicemia > 250 mg/dL + pH < 7,30 + Bicarbonato < 15 + Anion Gap elevado + Cetonemia). O pilar inicial mais crucial é a ressuscitação volêmica vigorosa com SF 0,9% (1 a 1,5 L na 1ª hora). A insulinoterapia contínua em bomba (0,1 U/kg/h) deve ser iniciada após a expansão inicial e desde que o potássio sérico esteja >= 3,3 mEq/L (repondo KCl se K+ entre 3,3 e 5,2 mEq/L para evitar hipocalemia grave induzida pela insulina).",
     subject: "Clínica Médica",
-    topic: "Infectologia & Neurologia / Meningites",
+    topic: "Endocrinologia / Cetoacidose Diabética",
     difficulty: "media",
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
   },
   {
-    id: "deptq_med_05",
-    question: "Homem de 68 anos, portador de DPOC grave, dá entrada no pronto-atendimento com piora do volume e purulência do escarro e aumento importante da dispneia basal (Critérios de Anthonisen I). Gasometria arterial em ar ambiente: pH 7,31, PaCO2 58 mmHg, PaO2 52 mmHg, HCO3 28 mEq/L, SatO2 84%. Além de broncodilatadores inalatórios e corticoide sistêmico, qual a conduta ventilatória e farmacológica indicada?",
+    id: "deptq_med_07",
+    question: "Homem de 65 anos é admitido com hemiparesia faciobraquiocrural direita e afasia motora de início súbito há 90 minutos (escala NIHSS = 14). A Tomografia Computadorizada de crânio sem contraste exclui hemorragia intracraniana e não mostra sinais precoces de isquemia extensa (escore ASPECTS = 10). PA atual é 160/90 mmHg e glicemia capilar 120 mg/dL. Não há contraindicações formais. Qual a conduta preconizada pelas diretrizes internacionais de AVC?",
     options: [
-      "Ventilação Não Invasiva (VNI) com alvo de SatO2 88-92% + Antibioticoterapia (ex: Amoxicilina-Clavulanato ou Macrolídeo/Fluoroquinolona)",
-      "Intubação orotraqueal imediata com FiO2 100% contínua e sem necessidade de antibióticos",
-      "Oxigenoterapia em máscara com reservatório a 15 L/min para manter SatO2 > 99%",
-      "Prescrição de sedativos benzodiazepínicos para diminuir o desconforto respiratório"
+      "Trombólise intravenosa imediata com Alteplase (rt-PA 0,9 mg/kg) ou Tenecteplase dentro da janela de até 4,5 horas do ictus",
+      "Administração imediata de Heparina não fracionada em bólus venoso pleno associada a AAS 300 mg",
+      "Redução agressiva da pressão arterial para PAS < 120 mmHg com nitroprussiato antes de qualquer decisão",
+      "Apenas observação neurológica em enfermaria e solicitação de Ressonância Magnética ambulatorial"
     ],
     correctAnswer: 0,
-    explanation: "Na exacerbação de DPOC com insuficiência respiratória hipercápnica e acidose respiratória (pH < 7,35 e PaCO2 > 45), a VNI (BIPAP/CPAP) é a intervenção padrão-ouro, reduzindo a mortalidade e a necessidade de intubação. O alvo de oxigenação em DPOC retentor é SatO2 entre 88-92% para evitar a perda do drive hipóxico. Pela presença dos 3 critérios de Anthonisen (dispneia, volume e purulência), a antibioticoterapia é formalmente indicada.",
+    explanation: "No Acidente Vascular Cerebral Isquêmico (AVCi) agudo atendido dentro da janela terapêutica de até 4,5 horas do início dos sintomas, sem hemorragia na TC de crânio e sem contraindicações (como PA > 185/110 mmHg refratária, plaquetopenia < 100k, coagulopatia), a trombólise química intravenosa com rt-PA (Alteplase 0,9 mg/kg) ou Tenecteplase é a conduta padrão-ouro comprovada para reduzir incapacidade funcional.",
     subject: "Clínica Médica",
-    topic: "Pneumologia / Exacerbação de DPOC",
+    topic: "Neurologia / Acidente Vascular Cerebral Isquêmico",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_med_08",
+    question: "Homem de 72 anos, tabagista, dá entrada na UTI com febre (38,8°C), tosse produtiva com escarro herrruginoso, confusão mental aguda, FR 32 irpm, PA 85/50 mmHg e Ureia 68 mg/dL. Radiografia de tórax mostra consolidação lobar em base direita com broncogramas aéreos. Qual a pontuação no escore CURB-65 e o local de tratamento indicado?",
+    options: [
+      "CURB-65 = 4 pontos (Confusão=1, Ureia>50=1, FR>=30=1, PA<90/60=1, Idade>=65=1 -> Total 5 pontos, indicando Internação em UTI)",
+      "CURB-65 = 1 ponto (Apenas Idade), indicando tratamento ambulatorial com Amoxicilina",
+      "CURB-65 = 2 pontos, indicando internação em enfermaria geral sem necessidade de UTI",
+      "Escore não aplicável para pneumonias bacterianas adquiridas na comunidade"
+    ],
+    correctAnswer: 0,
+    explanation: "O escore CURB-65 pontua: Confusão mental (1), Ureia > 50 mg/dL (1), Frequência respiratória >= 30 irpm (1), Pressão arterial < 90/60 mmHg (1) e Idade >= 65 anos (1). O paciente soma 5 pontos (CURB-65 4-5), caracterizando Pneumonia Adquirida na Comunidade Grave com alto risco de mortalidade (> 30%), exigindo internação imediata em Unidade de Terapia Intensiva (UTI) e antibioticoterapia combinada (Betalactâmico IV + Macrolídeo ou Fluoroquinolona respiratória).",
+    subject: "Clínica Médica",
+    topic: "Pneumologia & Infectologia / Pneumonia Adquirida na Comunidade",
     difficulty: "media",
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
@@ -183,6 +234,40 @@ export const RAW_DEPT_Q_BANK = [
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
   },
+  {
+    id: "deptq_surg_05",
+    question: "Homem de 30 anos sofre ferimento por arma branca em região precordial esquerda (área de Ziedler). Dá entrada na emergência torporoso, com PA 75/40 mmHg, FC 138 bpm, bulhas cardíacas hipofonéticas e turgência jugular visível a 90° (Tríade de Beck). O ecofast (E-FAST) na janela subxifoideana confirma líquido anecoico no saco pericárdico. Qual a conduta de emergência mandatória?",
+    options: [
+      "Janela pericárdica subxifoideana / Toracotomia de emergência com Pericardiotomia para descompressão e cardiorrafia",
+      "Infusão exclusiva de cristaloide e aguardar Tomografia Computadorizada de Tórax",
+      "Intubação orotraqueal com PEEP alta para suporte hemodinâmico sem intervenção cirúrgica",
+      "Administração de trombolítico intravenoso por suspeita de infarto agudo do miocárdio"
+    ],
+    correctAnswer: 0,
+    explanation: "A presença de ferimento penetrante na área cardíaca associada à Tríade de Beck (hipotensão + abafamento de bulhas + turgência jugular) e efusão pericárdica no E-FAST sela o diagnóstico de Tamponamento Cardíaco Traumático. Trata-se de emergência cirúrgica máxima: a descompressão do saco pericárdico (janela pericárdica ou toracotomia com pericardiotomia) e rafia da lesão miocárdica são intervenções imediatas que salvam a vida do paciente.",
+    subject: "Cirurgia Geral & Trauma",
+    topic: "Trauma / Trauma Cardíaco e Tamponamento (ATLS)",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_surg_06",
+    question: "Homem de 65 anos com antecedente de cirurgias prévias por apendicite e hérnia incisional procura a emergência com dor abdominal em cólica difusa há 2 dias, parada de eliminação de fezes e flatos, distensão abdominal progressiva e vômitos biliosos. Ao toque retal, a ampola retal está vazia. A radiografia de abdome em ortostase revela múltiplos níveis hidroaéreos em degrau dispostos centralmente e dilatação de alças de delgado com pregas coniventes (> 3 cm). Qual o diagnóstico mais provável?",
+    options: [
+      "Obstrução Intestinal Mecânica de Delgado por Bridas/Aderências pós-operatórias",
+      "Volvo de Sigmoide com obstrução de cólon distal",
+      "Íleo Paralítico metabólico por hipopotassemia leve",
+      "Síndrome de Ogilvie (Pseudo-obstrução colônica aguda)"
+    ],
+    correctAnswer: 0,
+    explanation: "O quadro de dor em cólica + vômitos precoces + parada de eliminação de fezes/flatos + distensão abdominal e níveis hidroaéreos em degrau no intestino delgado em paciente com cirurgias prévias é característico de Obstrução Intestinal Mecânica por Bridas/Aderências (causa mais comum de obstrução de delgado no adulto). A conduta inicial inclui jejum, sonda nasogástrica descompressiva, hidratação venosa vigorosa e reavaliação cirúrgica seriada.",
+    subject: "Cirurgia Geral & Trauma",
+    topic: "Cirurgia Geral / Abdome Agudo Obstrutivo",
+    difficulty: "facil",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
 
   // ==========================================================================
   // 3. DEPARTMENT OF PEDIATRICS & CHILD HEALTH (PEDIATRIA)
@@ -234,6 +319,40 @@ export const RAW_DEPT_Q_BANK = [
     explanation: "A icterícia que se manifesta nas primeiras 24-36 horas de vida com Coombs Direto positivo e níveis elevados de bilirrubina indireta em mãe O Rh- e concepto A Rh+ caracteriza Doença Hemolítica Perinatal / Icterícia Patológica. A conduta mandatória é a internação para Fototerapia de Alta Intensidade imediata, com controle seriado de hematócrito e bilirrubinas para avaliar eventual indicação de Imunoglobulina Humana IV ou Exsanguineotransfusão.",
     subject: "Pediatria & Puericultura",
     topic: "Neonatologia / Icterícia Neonatal",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_ped_04",
+    question: "Menino de 4 anos é levado ao pediatra com febre diária de 39°C há 6 dias consecutivos que não cede com antitérmicos comuns. Ao exame: conjuntivite bulbar bilateral não exsudativa, lábios eritematosos e fissurados com língua em framboesa ('morango'), linfonodomegalia cervical unilateral de 2 cm indolor, exantema polimorfo em tronco e edema com eritema em palmas e plantas. Qual o diagnóstico e o tratamento essencial para prevenir aneurismas coronarianos?",
+    options: [
+      "Doença de Kawasaki; Imunoglobulina Humana Intravenosa (IVIG 2 g/kg em dose única) + Ácido Acetilsalicílico (AAS)",
+      "Escarlatina bacteriana; Penicilina Benzatina intramuscular em dose única isolada",
+      "Mononucleose infecciosa por EBV; Corticoterapia oral exclusiva por 7 dias",
+      "Febre Reumática aguda; AAS e antibioticoprofilaxia secundária sem necessidade de imunoglobulina"
+    ],
+    correctAnswer: 0,
+    explanation: "O quadro preenche os critérios diagnósticos clássicos da Doença de Kawasaki: febre persistente >= 5 dias + 4 critérios (conjuntivite não purulenta, alterações orais com língua em framboesa, adenopatia cervical unilateral > 1,5 cm, exantema polimorfo e alterações de extremidades). O tratamento padrão iniciado idealmente até o 10º dia de febre consiste na Imunoglobulina Humana IV (2 g/kg) associada ao AAS em dose anti-inflamatória, o que reduz o risco de ectasias e aneurismas de artérias coronárias de 25% para menos de 4%.",
+    subject: "Pediatria & Puericultura",
+    topic: "Pediatria & Cardiologia Pediátrica / Doença de Kawasaki",
+    difficulty: "dificil",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_ped_05",
+    question: "Lactente de 8 meses é trazido ao pronto-atendimento com crises paroxísticas súbitas de dor abdominal intensa com choro inconsolável e flexão das pernas sobre o abdome a cada 15-20 minutos, intercaladas com períodos de letargia. Apresentou dois episódios de vômitos biliosos e, recentemente, evacuação com fezes avermelhadas de aspecto mucogelatinoso ('geleia de morango'). À palpação abdominal nota-se massa cilíndrica em formato de salsicha em flanco direito. Qual o diagnóstico provável e a conduta diagnóstica/terapêutica inicial?",
+    options: [
+      "Intussuscepção / Invaginação Intestinal Aguda; Ultrassonografia abdominal (sinal do alvo/pseudorrim) seguida de redução por enema hidrostático ou pneumático",
+      "Apendicite aguda perfurada; Laparotomia exploradora de emergência sem ultrassom",
+      "Estenose hipertrófica do piloro; Piloromiotomia de Fredet-Ramstedt após correção hidroeletrolítica",
+      "Gastroenterite bacteriana por Salmonella; Antibioticoterapia venosa com Ceftriaxona"
+    ],
+    correctAnswer: 0,
+    explanation: "A tríade clássica de dor em cólica paroxística + massa abdominal palpável em salsicha + fezes em 'geleia de morango' (sangue e muco) é típica da Intussuscepção Intestinal (causa mais comum de obstrução intestinal entre 3 meses e 3 anos). O ultrassom confirma o sinal do alvo/rosácea. Na ausência de sinais de perfuração ou peritonite, o tratamento inicial de escolha é a desinvaginação não operatória por enema com ar ou bário/salina guiado por imagem.",
+    subject: "Pediatria & Puericultura",
+    topic: "Cirurgia Pediátrica & Emergência / Intussuscepção Intestinal",
     difficulty: "media",
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
@@ -293,6 +412,40 @@ export const RAW_DEPT_Q_BANK = [
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
   },
+  {
+    id: "deptq_go_04",
+    question: "Mulher de 42 anos realiza mamografia de rotina que evidencia nódulo espiculado de 1,2 cm no quadrante superior externo da mama direita com microcalcificações pleomórficas agrupadas no seu interior, classificado como BI-RADS 5. Qual a conduta recomendada?",
+    options: [
+      "Biópsia tecidual percutânea por agulha grossa (Core Biopsy) ou biópsia a vácuo (Mamotomia) para confirmação histopatológica",
+      "Repetir a mamografia em 6 meses para controle evolutivo",
+      "Prescrever anti-inflamatório não esteroide e solicitar ultrassonografia apenas após a menopausa",
+      "Indicar mastectomia radical imediata sem necessidade de laudo anatomopatológico prévio"
+    ],
+    correctAnswer: 0,
+    explanation: "A categoria BI-RADS 5 corresponde a achados mamográficos com probabilidade de malignidade superior a 95% (altamente suspeito de câncer de mama). A conduta mandatória é a realização de biópsia percutânea por agulha grossa (Core Biopsy) guiada por imagem para estudo histopatológico e imuno-histoquímico antes de qualquer planejamento cirúrgico definitivo.",
+    subject: "Ginecologia & Obstetrícia",
+    topic: "Mastologia / Rastreamento e Classificação BI-RADS",
+    difficulty: "facil",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_go_05",
+    question: "Mulher de 35 anos, fumante de 20 cigarros por dia há 15 anos, comparece à consulta ginecológica solicitando método contraceptivo. Nega histórico de trombose, hipertensão ou diabetes. De acordo com os Critérios Médicos de Elegibilidade para Uso de Contraceptivos da Organização Mundial da Saúde (OMS), qual método apresenta contraindicação absoluta (Categoria 4 da OMS)?",
+    options: [
+      "Anticoncepcionais hormonais combinados (pílulas orais, injetáveis mensais, adesivo transdérmico ou anel vaginal contendo estrogênio)",
+      "Dispositivo Intrauterino de Cobre (DIU de Cobre)",
+      "Dispositivo Intrauterino liberador de Levonorgestrel (DIU hormonal)",
+      "Implante subdérmico de Etonogestrel ou Pílula de progestagênio isolado (Minipílula)"
+    ],
+    correctAnswer: 0,
+    explanation: "Segundo os Critérios de Elegibilidade da OMS e Ministério da Saúde, o tabagismo em mulheres com idade >= 35 anos que fumam >= 15 cigarros/dia é Categoria 4 (Contraindicação Absoluta) para métodos contraceptivos contendo estrogênio (combinados), devido ao risco exponencialmente aumentado de eventos tromboembólicos venosos e infarto agudo do miocárdio. Métodos livres de estrogênio (DIU de cobre, DIU hormonal, implante e pílulas de progestagênio) são perfeitamente seguros (Categorias 1 ou 2).",
+    subject: "Ginecologia & Obstetrícia",
+    topic: "Ginecologia / Planejamento Familiar e Contracepção (Critérios OMS)",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
 
   // ==========================================================================
   // 5. DEPARTMENT OF PREVENTIVE MEDICINE & PUBLIC HEALTH (MEDICINA PREVENTIVA)
@@ -347,12 +500,46 @@ export const RAW_DEPT_Q_BANK = [
     difficulty: "facil",
     source: "Dept-Q-Bank (znu-med / MIT License)",
     sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_prev_04",
+    question: "Em uma Unidade Básica de Saúde (UBS), a equipe de Saúde da Família acompanha longitudinalmente uma família há mais de 5 anos, gerenciando tanto as consultas de pré-natal da mãe quanto o manejo da hipertensão do avô e a vacinação do recém-nascido, atuando como primeiro contato preferencial e coordenando o encaminhamento para a atenção especializada quando necessário. Segundo a teoria de Barbara Starfield, quais atributos essenciais da Atenção Primária à Saúde estão diretamente expressos?",
+    options: [
+      "Acesso de Primeiro Contato, Longitudinalidade, Integralidade e Coordenação do Cuidado",
+      "Competência Cultural e Orientação Comunitária exclusivamente",
+      "Hierarquização terciária e Centralização burocrática",
+      "Universalidade e Paridade orçamentária exclusivamente"
+    ],
+    correctAnswer: 0,
+    explanation: "Segundo Barbara Starfield, a Atenção Primária à Saúde (APS) de alta qualidade alicerça-se em 4 atributos essenciais: 1) Acesso de Primeiro Contato (porta de entrada preferencial e acessível); 2) Longitudinalidade (vínculo interpessoal contínuo ao longo do tempo); 3) Integralidade (atenção às múltiplas necessidades biopsicossociais do indivíduo); 4) Coordenação do Cuidado (integração e sincronização dos fluxos com a rede de serviços especializados).",
+    subject: "Medicina Preventiva & SUS",
+    topic: "Atenção Primária / Atributos de Starfield e Estratégia Saúde da Família",
+    difficulty: "facil",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
+  },
+  {
+    id: "deptq_prev_05",
+    question: "Médico plantonista na UPA atende paciente procedente de área rural com suspeita clínica de Botulismo alimentar (diplopia, ptose palpebral, disfagia, boca seca e fraqueza muscular descendente aguda e afebril). De acordo com a Portaria de Notificação Compulsória do Ministério da Saúde, qual a periodicidade obrigatória para a notificação deste caso?",
+    options: [
+      "Notificação Compulsória Imediata (em até 24 horas) para a Secretaria Municipal e Estadual de Saúde e Ministério da Saúde",
+      "Notificação Semanal apenas após a confirmação laboratorial definitiva por isolamento da toxina botulínica",
+      "Notificação Mensal no Sistema de Informações de Agravos de Notificação (SINAN)",
+      "O botulismo não é agravo de notificação compulsória no Brasil"
+    ],
+    correctAnswer: 0,
+    explanation: "O Botulismo, assim como a Raiva Humana, Febre Amarela, Peste, Cólera, Varíola dos Macacos, Síndrome Respiratória Aguda Grave (SRAG) e acidentes por animais peçonhentos, é agravo de Notificação Compulsória Imediata (em até 24 horas) pelo meio mais rápido disponível (telefone/e-mail/formulário eletrônico), visando a imediata investigação epidemiológica e disponibilização do soro antibotulínico pelo Ministério da Saúde.",
+    subject: "Medicina Preventiva & SUS",
+    topic: "Vigilância Epidemiológica / Lista Nacional de Notificação Compulsória",
+    difficulty: "media",
+    source: "Dept-Q-Bank (znu-med / MIT License)",
+    sourceUrl: "https://github.com/znu-med/Dept-Q-Bank"
   }
 ];
 
 async function runDeptQIngestion() {
   console.log("=".repeat(80));
-  console.log("📚 INGESTÃO E NORMALIZAÇÃO DO DATASET Dept-Q-Bank (znu-med)");
+  console.log("📚 INGESTÃO MASSIVA AMPLIADA: DATASET Dept-Q-Bank (znu-med)");
   console.log("Licença: MIT License (https://github.com/znu-med/Dept-Q-Bank)");
   console.log("=".repeat(80));
 
