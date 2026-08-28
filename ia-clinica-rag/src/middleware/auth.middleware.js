@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { AuthSecurityService } from "../services/auth-security.service.js";
 
-const JWT_SECRET = env.jwtSecret || process.env.JWT_SECRET || "ia-clinica-secret-key-2026";
+const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret;
 
 /**
  * 1. Middleware de Autenticação Geral

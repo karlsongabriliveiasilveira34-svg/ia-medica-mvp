@@ -5,8 +5,9 @@ import { pool, ensureUsersSchema } from "../config/database.js";
 import { env } from "../config/env.js";
 import { emailService } from "./email.service.js";
 
-const JWT_SECRET = env.jwtSecret || process.env.JWT_SECRET || "ia-clinica-secret-key-2026";
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "ia-clinica-refresh-secret-2026";
+const fallbackRefreshSecret = crypto.randomBytes(32).toString("hex");
+const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret;
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || fallbackRefreshSecret;
 const JWT_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
@@ -232,7 +233,7 @@ export class AuthSecurityService {
 
     // Gerar Sessão Autenticada Imediata (Login Automático com Avatar)
     const emailClean = user.email || cleanEmail;
-    const emailHash = crypto.createHash("md5").update((emailClean || "").trim().toLowerCase()).digest("hex");
+    const emailHash = crypto.createHash("sha256").update((emailClean || "").trim().toLowerCase()).digest("hex");
     const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
 
     const payload = {
@@ -382,7 +383,7 @@ export class AuthSecurityService {
 
     // Gerar Tokens JWT com Avatar Real (Gravatar / Foto)
     const emailClean = user.email || cleanEmail;
-    const emailHash = crypto.createHash("md5").update((emailClean || "").trim().toLowerCase()).digest("hex");
+    const emailHash = crypto.createHash("sha256").update((emailClean || "").trim().toLowerCase()).digest("hex");
     const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
 
     const payload = {

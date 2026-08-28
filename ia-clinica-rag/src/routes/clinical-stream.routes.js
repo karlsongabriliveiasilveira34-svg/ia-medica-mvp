@@ -18,10 +18,12 @@ const apiKey = process.env.GEMINI_API_KEY || env.geminiApiKey || "";
  * reduzindo a latência perceptível para milissegundos.
  */
 clinicalStreamRouter.post(["/api/clinical/stream", "/clinical/stream"], async (req, res) => {
-  const { prompt, query, history = [], specialty = "Clínica Geral", patientContext = null } = req.body;
-  const userMessage = prompt || query || "";
+  const body = req.body && typeof req.body === "object" ? req.body : {};
+  const { prompt, query, history = [], specialty = "Clínica Geral", patientContext = null } = body;
+  const rawMessage = typeof prompt === "string" ? prompt : (typeof query === "string" ? query : "");
+  const userMessage = rawMessage.trim();
 
-  if (!userMessage.trim()) {
+  if (!userMessage || userMessage.length === 0) {
     return res.status(400).json({ status: "error", message: "Mensagem ou pergunta clínica é obrigatória." });
   }
 

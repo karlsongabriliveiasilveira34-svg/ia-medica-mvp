@@ -122,7 +122,7 @@ async function runFullVerification() {
   // ----------------------------------------------------
   console.log("\n[TESTE 5] Testando resolução de avatar real...");
   const testEmail = "lucas.silveira@hospital.med.br";
-  const expectedHash = crypto.createHash("md5").update(testEmail).digest("hex");
+  const expectedHash = crypto.createHash("sha256").update(testEmail).digest("hex");
   const expectedGravatar = `https://www.gravatar.com/avatar/${expectedHash}?d=mp&s=200`;
 
   console.log("   Email testado:", testEmail);
