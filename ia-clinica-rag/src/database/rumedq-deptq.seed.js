@@ -16,6 +16,7 @@ import { normalizeQuestion, normalizeFlashcard } from "../adapters/question-flas
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const RUMEDQ_JSON_FILE = path.resolve(__dirname, "rumedq-dataset.json");
+const DEPTQ_JSON_FILE = path.resolve(__dirname, "deptq-dataset.json");
 
 let loadedRumedQCards = [];
 try {
@@ -25,6 +26,16 @@ try {
   }
 } catch (e) {
   console.warn("Aviso ao carregar rumedq-dataset.json:", e.message);
+}
+
+let loadedDeptQQuestions = [];
+try {
+  if (fs.existsSync(DEPTQ_JSON_FILE)) {
+    const rawQData = fs.readFileSync(DEPTQ_JSON_FILE, "utf8");
+    loadedDeptQQuestions = JSON.parse(rawQData);
+  }
+} catch (e) {
+  console.warn("Aviso ao carregar deptq-dataset.json:", e.message);
 }
 
 export const RUMEDQ_FLASHCARDS = loadedRumedQCards.length > 0 ? loadedRumedQCards : [
@@ -111,7 +122,7 @@ export const RUMEDQ_FLASHCARDS = loadedRumedQCards.length > 0 ? loadedRumedQCard
   }
 ];
 
-export const DEPT_Q_BANK_QUESTIONS = [
+export const DEPT_Q_BANK_QUESTIONS = loadedDeptQQuestions.length > 0 ? loadedDeptQQuestions : [
   // 1. DEPARTAMENTO DE CLÍNICA MÉDICA
   {
     question: "Homem, 62 anos, com histórico de DPOC moderado e tabagismo de 40 maços-ano, dá entrada na emergência com piora progressiva da dispneia, aumento do volume do escarro e escarro purulento (Critérios de Anthonisen Tipo 1). Gasometria arterial em ar ambiente: pH 7,31, PaCO2 56 mmHg, PaO2 54 mmHg, HCO3 28 mEq/L, SatO2 86%. Qual a conduta de escolha para o manejo ventilatório e farmacológico inicial?",
