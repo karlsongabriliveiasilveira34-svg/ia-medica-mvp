@@ -13,7 +13,8 @@
     "ingest": "node src/services/ingest-documents.js",
     "generate-jwt": "node scripts/generate-jwt.js",
     "test": "npm run test:all",
-    "test:all": "node tests/test-residency-roadmaps.js && node tests/validate-5000-questions.js && node tests/test-unimontes-roadmap.js",
+    "test:all": "node tests/test-residency-roadmaps.js && node tests/validate-5000-questions.js && node tests/test-unimontes-roadmap.js && node tests/test-stress-and-security-attacks.js",
+    "test:stress": "node tests/test-stress-and-security-attacks.js",
     "security:check": "node scripts/security-audit-check.js",
     "security:audit": "npm audit --audit-level=high"
   },
