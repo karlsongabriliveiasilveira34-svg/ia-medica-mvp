@@ -23,8 +23,8 @@ export function ClinicalChat({
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState('auto');
-  const [userMode, setUserMode] = useState(userPlan === 'estudante' ? 'student' : 'doctor'); // 'doctor' ou 'student'
-  const [deepResearch, setDeepResearch] = useState(false); // Busca Padrão (500) vs Pesquisa Profunda (1.500)
+  const [userMode, setUserMode] = useState(userPlan === 'estudante' ? 'student' : 'doctor');
+  const [deepResearch, setDeepResearch] = useState(false); // Padrão vs Pesquisa Profunda
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [recordedDecisions, setRecordedDecisions] = useState({});
   const [pastSessions, setPastSessions] = useState([]);
@@ -69,10 +69,10 @@ export function ClinicalChat({
 
   // Reabrir uma sessão existente anterior (P2.2)
   const handleOpenPreviousSession = async (sessionId) => {
-    if (loading) return; // Bloquear troca de sessão durante requisição ativa (B3)
+    if (loading) return;
     setLoading(true);
     setShowSessionDrawer(false);
-    setRecordedDecisions({}); // Reset de decisões gravadas para evitar contaminação entre sessões (B1)
+    setRecordedDecisions({});
 
     try {
       const res = await fetch(`/api/sessions/${sessionId}`);
@@ -293,7 +293,6 @@ export function ClinicalChat({
     }
   };
 
-  // Receber foto capturada diretamente pela câmera
   const handlePhotoCaptured = (photoObj) => {
     setSelectedImage({
       dataUrl: photoObj.dataUrl,
@@ -345,7 +344,6 @@ export function ClinicalChat({
       if (contentType.includes("application/json")) {
         data = await res.json();
       } else {
-        const errorText = await res.text();
         data = {
           status: 'error',
           message: res.status === 429
@@ -418,14 +416,14 @@ export function ClinicalChat({
       <div className="space-y-2 text-sm leading-relaxed">
         {lines.map((line, idx) => {
           if (line.startsWith('### ')) {
-            return <h4 key={idx} className="font-bold text-base text-clinical-300 mt-3 mb-1">{line.replace('### ', '')}</h4>;
+            return <h4 key={idx} className="font-bold text-base text-emerald-900 mt-3 mb-1">{line.replace('### ', '')}</h4>;
           }
           if (line.startsWith('## ')) {
-            return <h3 key={idx} className="font-bold text-lg text-white mt-4 mb-2 border-b border-slate-800 pb-1 flex items-center gap-2">{line.replace('## ', '')}</h3>;
+            return <h3 key={idx} className="font-bold text-lg text-[#17231f] mt-4 mb-2 border-b border-[#17231f]/10 pb-1 flex items-center gap-2">{line.replace('## ', '')}</h3>;
           }
           if (line.startsWith('- ') || line.startsWith('* ')) {
             return (
-              <li key={idx} className="ml-4 list-disc text-slate-300">
+              <li key={idx} className="ml-4 list-disc text-[#2c3b35]">
                 {formatBoldAndCitations(line.substring(2))}
               </li>
             );
@@ -433,7 +431,7 @@ export function ClinicalChat({
           if (line.trim() === '') {
             return <div key={idx} className="h-1" />;
           }
-          return <p key={idx} className="text-slate-200">{formatBoldAndCitations(line)}</p>;
+          return <p key={idx} className="text-[#17231f]">{formatBoldAndCitations(line)}</p>;
         })}
       </div>
     );
@@ -443,7 +441,7 @@ export function ClinicalChat({
     const parts = str.split(/(\*\*.*?\*\*|\[Fonte \d+\])/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+        return <strong key={i} className="font-semibold text-[#17231f]">{part.slice(2, -2)}</strong>;
       }
       if (/^\[Fonte \d+\]$/.test(part)) {
         const num = parseInt(part.replace(/\D/g, ''), 10);
@@ -454,8 +452,8 @@ export function ClinicalChat({
             onMouseLeave={() => setHighlightedSourceId(null)}
             className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold cursor-pointer transition-all ml-1 ${
               highlightedSourceId === num
-                ? 'bg-clinical-500 text-white ring-2 ring-clinical-400'
-                : 'bg-clinical-500/20 text-clinical-300 border border-clinical-500/30 hover:bg-clinical-500/40'
+                ? 'bg-[#213f34] text-white ring-2 ring-[#213f34]/30'
+                : 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200'
             }`}
           >
             {part}
@@ -467,65 +465,333 @@ export function ClinicalChat({
   };
 
   return (
-    <div className="media-chat flex h-[calc(100dvh-64px)] max-w-7xl flex-col mx-auto px-3 py-3 sm:px-6 sm:py-5">
+    <div className="flex h-[calc(100dvh-64px)] max-w-7xl flex-col mx-auto px-2.5 sm:px-6 py-2.5 sm:py-4 gap-2.5">
       
-      {/* Top Header: Seletor de Especialidade Clínico */}
-      <div className="media-chat-controls flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-2">
-        <SpecialtySelector
-          selectedSpecialty={selectedSpecialty}
-          onSelectSpecialty={setSelectedSpecialty}
-        />
-      </div>
+      {/* Top Header: Seletor de Especialidade Clínico com Histórico Integrado */}
+      <SpecialtySelector
+        selectedSpecialty={selectedSpecialty}
+        onSelectSpecialty={setSelectedSpecialty}
+        onOpenHistory={() => {
+          loadPastSessions();
+          setShowSessionDrawer(!showSessionDrawer);
+        }}
+        onAnalyzeCase={handleAnalyzeCase}
+        hasActiveSession={!!currentSessionId}
+        isAnalyzing={loading}
+      />
 
-      {/* Barra de Ações da Sessão Conversacional com Gravação e Retomada de Caso */}
-      <div className="media-session-bar flex flex-wrap items-center justify-between gap-2 py-2 px-3 bg-slate-900/80 rounded-2xl border border-slate-800 mb-3">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="text-slate-300 font-medium">
-            Atendimento Clínico Ativo • {deepResearch ? '🚀 Modo Pesquisa Profunda Ativo' : (userMode === 'student' ? 'Foco Didático e Fisiopatologia' : 'Foco em Decisão Clínica e Prescrição')}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAudioRecorder(!showAudioRecorder)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs border transition-all ${
-              showAudioRecorder
-                ? 'bg-rose-950/80 border-rose-500/40 text-rose-300'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5 text-rose-400" />
-            <span>{showAudioRecorder ? 'Ocultar Gravação' : 'Gravar Consulta'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              loadPastSessions();
-              setShowSessionDrawer(!showSessionDrawer);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-all"
-          >
-            <History className="w-3.5 h-3.5 text-teal-400" />
-            <span>Retomar Caso Anterior</span>
-          </button>
-
-          {currentSessionId && (
-            <button
-              onClick={handleAnalyzeCase}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#213f34] hover:bg-[#172f27] text-white font-semibold text-xs shadow-sm transition-all disabled:opacity-50"
-            >
-              <FileCheck className="w-4 h-4 text-white" />
-              <span>Analisar Caso Completo</span>
+      {/* Drawer de Seleção de Sessões Anteriores (Histórico) */}
+      {showSessionDrawer && (
+        <div className="p-4 bg-white border border-[#17231f]/10 rounded-2xl animate-fadeIn shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#17231f] flex items-center gap-1.5">
+              <FolderOpen className="w-4 h-4 text-[#213f34]" /> Histórico de Atendimentos Anteriores:
+            </h4>
+            <button onClick={() => setShowSessionDrawer(false)} className="text-xs text-[#5e6c65] hover:text-[#17231f] font-bold">
+              Fechar ✕
             </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+            {pastSessions.length === 0 ? (
+              <p className="text-xs text-[#5e6c65] col-span-2 py-2">Nenhum atendimento anterior encontrado.</p>
+            ) : (
+              pastSessions.map((sess) => (
+                <button
+                  key={sess.id}
+                  onClick={() => handleOpenPreviousSession(sess.id)}
+                  className="p-3 rounded-xl bg-[#faf8f5] hover:bg-[#ede8df] border border-[#17231f]/10 text-left transition-all group flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-[#213f34] font-bold">Caso Clínico</span>
+                    <span className="text-[10px] text-[#5e6c65]">{new Date(sess.updated_at).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-xs text-[#17231f] line-clamp-1">
+                    {sess.initial_complaint || 'Atendimento sem queixa inicial registrada'}
+                  </p>
+                  <span className="text-[10px] text-[#5e6c65] mt-1 block">
+                    {sess.message_count || 0} turnos • {sess.decision_count || 0} condutas gravadas
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Card de Resumo de Retomada do Caso */}
+      {caseResumeSummary && (
+        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#17231f] animate-fadeIn shadow-sm">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Bookmark className="w-4 h-4 text-emerald-800" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-950">
+              Retomada de Atendimento — Síntese do Caso:
+            </h4>
+          </div>
+          <p className="text-xs text-[#2c3b35] leading-relaxed mb-2">
+            {caseResumeSummary.summaryText}
+          </p>
+          {caseResumeSummary.suggestedNextSteps && caseResumeSummary.suggestedNextSteps.length > 0 && (
+            <div className="text-xs space-y-1">
+              <span className="font-bold text-emerald-950 block text-[11px]">Próximos passos recomendados:</span>
+              <ul className="list-disc list-inside text-[#2c3b35] space-y-0.5 text-[11px]">
+                {caseResumeSummary.suggestedNextSteps.map((step, sIdx) => (
+                  <li key={sIdx}>{step}</li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
+      )}
+
+      {/* Timeline de Mensagens / Área Principal */}
+      <div className="flex-1 overflow-y-auto space-y-4 pr-1 sm:space-y-5 sm:pr-2">
+        
+        {/* Empty State Clean, Minimalista e Profissional */}
+        {messages.length === 0 && (
+          <div className="my-auto py-5 px-4 sm:py-7 sm:px-6 bg-white/80 border border-[#17231f]/10 rounded-3xl text-center space-y-4 shadow-sm animate-fadeIn max-w-4xl mx-auto">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#213f34] flex items-center justify-center text-[#f4f1ea] shadow-sm">
+                <MedIaIcon className="w-6 h-6 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
+              </div>
+              <div className="text-left">
+                <h2 className="font-editorial text-xl sm:text-2xl font-bold text-[#17231f]">
+                  Copiloto de Decisão Clínica
+                </h2>
+                <p className="text-xs text-[#5e6c65]">
+                  Apoio ao raciocínio diagnóstico e terapêutico com fundamentação direta nas fontes oficiais.
+                </p>
+              </div>
+            </div>
+
+            {/* 3 Exemplos Rápidos em Grid Elegante */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-left">
+              <button
+                onClick={() => handleSendQuestion('Paciente masculino de 52 anos, hipertenso, com dor torácica opressiva de 2h e ECG com Supra ST de 2.5mm de V1 a V4. Qual a conduta de emergência?')}
+                className="p-3 rounded-2xl bg-[#faf8f5] hover:bg-[#ede8df] border border-[#17231f]/10 text-left flex flex-col justify-between transition group"
+              >
+                <div>
+                  <span className="text-[10px] font-black text-rose-800 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                    Cardiologia
+                  </span>
+                  <p className="text-xs font-semibold text-[#17231f] mt-1.5 line-clamp-2">
+                    Dor torácica com Supra de ST e troponina alterada
+                  </p>
+                </div>
+                <span className="text-[10px] text-[#5e6c65] group-hover:text-[#17231f] font-bold mt-2 flex items-center gap-1">
+                  Consultar caso <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleSendQuestion('Criança de 3 anos com otite média aguda. Qual a dose recomendada de amoxicilina por kg de peso corporal e conduta?')}
+                className="p-3 rounded-2xl bg-[#faf8f5] hover:bg-[#ede8df] border border-[#17231f]/10 text-left flex flex-col justify-between transition group"
+              >
+                <div>
+                  <span className="text-[10px] font-black text-sky-800 uppercase tracking-wider bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+                    Pediatria
+                  </span>
+                  <p className="text-xs font-semibold text-[#17231f] mt-1.5 line-clamp-2">
+                    Dose de amoxicilina por kg em Otite Média Aguda
+                  </p>
+                </div>
+                <span className="text-[10px] text-[#5e6c65] group-hover:text-[#17231f] font-bold mt-2 flex items-center gap-1">
+                  Consultar caso <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleSendQuestion('Paciente com quadro de vertigem posicional súbita e nistagmo. Quais as manobras físicas de consultório indicadas (Dix-Hallpike e Epley)?')}
+                className="p-3 rounded-2xl bg-[#faf8f5] hover:bg-[#ede8df] border border-[#17231f]/10 text-left flex flex-col justify-between transition group"
+              >
+                <div>
+                  <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                    Neurologia
+                  </span>
+                  <p className="text-xs font-semibold text-[#17231f] mt-1.5 line-clamp-2">
+                    Vertigem posicional e Manobras de Dix-Hallpike e Epley
+                  </p>
+                </div>
+                <span className="text-[10px] text-[#5e6c65] group-hover:text-[#17231f] font-bold mt-2 flex items-center gap-1">
+                  Consultar caso <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
+            </div>
+
+            {/* Aviso Ético Discreto */}
+            <div className="pt-2 border-t border-[#17231f]/5 flex items-center justify-center gap-1.5 text-[10px] text-[#5e6c65]">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <span>
+                <strong>Aviso ético:</strong> Ferramenta de suporte baseada em evidências. A decisão final e responsabilidade cabem ao médico.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Mensagens da Consulta */}
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex gap-2 sm:gap-3.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            {msg.sender === 'bot' && (
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#213f34] flex items-center justify-center text-[#f4f1ea] shrink-0 shadow-sm">
+                <MedIaIcon className="w-4 h-4 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
+              </div>
+            )}
+
+            <div className={`max-w-3xl rounded-2xl p-4 sm:p-5 shadow-sm ${
+              msg.sender === 'user'
+                ? 'bg-[#213f34] text-white rounded-br-md'
+                : 'bg-white border border-[#17231f]/10 text-[#17231f] rounded-bl-md'
+            }`}>
+              
+              {/* Imagem Anexada */}
+              {msg.sender === 'user' && msg.imagePreview && typeof msg.imagePreview === 'string' && (
+                <div className="mb-3 rounded-xl overflow-hidden max-w-xs border border-white/20 shadow-md">
+                  <div
+                    className="w-full h-48 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${encodeURI(msg.imagePreview)})` }}
+                    role="img"
+                    aria-label="Imagem Clínica Anexada"
+                  />
+                </div>
+              )}
+              
+              {/* Header do Assistente */}
+              {msg.sender === 'bot' && (
+                <div className="mb-3 pb-2 border-b border-[#17231f]/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#213f34] uppercase tracking-wider">
+                      {msg.agent?.name || 'Clínica Geral'}
+                    </span>
+                    <span className="text-[10px] text-[#5e6c65] bg-[#faf8f5] px-2 py-0.5 rounded-full border border-[#17231f]/10">
+                      {msg.userMode === 'student' ? 'Modo Acadêmico' : 'Modo Médico'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1 font-semibold">
+                    <Lock className="w-3 h-3 text-emerald-700" /> LGPD Protegido
+                  </span>
+                </div>
+              )}
+
+              {/* Alerta de Red Flags */}
+              {msg.warnings && msg.warnings.length > 0 && (
+                <div className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider text-rose-950">
+                    <ShieldAlert className="w-4 h-4 text-rose-700" />
+                    <span>Atenção Clínica — Alertas de Emergência (Red Flags)</span>
+                  </div>
+                  {msg.warnings.map((w, idx) => (
+                    <p key={idx} className="text-xs">{w.message || w}</p>
+                  ))}
+                </div>
+              )}
+
+              {/* Diagnósticos Diferenciais Probabilísticos */}
+              {msg.sender === 'bot' && msg.differentialDiagnoses && msg.differentialDiagnoses.length > 0 && (
+                <div className="mb-4 p-3.5 rounded-2xl bg-[#faf8f5] border border-[#17231f]/10 shadow-sm">
+                  <div className="flex items-center justify-between mb-2.5 border-b border-[#17231f]/5 pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-4 h-4 text-[#213f34]" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
+                        Diagnóstico Diferencial Probabilístico
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {msg.differentialDiagnoses.map((diag, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-[#17231f]">{diag.doenca}</span>
+                          <button
+                            onClick={() => onSelectDiagnosis({ ...diag, contextMessage: msg })}
+                            title="Ver justificativa do raciocínio clínico"
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-950 font-mono font-bold text-xs transition cursor-pointer"
+                          >
+                            <span>{diag.probabilidade}%</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div className="w-full bg-[#ece7dc] h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#213f34] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${diag.probabilidade}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Conteúdo Textual Formatado */}
+              <div className="prose prose-sm max-w-none">
+                {renderFormattedText(msg.text)}
+              </div>
+
+              {/* Citações Clínicas */}
+              {msg.citations && msg.citations.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-[#17231f]/10">
+                  <span className="text-[10px] font-bold uppercase text-[#5e6c65] block mb-2">
+                    Evidências & Fontes Consultadas ({msg.citations.length}):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {msg.citations.map((c, cIdx) => (
+                      <button
+                        key={cIdx}
+                        onClick={() => onSelectCitation(c)}
+                        className="text-[11px] font-medium bg-[#faf8f5] hover:bg-[#ede8df] text-[#17231f] border border-[#17231f]/10 px-2.5 py-1 rounded-lg transition flex items-center gap-1.5"
+                      >
+                        <FileText className="w-3 h-3 text-[#213f34]" />
+                        <span className="truncate max-w-[200px]">{c.title || `Fonte ${cIdx + 1}`}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Ações de Final de Resposta (Laudo & Auditoria) */}
+              {msg.sender === 'bot' && !msg.isError && (
+                <div className="mt-3.5 pt-2.5 border-t border-[#17231f]/5 flex items-center justify-between text-xs">
+                  <button
+                    onClick={() => handleOpenReasoningConfirm(msg.differentialDiagnoses?.[0], msg)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#213f34] hover:text-[#172f27] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition"
+                  >
+                    <FileCheck className="w-3.5 h-3.5" /> Gerar Laudo Médico Deste Caso
+                  </button>
+
+                  <button
+                    onClick={() => handleExportAuditReport(msg)}
+                    className="flex items-center gap-1 text-[11px] text-[#5e6c65] hover:text-[#17231f] transition"
+                    title="Exportar trilha de auditoria médico-legal em JSON"
+                  >
+                    <Download className="w-3 h-3" /> Exportar Auditoria
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Módulo de Gravação de Áudio da Consulta (Ambient AI Scribe) */}
+      {/* Módulo Integrado de Gravação de Áudio (Ambient AI Scribe) — Expandível Acima do Input */}
       {showAudioRecorder && (
-        <div className="mb-4 animate-fadeIn">
+        <div className="bg-white p-3 rounded-2xl border border-rose-200 shadow-md animate-fadeIn">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-rose-950 flex items-center gap-1.5">
+              <Mic className="w-4 h-4 text-rose-600 animate-pulse" /> Gravação de Áudio da Consulta (Ambient AI Scribe)
+            </span>
+            <button
+              onClick={() => setShowAudioRecorder(false)}
+              className="text-xs text-[#5e6c65] hover:text-[#17231f] font-bold"
+            >
+              Fechar ✕
+            </button>
+          </div>
           <AudioConsultationRecorder
             onTranscriptProcessed={handleAudioTranscriptProcessed}
             specialty={selectedSpecialty}
@@ -533,527 +799,25 @@ export function ClinicalChat({
         </div>
       )}
 
-      {/* Drawer de Seleção de Sessões Anteriores */}
-      {showSessionDrawer && (
-        <div className="mb-4 p-4 bg-slate-950 border border-slate-800 rounded-2xl animate-fadeIn shadow-xl">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <FolderOpen className="w-4 h-4 text-teal-400" /> Histórico de Casos para Retomada de Atendimento:
-            </h4>
-            <button onClick={() => setShowSessionDrawer(false)} className="text-xs text-slate-500 hover:text-white">
-              Fechar ✕
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-            {pastSessions.map((sess) => (
-              <button
-                key={sess.id}
-                onClick={() => handleOpenPreviousSession(sess.id)}
-                className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left transition-all group flex flex-col justify-between"
-              >
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-teal-400 font-semibold">Caso Clínico</span>
-                  <span className="text-[10px] text-slate-500">{new Date(sess.updated_at).toLocaleDateString()}</span>
-                </div>
-                <p className="text-xs text-slate-300 line-clamp-1">
-                  {sess.initial_complaint || 'Atendimento sem queixa inicial registrada'}
-                </p>
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  {sess.message_count || 0} turnos • {sess.decision_count || 0} condutas gravadas
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Card de Resumo de Retomada do Caso */}
-      {caseResumeSummary && (
-        <div className="mb-4 p-4 rounded-2xl bg-teal-950/40 border border-teal-500/30 text-slate-200 animate-fadeIn">
-          <div className="flex items-center gap-2 mb-2">
-            <Bookmark className="w-4 h-4 text-teal-400" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-teal-300">
-              Retomada de Atendimento — Síntese do que já foi discutido:
-            </h4>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed mb-3">
-            {caseResumeSummary.summaryText}
-          </p>
-          <div className="text-xs space-y-1">
-            <span className="font-semibold text-teal-200 block text-[11px]">Próximos passos recomendados para retomada:</span>
-            <ul className="list-disc list-inside text-slate-300 space-y-0.5 text-[11px]">
-              {caseResumeSummary.suggestedNextSteps.map((step, sIdx) => (
-                <li key={sIdx}>{step}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Timeline de Mensagens */}
-      <div className="media-thread flex-1 overflow-y-auto space-y-5 pr-1 sm:space-y-6 sm:pr-2">
-        {messages.length === 0 && (
-          <div className="media-empty-state my-auto py-7 px-4 sm:py-10 sm:px-8 bg-slate-900/80 border border-slate-800 rounded-[1.75rem] text-center space-y-5 shadow-xl glass-panel animate-fadeIn">
-            <div className="media-assistant-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#213f34] mx-auto flex items-center justify-center text-[#f4f1ea] shadow-md border border-[#315547]/40">
-              <MedIaIcon className="w-8 h-8 sm:w-9 sm:h-9 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
-            </div>
-            <div className="max-w-2xl mx-auto space-y-2">
-              <h2 className="font-editorial text-2xl sm:text-3xl font-medium text-white tracking-[-0.02em]">
-                Comece pelo caso. As fontes vêm junto.
-              </h2>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Descreva a situação clínica como você pensaria no consultório ou no plantão. O medIa organiza a análise sem esconder o fundamento.
-              </p>
-            </div>
-
-            <div className="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 text-left max-w-2xl mx-auto space-y-2">
-              <span className="text-[11px] font-bold text-clinical-400 uppercase tracking-wider block">
-                Exemplos de casos clínicos para consulta rápida:
-              </span>
-              <div className="grid grid-cols-1 gap-2 text-xs">
-                <button
-                  onClick={() => handleSendQuestion('Paciente masculino de 52 anos, hipertenso, com dor torácica opressiva de 2h e ECG com Supra ST de 2.5mm de V1 a V4. Qual a conduta de emergência?')}
-                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-left flex items-center justify-between group transition-all"
-                >
-                  <span><strong>Cardiologia:</strong> Dor torácica com Supra de ST e troponina alterada</span>
-                  <ChevronRight className="w-4 h-4 text-clinical-400 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button
-                  onClick={() => handleSendQuestion('Criança de 3 anos com otite média aguda. Qual a dose recomendada de amoxicilina por kg de peso corporal e conduta?')}
-                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-left flex items-center justify-between group transition-all"
-                >
-                  <span><strong>Pediatria:</strong> Dose de amoxicilina por kg em Otite Média Aguda</span>
-                  <ChevronRight className="w-4 h-4 text-clinical-400 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button
-                  onClick={() => handleSendQuestion('Paciente com quadro de vertigem posicional súbita e nistagmo. Quais as manobras físicas de consultório indicadas (Dix-Hallpike e Epley)?')}
-                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-left flex items-center justify-between group transition-all"
-                >
-                  <span><strong>Neurologia:</strong> Vertigem posicional e Manobras de Dix-Hallpike e Epley</span>
-                  <ChevronRight className="w-4 h-4 text-clinical-400 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-xl text-[11px] text-amber-300 max-w-2xl mx-auto flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>
-                <strong>Aviso ético e regulatório:</strong> Ferramenta de apoio ao raciocínio clínico baseada em evidências — a decisão clínica final e a responsabilidade de prescrição cabem exclusivamente ao médico assistente.
-              </span>
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg) => {
-          const localCitations = (msg.citations || []).filter(c => c.originType === 'LOCAL_VALIDATED' || !c.url || c.url.startsWith('/knowledge'));
-          const webCitations = (msg.citations || []).filter(c => c.originType === 'WEB_SEARCH' || (c.url && !c.url.startsWith('/knowledge')));
-
-          return (
-            <div
-              key={msg.id}
-              className={`media-message-row flex gap-2 sm:gap-4 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.sender === 'bot' && (
-                <div className="media-assistant-avatar w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#213f34] flex items-center justify-center text-[#f4f1ea] shrink-0 shadow-sm border border-[#315547]/40">
-                  <MedIaIcon className="w-5 h-5 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
-                </div>
-              )}
-
-              <div className={`media-message max-w-3xl rounded-2xl p-4 sm:p-5 shadow-sm ${
-                msg.sender === 'user'
-                  ? 'media-message-user bg-[#213f34] text-white rounded-br-md'
-                  : 'media-message-assistant glass-panel border border-slate-800 text-slate-100 rounded-bl-md'
-              }`}>
-                
-                {/* Imagem Anexada pelo Usuário */}
-                {msg.sender === 'user' && msg.imagePreview && typeof msg.imagePreview === 'string' && (
-                  <div className="mb-3 rounded-xl overflow-hidden max-w-xs border border-white/20 shadow-md">
-                    <div
-                      className="w-full h-48 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${encodeURI(msg.imagePreview)})` }}
-                      role="img"
-                      aria-label="Imagem Clínica Anexada"
-                    />
-                  </div>
-                )}
-                
-                {/* Header do Agente e Modo */}
-                {msg.sender === 'bot' && (
-                  <div className="mb-3 pb-2 border-b border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-clinical-400 uppercase tracking-wider">
-                        {msg.agent?.name || 'Clínica Geral'}
-                      </span>
-                      <span className="text-[10px] text-teal-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                        {msg.userMode === 'student' ? 'Modo Estudante' : 'Modo Médico'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-emerald-400" /> LGPD Protegido
-                    </span>
-                  </div>
-                )}
-
-                {/* Alerta de Red Flags / Emergência */}
-                {msg.warnings && msg.warnings.length > 0 && (
-                  <div className="mb-4 p-3 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-200 space-y-1">
-                    <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-rose-300">
-                      <ShieldAlert className="w-4 h-4 text-rose-400" />
-                      <span>Atenção Clínica — Alertas de Emergência (Red Flags)</span>
-                    </div>
-                    {msg.warnings.map((w, idx) => (
-                      <p key={idx} className="text-xs">{w.message || w}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Painel de Diagnósticos Diferenciais (Apenas em NOVO_CASO ou CONTINUACAO_CASO) */}
-                {msg.sender === 'bot' && msg.differentialDiagnoses && msg.differentialDiagnoses.length > 0 && (
-                  <div className="mb-5 p-4 rounded-xl bg-slate-950/90 border border-clinical-500/30 shadow-lg">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-clinical-400 animate-pulse" />
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-clinical-300">
-                          Cálculo Probabilístico de Diagnóstico Diferencial (100%)
-                        </h4>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {msg.differentialDiagnoses.map((diag, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-200">{diag.doenca}</span>
-                            <button
-                              onClick={() => onSelectDiagnosis({ ...diag, contextMessage: msg })}
-                              title="Clique para ver a justificativa do raciocínio clínico e evidências deste cálculo"
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-500/50 border border-emerald-500/40 text-emerald-300 hover:text-white font-mono font-bold text-xs transition-all cursor-pointer group"
-                            >
-                              <span>{diag.probabilidade}%</span>
-                              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                            </button>
-                          </div>
-                          <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
-                            <div
-                              className="bg-gradient-to-r from-teal-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${diag.probabilidade}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mapa Visual de Consenso Científico vs Controvérsia (P2 - Bug C) */}
-                {msg.sender === 'bot' && msg.consensusMatrix && msg.consensusMatrix.showCard !== false && (
-                  <div className="mb-4 p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                        <PieChart className="w-4 h-4 text-teal-400" /> Mapa de Consenso Científico da Literatura:
-                      </span>
-                      <span className="text-[10px] text-teal-300 font-bold bg-teal-950 px-2 py-0.5 rounded border border-teal-500/30">
-                        {msg.consensusMatrix.consensusLevel}
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden flex border border-slate-800">
-                      <div
-                        className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all"
-                        style={{ width: `${msg.consensusMatrix.primarySupportPercent}%` }}
-                        title="Conduta Principal Apoiada por Diretrizes"
-                      />
-                      <div
-                        className="bg-amber-500/70 h-full transition-all"
-                        style={{ width: `${msg.consensusMatrix.alternativeSupportPercent}%` }}
-                        title="Condutas Alternativas / Divergentes"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>{msg.consensusMatrix.primarySupportPercent}% Diretrizes Favoráveis</span>
-                      <span>{msg.consensusMatrix.alternativeSupportPercent}% Alternativas Aceitas</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Conteúdo Narrativo */}
-                {renderFormattedText(msg.text)}
-
-                {/* Painel de Registro Médico-Legal da Escolha de Conduta (Modo Médico) */}
-                {msg.sender === 'bot' && !msg.isError && currentSessionId && userMode === 'doctor' && msg.differentialDiagnoses && msg.differentialDiagnoses.length > 0 && (
-                  <div className="mt-4 p-3.5 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <Scale className="w-4 h-4 text-amber-400" /> Registro Médico-Legal de Conduta Escolhida:
-                      </span>
-                      {recordedDecisions[msg.id] && (
-                        <span className="text-[10px] text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Registrado no Prontuário ({recordedDecisions[msg.id].timestamp})
-                        </span>
-                      )}
-                    </div>
-
-                    {!recordedDecisions[msg.id] ? (
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <button
-                          onClick={() => handleRecordPhysicianDecision(msg.id, 'Conduta Recomendada pelas Diretrizes Principais', msg.citations)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-clinical-600/30 border border-slate-800 hover:border-clinical-500/40 text-slate-300 hover:text-white transition-all text-[11px] font-medium"
-                        >
-                          Confirmar Conduta Recomendada
-                        </button>
-                        <button
-                          onClick={() => handleRecordPhysicianDecision(msg.id, 'Conduta Conservadora / Observação Armada', msg.citations)}
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-teal-600/30 border border-slate-800 hover:border-teal-500/40 text-slate-300 hover:text-white transition-all text-[11px] font-medium"
-                        >
-                          Confirmar Conduta Conservadora
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-300 italic">
-                        "Conduta registrada pelo médico: <strong>{recordedDecisions[msg.id].conduct}</strong> vinculada à sessão de consulta."
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Próximas Perguntas Sugeridas Clicáveis (P2.1) */}
-                {msg.sender === 'bot' && msg.followUpQuestions && msg.followUpQuestions.length > 0 && (
-                  <div className="mt-4 pt-3 border-t border-slate-800/80">
-                    <span className="text-xs font-bold text-clinical-300 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-                      Próximas Perguntas Sugeridas (Clique para Enviar):
-                    </span>
-                    <div className="space-y-1.5">
-                      {msg.followUpQuestions.map((qText, qIdx) => (
-                        <button
-                          key={qIdx}
-                          onClick={() => handleSendQuestion(qText)}
-                          className="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-clinical-600/20 border border-slate-800 hover:border-clinical-500/40 text-xs text-slate-200 hover:text-white transition-all flex items-center justify-between group shadow-sm"
-                        >
-                          <span className="font-medium">{qText}</span>
-                          <ChevronRight className="w-4 h-4 text-clinical-400 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* SEÇÃO P1.7 & P2: FONTES COM EXPLICABILIDADE DO RANQUEAMENTO */}
-                {msg.sender === 'bot' && msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-5 pt-4 border-t border-slate-800 space-y-4">
-                    
-                    {/* 1. Base Local Validada */}
-                    {localCitations.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                            <Building2 className="w-4 h-4 text-clinical-400" /> Diretrizes e Manuais Institucionais Validados ({localCitations.length}):
-                          </span>
-                          <span className="text-[10px] text-clinical-300 bg-clinical-950 px-2 py-0.5 rounded border border-clinical-500/30">
-                            Base Curada Servidor
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {localCitations.map((cit) => {
-                            const pageNum = cit.page || cit.pageNumber || 1;
-                            const targetUrl = cit.url || `/knowledge/${encodeURIComponent(cit.filename)}#page=${pageNum}`;
-                            const isHighlighted = highlightedSourceId === cit.sourceId;
-
-                            return (
-                              <div
-                                key={cit.sourceId || cit.id}
-                                className={`p-3 rounded-xl bg-slate-900/90 border transition-all flex flex-col justify-between ${
-                                  isHighlighted
-                                    ? 'border-clinical-400 ring-2 ring-clinical-500/30'
-                                    : 'border-slate-800 hover:border-clinical-500/50'
-                                }`}
-                              >
-                                <div>
-                                  <h5
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="text-xs font-semibold text-slate-200 line-clamp-2 hover:text-clinical-300 cursor-pointer"
-                                  >
-                                    {cit.title}
-                                  </h5>
-                                  <span className="text-[10px] text-slate-400 block mt-1">
-                                    Organização: {cit.organization || 'Diretriz Oficial'} • Ano: {cit.year || 'N/I'}
-                                  </span>
-                                  {cit.rankingRationale && (
-                                    <p className="text-[10px] text-slate-400 mt-1.5 italic bg-slate-950/80 p-1.5 rounded border border-slate-800/80">
-                                      Justificativa: {cit.rankingRationale}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                                  <button
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="text-clinical-400 hover:text-clinical-300 font-medium"
-                                  >
-                                    Ver Trecho (Pág. {pageNum})
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="text-slate-300 hover:text-white text-[10px] underline flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
-                                  >
-                                    PDF Original <ExternalLink className="w-3 h-3 text-clinical-400" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 2. Artigos Buscados na Web (Cochrane Library / PubMed) */}
-                    {webCitations.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t border-slate-800/60">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <Globe className="w-4 h-4 text-teal-400" /> Artigos Científicos Indexados ({webCitations.length}):
-                          </span>
-                          <span className="text-[10px] text-teal-300 bg-teal-950 px-2 py-0.5 rounded border border-teal-500/30 font-mono font-bold">
-                            Cochrane CDSR / PubMed
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {webCitations.map((cit) => {
-                            const isHighlighted = highlightedSourceId === cit.sourceId;
-
-                            return (
-                              <div
-                                key={cit.sourceId || cit.id}
-                                className={`p-3 rounded-xl bg-slate-900/90 border transition-all flex flex-col justify-between shadow-md ${
-                                  isHighlighted
-                                    ? 'border-teal-400 ring-2 ring-teal-500/30'
-                                    : 'border-teal-500/30 hover:border-teal-400'
-                                }`}
-                              >
-                                <div>
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-bold text-teal-300 bg-teal-950 px-2 py-0.5 rounded border border-teal-500/30">
-                                      {cit.gradeLevel || 'GRADE Nível 1 Meta-Análise'}
-                                    </span>
-                                  </div>
-                                  <h5
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="text-xs font-semibold text-slate-100 line-clamp-2 hover:text-teal-300 cursor-pointer"
-                                  >
-                                    {cit.title}
-                                  </h5>
-                                  <span className="text-[10px] text-slate-400 block mt-1">
-                                    Autores: {cit.authors || 'Metadado indisponível'}
-                                  </span>
-                                  {cit.rankingRationale && (
-                                    <p className="text-[10px] text-teal-200/80 mt-1.5 italic bg-teal-950/40 p-1.5 rounded border border-teal-500/20">
-                                      Justificativa: {cit.rankingRationale}
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                                  <button
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="text-teal-400 hover:text-teal-300 font-medium"
-                                  >
-                                    Ver Resumo
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => onSelectCitation(cit)}
-                                    className="px-2 py-0.5 rounded bg-teal-600/30 hover:bg-teal-500 text-teal-200 hover:text-white font-medium text-[10px] flex items-center gap-1 border border-teal-500/40 cursor-pointer"
-                                  >
-                                    <span>Ver no Original</span>
-                                    <ExternalLink className="w-3 h-3 text-teal-300" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-                )}
-
-                {/* Rodapé da Mensagem: Botão de Estruturar Laudo + Exportar + Feedback */}
-                {msg.sender === 'bot' && !msg.isError && (
-                  <div className="mt-4 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {userMode === 'doctor' && msg.differentialDiagnoses && msg.differentialDiagnoses.length > 0 && (
-                        <button
-                          onClick={() => handleOpenReasoningConfirm(msg.differentialDiagnoses?.[0] || null, msg)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-md shadow-emerald-950/50 transition-all cursor-pointer"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>Estruturar Laudo e Prontuário</span>
-                        </button>
-                      )}
-
-                      {userMode === 'doctor' && (
-                        <button
-                          onClick={() => handleExportAuditReport(msg)}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-all text-[11px]"
-                        >
-                          <Download className="w-3.5 h-3.5 text-teal-400" />
-                          <span>Exportar Relatório (.json)</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <FeedbackWidget decisionId={msg.id} />
-                  </div>
-                )}
-
-              </div>
-            </div>
-          );
-        })}
-        {loading && (
-          <div className="media-loading flex gap-3 items-center p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
-            <Loader2 className="w-5 h-5 text-clinical-400 animate-spin" />
-            <span className="text-xs text-slate-400 font-medium">
-              Agente Médico ({userMode === 'student' ? 'Modo Estudante' : 'Modo Médico'}) processando evidências com Gemini Flash...
-            </span>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Disclaimer LGPD no Rodapé */}
-      <div className="py-1 px-2 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5">
-        <Lock className="w-3 h-3 text-emerald-400" />
-        <span>Dados protegidos pela LGPD (Lei 13.709/2018). Apoio à decisão clínica com rastreabilidade médico-legal completa.</span>
-      </div>
-
-      {/* Input de Mensagem com Suporte a Câmera e Imagem Multimodal */}
-      <div className="media-composer mt-1 space-y-2">
-        {/* Preview da Imagem ou Foto da Câmera Selecionada */}
+      {/* ========================================================================= */}
+      {/* BARRA DE ENTRADA & AÇÕES UNIFICADAS DA CONSULTA */}
+      {/* ========================================================================= */}
+      <div className="bg-white/95 backdrop-blur-md p-2.5 sm:p-3.5 rounded-3xl border border-[#17231f]/10 shadow-sm space-y-2">
+        
+        {/* Preview de Foto/Imagem Selecionada */}
         {selectedImage && (
-          <div className="p-2.5 bg-slate-950 rounded-2xl border border-emerald-500/40 flex items-center justify-between animate-fadeIn max-w-md shadow-lg">
-            <div className="flex items-center gap-3 truncate">
-              <div className="relative shrink-0">
-                <img
-                  src={selectedImage.dataUrl}
-                  alt="Preview Imagem"
-                  className="w-12 h-12 object-cover rounded-xl border border-slate-700 shadow-sm"
-                />
-                {selectedImage.fromCamera && (
-                  <span className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-0.5 rounded-full ring-2 ring-slate-950">
-                    <Camera className="w-2.5 h-2.5" />
-                  </span>
+          <div className="p-2 bg-[#faf8f5] rounded-2xl border border-[#17231f]/10 flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200 shrink-0 border">
+                {selectedImage.dataUrl && (
+                  <img src={selectedImage.dataUrl} alt="Preview" className="w-full h-full object-cover" />
                 )}
               </div>
               <div className="truncate text-xs">
-                <span className="font-bold text-slate-200 block truncate flex items-center gap-1.5">
+                <span className="font-bold text-[#17231f] block truncate">
                   {selectedImage.name}
                 </span>
-                <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                <span className="text-[10px] text-emerald-800 font-semibold">
                   {selectedImage.fromCamera ? '📷 Foto da Câmera' : '📁 Imagem Anexada'} • {selectedImage.sizeKb} KB
                 </span>
               </div>
@@ -1061,24 +825,24 @@ export function ClinicalChat({
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="p-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 text-slate-400 hover:text-rose-300 transition-colors ml-2 shrink-0 border border-slate-800"
-              title="Remover Foto/Imagem"
+              className="p-1 rounded-lg hover:bg-rose-100 text-[#5e6c65] hover:text-rose-700 transition"
+              title="Remover anexo"
             >
               <XIcon className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Barra de Status de Modo e Contador de Caracteres por Plano */}
-        <div className="flex items-center justify-between text-[11px] px-1 text-slate-400">
+        {/* Status de Modo & Contador de Caracteres */}
+        <div className="flex items-center justify-between text-[11px] px-1 text-[#5e6c65]">
           <span className="flex items-center gap-1.5">
             {userMode === 'student' ? (
-              <span className="text-amber-400 font-semibold flex items-center gap-1 bg-amber-950/60 px-2 py-0.5 rounded-md border border-amber-500/30">
-                <GraduationCap className="w-3.5 h-3.5" /> Modo Acadêmico & Fisiopatologia
+              <span className="text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[10px]">
+                <GraduationCap className="w-3 h-3 text-amber-700" /> Modo Acadêmico
               </span>
             ) : (
-              <span className="text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
-                <Stethoscope className="w-3.5 h-3.5" /> Copiloto Médico & Condutas
+              <span className="text-emerald-950 font-semibold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">
+                <Stethoscope className="w-3 h-3 text-[#213f34]" /> Copiloto Médico
               </span>
             )}
           </span>
@@ -1088,110 +852,131 @@ export function ClinicalChat({
             const isOver = maxChars !== Infinity && input.length > maxChars;
 
             return (
-              <span className={`font-mono text-[10px] ${isOver ? 'text-rose-400 font-bold bg-rose-950/80 px-2 py-0.5 rounded-md' : input.length > maxChars * 0.8 ? 'text-amber-400 font-semibold' : 'text-slate-400'}`}>
+              <span className={`font-mono text-[10px] ${isOver ? 'text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-md' : 'text-[#5e6c65]'}`}>
                 {input.length} / {maxChars === Infinity ? 'Ilimitado' : `${maxChars} carac.`}
-                {isOver && ' ⚠️ Excedeu o limite!'}
+                {isOver && ' ⚠️ Limite excedido'}
               </span>
             );
           })()}
         </div>
 
+        {/* Formulário de Envio com Todos os Controles Integrados */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
             if (maxChars !== Infinity && input.length > maxChars) {
-              alert(`⚠️ Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}. Por favor, reduza o texto.`);
+              alert(`⚠️ Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}.`);
               return;
             }
             handleSendQuestion();
           }}
-          className="media-composer-form flex gap-2"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
         >
-          {/* Botão 1: Tirar Foto Direta com a Câmera */}
-          <button
-            type="button"
-            onClick={() => {
-              if (userPlan === 'free') {
-                alert("⚠️ O envio e análise de imagens com a câmera está disponível a partir do Plano Estudante.");
-                if (onOpenUsageModal) onOpenUsageModal();
-                return;
-              }
-              setShowCameraModal(true);
-            }}
-            disabled={loading}
-            title="Tirar Foto com a Câmera (Lesão, ECG, Exame Físico)"
-            className="media-attach-button bg-slate-900 hover:bg-emerald-950/80 text-slate-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
-          >
-            <Camera className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
-          </button>
+          {/* Grupo de Ferramentas de Entrada: Câmera + Arquivo */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (userPlan === 'free') {
+                  alert("⚠️ O envio de fotos está disponível a partir do Plano Estudante.");
+                  if (onOpenUsageModal) onOpenUsageModal();
+                  return;
+                }
+                setShowCameraModal(true);
+              }}
+              disabled={loading}
+              title="Tirar Foto com a Câmera"
+              className="p-2.5 rounded-2xl bg-[#faf8f5] hover:bg-[#ede8df] text-[#213f34] border border-[#17231f]/10 transition flex items-center justify-center shrink-0 disabled:opacity-50"
+            >
+              <Camera className="w-4 h-4 text-[#213f34]" />
+            </button>
 
-          {/* Botão 2: Anexar Imagem da Galeria / Arquivos */}
-          <button
-            type="button"
-            onClick={() => {
-              if (userPlan === 'free') {
-                alert("⚠️ O Plano Free não possui upload de arquivos. Faça upgrade para o Plano Estudante!");
-                if (onOpenUsageModal) onOpenUsageModal();
-                return;
-              }
-              imageInputRef.current?.click();
-            }}
-            disabled={loading}
-            title="Anexar Arquivo da Galeria (JPG/PNG/WEBP/PDF)"
-            className="media-attach-button bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-teal-300 border border-slate-800 px-3.5 py-3 rounded-2xl transition-all flex items-center justify-center shrink-0 disabled:opacity-50 group"
-          >
-            <ImageIcon className="w-5 h-5 text-teal-400 group-hover:scale-110 transition-transform" />
-          </button>
-          <input
-            type="file"
-            ref={imageInputRef}
-            onChange={handleImageSelect}
-            accept="image/*,application/pdf"
-            className="hidden"
-          />
+            <button
+              type="button"
+              onClick={() => {
+                if (userPlan === 'free') {
+                  alert("⚠️ O upload de arquivos está disponível a partir do Plano Estudante.");
+                  if (onOpenUsageModal) onOpenUsageModal();
+                  return;
+                }
+                imageInputRef.current?.click();
+              }}
+              disabled={loading}
+              title="Anexar Arquivo ou Imagem"
+              className="p-2.5 rounded-2xl bg-[#faf8f5] hover:bg-[#ede8df] text-[#213f34] border border-[#17231f]/10 transition flex items-center justify-center shrink-0 disabled:opacity-50"
+            >
+              <ImageIcon className="w-4 h-4 text-[#213f34]" />
+            </button>
+            <input
+              type="file"
+              ref={imageInputRef}
+              onChange={handleImageSelect}
+              accept="image/*,application/pdf"
+              className="hidden"
+            />
+          </div>
 
+          {/* Campo de Texto Principal */}
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               selectedImage
-                ? (selectedImage.fromCamera
-                    ? 'Digite observações sobre a foto capturada (opcional)...'
-                    : 'Digite observações adicionais sobre a imagem (opcional)...')
+                ? 'Observações sobre a imagem clínica anexada...'
                 : (userMode === 'student'
-                    ? 'Digite uma queixa ou dúvida para explorar a fisiopatologia e raciocínio clínico...'
-                    : 'Digite o caso clínico, achados de exame ou dúvida para apoio à conduta médica...')
+                    ? 'Digite uma dúvida fisiopatológica ou caso para explorar...'
+                    : 'Descreva a queixa, exame físico ou hipótese clínica...')
             }
             disabled={loading}
-            className="media-chat-input min-w-0 flex-1 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-clinical-500 transition-colors disabled:opacity-50"
+            className="min-w-0 flex-1 bg-[#faf8f5] border border-[#17231f]/10 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-[#17231f] placeholder-[#5e6c65] focus:outline-none focus:ring-2 focus:ring-[#213f34]/20 transition disabled:opacity-50"
           />
 
-          {/* Botão de Alternância: Pesquisa Padrão vs Pesquisa Profunda */}
-          <button
-            type="button"
-            onClick={() => setDeepResearch(!deepResearch)}
-            disabled={loading}
-            className={`px-3.5 py-3 rounded-2xl text-xs font-bold transition-all border shrink-0 flex items-center gap-2 shadow-sm disabled:opacity-50 ${
-              deepResearch
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/40 ring-2 ring-emerald-500/50 animate-pulse'
-                : 'bg-slate-900 text-slate-300 border-slate-800 hover:text-emerald-300 hover:border-emerald-500/40'
-            }`}
-            title="Alternar entre Pesquisa Padrão e Pesquisa Profunda"
-          >
-            <Send className={`w-3.5 h-3.5 -rotate-45 transition-transform ${deepResearch ? 'text-emerald-100 scale-110' : 'text-emerald-400'}`} />
-            <span className="hidden md:inline">{deepResearch ? 'Pesquisa Profunda' : 'Pesquisa Padrão'}</span>
-            <span className="md:hidden">{deepResearch ? 'Profunda' : 'Padrão'}</span>
-          </button>
+          {/* Grupo de Ações da Consulta: Gravar Consulta + Pesquisa Profunda + Enviar */}
+          <div className="flex items-center gap-1.5 justify-end shrink-0">
+            
+            {/* BOTÃO REPOSICIONADO: Gravar Consulta (Ambient AI Scribe) */}
+            <button
+              type="button"
+              onClick={() => setShowAudioRecorder(!showAudioRecorder)}
+              className={`px-3 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                showAudioRecorder
+                  ? 'bg-rose-100 text-rose-950 border-rose-300 shadow-sm'
+                  : 'bg-[#faf8f5] hover:bg-rose-50 text-[#17231f] border-[#17231f]/10 hover:border-rose-300'
+              }`}
+              title="Gravar áudio da consulta para transcrição e laudo automático"
+            >
+              <Mic className={`w-3.5 h-3.5 ${showAudioRecorder ? 'text-rose-600 animate-pulse' : 'text-rose-600'}`} />
+              <span className="hidden md:inline">{showAudioRecorder ? 'Gravando' : 'Gravar Consulta'}</span>
+            </button>
 
-          <button
-            type="submit"
-            disabled={loading || (!input.trim() && !selectedImage) || (userPlan === 'free' && input.length > 500) || (userPlan === 'estudante' && input.length > 2000) || (userPlan === 'clinica' && input.length > 5000)}
-            className="media-send-button bg-[#213f34] hover:bg-[#172f27] disabled:bg-slate-800 text-white font-semibold px-4 sm:px-5 py-3 rounded-2xl transition-all shadow-sm flex items-center justify-center disabled:opacity-50 shrink-0"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </button>
+            {/* Alternar Pesquisa Profunda vs Padrão */}
+            <button
+              type="button"
+              onClick={() => setDeepResearch(!deepResearch)}
+              disabled={loading}
+              className={`px-3 py-2.5 rounded-2xl text-xs font-bold transition-all border flex items-center gap-1.5 disabled:opacity-50 ${
+                deepResearch
+                  ? 'bg-emerald-800 text-white border-emerald-900 shadow-sm'
+                  : 'bg-[#faf8f5] hover:bg-[#ede8df] text-[#17231f] border-[#17231f]/10'
+              }`}
+              title="Alternar entre Pesquisa Padrão e Pesquisa Profunda"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${deepResearch ? 'text-emerald-200' : 'text-amber-600'}`} />
+              <span className="hidden lg:inline">{deepResearch ? 'Profunda' : 'Padrão'}</span>
+            </button>
+
+            {/* Botão Enviar */}
+            <button
+              type="submit"
+              disabled={loading || (!input.trim() && !selectedImage) || (userPlan === 'free' && input.length > 500) || (userPlan === 'estudante' && input.length > 2000) || (userPlan === 'clinica' && input.length > 5000)}
+              className="bg-[#213f34] hover:bg-[#172f27] disabled:bg-[#5e6c65]/30 text-white font-bold px-4 py-2.5 rounded-2xl transition shadow-sm flex items-center justify-center disabled:opacity-50 shrink-0"
+              title="Enviar caso"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
         </form>
       </div>
 
