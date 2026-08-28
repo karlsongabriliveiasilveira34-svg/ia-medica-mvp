@@ -22,60 +22,84 @@ export const SPECIALTY_AREAS = [
 
 export const FLASHCARD_DECKS = [
   {
+    id: 'all',
+    area: 'all',
+    title: 'Acervo Completo (5.000+ Cards)',
+    description: 'Todos os flashcards médicos integrados com repetição espaçada SM-2 de alta retenção.',
+    color: 'border-emerald-500/30 bg-emerald-50/50 text-emerald-900',
+    dueCount: 45
+  },
+  {
+    id: 'clinica',
+    area: 'clinica',
+    title: 'Clínica Médica & Propedêutica',
+    description: 'Doenças sistêmicas, diagnóstico diferencial, endocrinologia, reumatologia e hematologia',
+    color: 'border-blue-500/30 bg-blue-50/50 text-blue-900',
+    dueCount: 28
+  },
+  {
     id: 'cardio',
     area: 'clinica',
     title: 'Cardiologia & ECG',
     description: 'Arritmias, SCA, Insuficiência Cardíaca, Valvopatias e Hipertensão SBC',
-    color: 'border-rose-500/30 bg-rose-50/50 text-rose-900'
+    color: 'border-rose-500/30 bg-rose-50/50 text-rose-900',
+    dueCount: 14
   },
   {
-    id: 'infecto',
-    area: 'clinica',
-    title: 'Infectologia & Antimicrobianos',
-    description: 'Esquemas empíricos, Sepse (ILAS), Meningites, HIV/AIDS e Tuberculose',
-    color: 'border-amber-500/30 bg-amber-50/50 text-amber-900'
+    id: 'cirurgia',
+    area: 'cirurgia',
+    title: 'Cirurgia, Trauma & ATLS',
+    description: 'Protocolo ABCDE, Abdome Agudo Inflamatório/Obstrutivo, Queimaduras e Suturas',
+    color: 'border-emerald-500/30 bg-emerald-50/50 text-emerald-900',
+    dueCount: 19
   },
   {
     id: 'pediatria',
     area: 'pediatria',
     title: 'Pediatria & Puericultura',
     description: 'Calendário PNI, Crescimento e Desenvolvimento, Desidratação OMS e OMA',
-    color: 'border-sky-500/30 bg-sky-50/50 text-sky-900'
+    color: 'border-sky-500/30 bg-sky-50/50 text-sky-900',
+    dueCount: 12
   },
   {
     id: 'go',
     area: 'go',
     title: 'Ginecologia & Obstetrícia',
     description: 'Pré-Natal, Hemorragias da 1ª e 2ª Metade, Rastreio de Câncer e Anticoncepção',
-    color: 'border-pink-500/30 bg-pink-50/50 text-pink-900'
-  },
-  {
-    id: 'cirurgia',
-    area: 'cirurgia',
-    title: 'Cirurgia, Trauma & ATLS',
-    description: 'Protocolo ABCDE, Abdome Agudo Inflamatório/Obstrutivo e Queimaduras',
-    color: 'border-emerald-500/30 bg-emerald-50/50 text-emerald-900'
+    color: 'border-pink-500/30 bg-pink-50/50 text-pink-900',
+    dueCount: 15
   },
   {
     id: 'preventiva',
     area: 'preventiva',
     title: 'Medicina Preventiva & SUS',
     description: 'Leis 8.080/8.142, Indicadores de Mortalidade, Risco Relativo e Bioética',
-    color: 'border-indigo-500/30 bg-indigo-50/50 text-indigo-900'
+    color: 'border-indigo-500/30 bg-indigo-50/50 text-indigo-900',
+    dueCount: 11
   },
   {
-    id: 'farmaco',
+    id: 'infecto',
     area: 'clinica',
-    title: 'Farmacologia Clínica & Dosagens',
-    description: 'Interações medicamentosas, Farmacocinética, Intoxicações e Ajustes Renais',
-    color: 'border-teal-500/30 bg-teal-50/50 text-teal-900'
+    title: 'Infectologia & Antimicrobianos',
+    description: 'Esquemas empíricos, Sepse (ILAS), Meningites, HIV/AIDS e Tuberculose',
+    color: 'border-amber-500/30 bg-amber-50/50 text-amber-900',
+    dueCount: 16
   },
   {
     id: 'nefro',
     area: 'clinica',
     title: 'Nefrologia & Distúrbios Hidroeletrolíticos',
     description: 'Hiponatremia, Hipercalemia, Injúria Renal Aguda (KDIGO) e Glomerulopatias',
-    color: 'border-purple-500/30 bg-purple-50/50 text-purple-900'
+    color: 'border-purple-500/30 bg-purple-50/50 text-purple-900',
+    dueCount: 10
+  },
+  {
+    id: 'farmaco',
+    area: 'clinica',
+    title: 'Farmacologia Clínica & Dosagens',
+    description: 'Interações medicamentosas, Farmacocinética, Intoxicações e Ajustes Renais',
+    color: 'border-teal-500/30 bg-teal-50/50 text-teal-900',
+    dueCount: 13
   }
 ];
 

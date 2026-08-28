@@ -29,6 +29,7 @@ import { LgpdController } from "../controllers/lgpd.controller.js";
 import { authRouter } from "./auth.routes.js";
 import { iaRouter } from "./ia.routes.js";
 import { questoesRouter } from "./questoes.routes.js";
+import { especialidadesRouter } from "./especialidades.routes.js";
 import { pixFixRouter } from "./pix-fix.routes.js";
 import { clinicalStreamRouter } from "./clinical-stream.routes.js";
 import { advancedClinicalRouter } from "./drug-interaction.routes.js";
@@ -86,9 +87,10 @@ apiRouter.get("/health", checkHealth);
 // Rotas de Autenticação (Públicas)
 apiRouter.use(authRouter);
 
-// Rotas de IA Preceptora, Questões de Residência e PIX Dinâmico
+// Rotas de IA Preceptora, Questões de Residência e Roadmaps de Especialização
 apiRouter.use(iaRouter);
 apiRouter.use(questoesRouter);
+apiRouter.use(especialidadesRouter);
 apiRouter.use(pixFixRouter);
 apiRouter.use(clinicalStreamRouter);
 apiRouter.use(advancedClinicalRouter);

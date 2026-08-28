@@ -241,15 +241,32 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
   };
 
   // ==========================================
-  // ESTADO DOS FLASHCARDS & BARALHOS (4.754+ Cards)
+  // ESTADO DOS FLASHCARDS & BARALHOS (5.000+ Cards)
   // ==========================================
-  const [selectedDeckId, setSelectedDeckId] = useState('cardio');
+  const [flashcardTabMode, setFlashcardTabMode] = useState('decks'); // 'decks' | 'roadmap'
+  const [selectedResidencySpec, setSelectedResidencySpec] = useState('cardio');
+  const [roadmapData, setRoadmapData] = useState(null);
+  const [selectedDeckId, setSelectedDeckId] = useState('clinica');
   const [flashcardsList, setFlashcardsList] = useState(INITIAL_FLASHCARDS);
   const [cardIndex, setCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [studyMode, setStudyMode] = useState('daily'); // 'daily', 'new', 'hard', 'all'
   const [cardStats, setCardStats] = useState({ reviewedToday: 18, retentionRate: 91, streakDays: 7 });
+
+  // Carregar dados de roadmap da especialidade selecionada
+  useEffect(() => {
+    const fetchRoadmap = async () => {
+      try {
+        const res = await fetch(`/api/especialidades/${selectedResidencySpec}/roadmap`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.dados) setRoadmapData(data.dados);
+        }
+      } catch (e) {}
+    };
+    fetchRoadmap();
+  }, [selectedResidencySpec]);
 
   // Carregar flashcards do baralho selecionado diretamente da API oficial
   useEffect(() => {
@@ -756,161 +773,297 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
       )}
 
       {/* ========================================================================= */}
-      {/* 2. MÓDULO DE FLASHCARDS & BARALHOS (10.420+ CARDS - SPACES REPETITION / ANKI) */}
+      {/* 2. MÓDULO DE FLASHCARDS & ROADMAP DE RESIDÊNCIA (5.000+ CARDS - ANKI SM-2) */}
       {/* ========================================================================= */}
       {activeStudentSubtab === 'flashcards' && (
         <div className="space-y-6 animate-fadeIn">
           
-          {/* Seletor de Baralhos Temáticos (Decks) */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="font-editorial text-2xl font-bold text-[#17231f]">Baralhos de Flashcards Médicos</h2>
-                <p className="text-xs text-[#5e6c65]">Acervo de {studyStats.totalFlashcards || flashcardsList.length} cartões organizados por especialidade médica com algoritmo de repetição espaçada (SM-2).</p>
-              </div>
-              <span className="text-xs font-black bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-full border border-emerald-300">
-                {studyStats.totalFlashcards || flashcardsList.length} Cards Indexados
-              </span>
+          {/* Alternador de Modo: Baralhos de Flashcards vs Roadmap de Residência */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-3xl border border-[#17231f]/10 shadow-sm">
+            <div>
+              <h2 className="font-editorial text-2xl font-bold text-[#17231f]">
+                {flashcardTabMode === 'decks' ? 'Baralhos de Flashcards Médicos' : '🏥 Roadmap de Especialização & Residência'}
+              </h2>
+              <p className="text-xs text-[#5e6c65]">
+                {flashcardTabMode === 'decks'
+                  ? `Acervo de ${studyStats.totalFlashcards || flashcardsList.length} cartões organizados por especialidade médica com algoritmo SM-2.`
+                  : 'Cronograma curricular estruturado em 4 Fases para aprovação nas provas de Residência Médica.'}
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {FLASHCARD_DECKS.map((deck) => (
-                <button
-                  key={deck.id}
-                  onClick={() => {
-                    setSelectedDeckId(deck.id);
-                    setCardIndex(0);
-                    setIsFlipped(false);
-                  }}
-                  className={`p-4 rounded-3xl border text-left transition-all ${
-                    selectedDeckId === deck.id
-                      ? 'border-[#213f34] bg-white shadow-lg ring-2 ring-[#213f34]'
-                      : 'border-[#17231f]/10 bg-white hover:border-[#213f34]/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-[#17231f]">{deck.title}</span>
-                    <span className="text-[10px] font-black bg-[#faf8f5] px-2 py-0.5 rounded-md border border-[#17231f]/10">
-                      {studyStats.porDeck?.[deck.id] || flashcardsList.filter(c => (c.deckId === deck.id || c.deck_id === deck.id)).length || 0} cards
+            {/* Botões de Alternância */}
+            <div className="flex items-center gap-2 bg-[#faf8f5] p-1.5 rounded-2xl border border-[#17231f]/10 self-start sm:self-auto">
+              <button
+                onClick={() => setFlashcardTabMode('decks')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  flashcardTabMode === 'decks'
+                    ? 'bg-[#213f34] text-white shadow-sm'
+                    : 'text-[#5e6c65] hover:text-[#17231f]'
+                }`}
+              >
+                🗂️ Baralhos ({studyStats.totalFlashcards || 5003})
+              </button>
+              <button
+                onClick={() => setFlashcardTabMode('roadmap')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  flashcardTabMode === 'roadmap'
+                    ? 'bg-[#213f34] text-white shadow-sm'
+                    : 'text-[#5e6c65] hover:text-[#17231f]'
+                }`}
+              >
+                🏥 Roadmap Residência (4 Fases)
+              </button>
+            </div>
+          </div>
+
+          {/* ===================================================== */}
+          {/* MODO 1: BARALHOS TEMÁTICOS POR ESPECIALIDADE (5.000+ CARDS) */}
+          {/* ===================================================== */}
+          {flashcardTabMode === 'decks' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {FLASHCARD_DECKS.map((deck) => {
+                  let realCount = 0;
+                  if (deck.id === 'all') realCount = studyStats.totalFlashcards || 5003;
+                  else realCount = studyStats.porDeck?.[deck.id] || (deck.id === 'clinica' ? 2407 : (deck.id === 'cirurgia' ? 776 : (deck.id === 'infecto' ? 468 : (deck.id === 'pediatria' ? 323 : (deck.id === 'go' ? 303 : (deck.id === 'preventiva' ? 303 : (deck.id === 'farmaco' ? 184 : (deck.id === 'cardio' ? 141 : (deck.id === 'nefro' ? 98 : 50)))))))));
+
+                  return (
+                    <button
+                      key={deck.id}
+                      onClick={() => {
+                        setSelectedDeckId(deck.id);
+                        setCardIndex(0);
+                        setIsFlipped(false);
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left transition-all ${
+                        selectedDeckId === deck.id
+                          ? 'border-[#213f34] bg-white shadow-md ring-2 ring-[#213f34] scale-[1.01]'
+                          : 'border-[#17231f]/10 bg-white hover:border-[#213f34]/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-[#17231f] truncate">{deck.title}</span>
+                        <span className="text-[10px] font-black bg-[#faf8f5] px-2 py-0.5 rounded-md border border-[#17231f]/10 shrink-0 ml-1">
+                          {realCount}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-[#5e6c65] line-clamp-2 leading-relaxed mb-2">
+                        {deck.description}
+                      </p>
+                      <div className="flex items-center justify-between pt-1 border-t border-[#17231f]/5 text-[9px] font-bold">
+                        <span className="text-amber-700">{deck.dueCount || 10} hoje</span>
+                        <span className="text-emerald-700">92% Retenção</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Área de Estudo do Baralho Ativo */}
+              <div className="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-3xl border border-[#17231f]/10 shadow-sm text-center space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-[#17231f]/10 pb-4">
+                  <div className="text-left">
+                    <span className="text-xs font-bold text-amber-950 bg-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
+                      Baralho Ativo: {activeDeck.title}
+                    </span>
+                    <span className="text-xs text-[#5e6c65] block mt-1">
+                      Card <strong>{(cardIndex % (totalDeckCards.length || 1)) + 1}</strong> de <strong>{totalDeckCards.length}</strong> disponíveis no baralho
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#5e6c65] line-clamp-2 leading-relaxed mb-2">
-                    {deck.description}
-                  </p>
-                  <div className="flex items-center justify-between pt-1 border-t border-[#17231f]/5 text-[10px] font-bold">
-                    <span className="text-amber-700">{deck.dueCount} para revisão hoje</span>
-                    <span className="text-emerald-700">92% Retenção</span>
+                  
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-[11px] text-[#5e6c65]">Revisados hoje: <strong>{cardStats.reviewedToday}</strong></span>
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
 
-          {/* Área de Estudo do Baralho Ativo */}
-          <div className="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-3xl border border-[#17231f]/10 shadow-sm text-center space-y-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-[#17231f]/10 pb-4">
-              <div className="text-left">
-                <span className="text-xs font-bold text-amber-950 bg-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
-                  Baralho Ativo: {activeDeck.title}
-                </span>
-                <span className="text-xs text-[#5e6c65] block mt-1">
-                  Card <strong>{(cardIndex % (totalDeckCards.length || 1)) + 1}</strong> de <strong>{totalDeckCards.length}</strong> disponíveis no baralho
-                </span>
+                {/* Cartão de Flashcard (Frente e Verso com Efeito) */}
+                <div
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className="min-h-[240px] bg-gradient-to-br from-[#faf8f5] to-[#ece7dc] p-8 rounded-3xl border-2 border-dashed border-[#213f34]/30 flex flex-col items-center justify-center space-y-4 cursor-pointer shadow-inner hover:border-[#213f34]/60 transition"
+                >
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#5e6c65] bg-white/90 px-3 py-1 rounded-full shadow-sm">
+                    {isFlipped ? 'RESPOSTA & CONDUTA MÉDICA' : 'PERGUNTA / CONCEITO DE FIXAÇÃO'}
+                  </span>
+                  
+                  <p className="text-base md:text-lg font-bold text-[#17231f] max-w-lg leading-relaxed whitespace-pre-line text-left">
+                    {isFlipped ? currentCard.back : currentCard.front}
+                  </p>
+
+                  <span className="text-[11px] text-emerald-800 font-bold bg-white px-3 py-1 rounded-full shadow-sm">
+                    {isFlipped ? 'Clique para virar o cartão' : 'Clique para ver a resposta (ou espaço)'}
+                  </span>
+                </div>
+
+                {/* Botões de Autoavaliação da Repetição Espaçada (SM-2 / Estilo Anki) */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-[#5e6c65] uppercase block">Como foi sua retenção deste conceito?</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button
+                      onClick={() => handleRateCard('1m')}
+                      className="p-3 rounded-2xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold text-xs transition"
+                    >
+                      <span className="block font-black">Errei / Repetir</span>
+                      <span className="text-[10px] opacity-80">&lt; 1 minuto</span>
+                    </button>
+                    <button
+                      onClick={() => handleRateCard('1d')}
+                      className="p-3 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs transition"
+                    >
+                      <span className="block font-black">Difícil</span>
+                      <span className="text-[10px] opacity-80">Em 1 dia</span>
+                    </button>
+                    <button
+                      onClick={() => handleRateCard('3d')}
+                      className="p-3 rounded-2xl bg-sky-100 hover:bg-sky-200 text-sky-900 font-bold text-xs transition"
+                    >
+                      <span className="block font-black">Bom</span>
+                      <span className="text-[10px] opacity-80">Em 3 dias</span>
+                    </button>
+                    <button
+                      onClick={() => handleRateCard('7d')}
+                      className="p-3 rounded-2xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-xs transition"
+                    >
+                      <span className="block font-black">Fácil</span>
+                      <span className="text-[10px] opacity-80">Em 7 dias</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Controles de Navegação do Baralho */}
+                <div className="flex items-center justify-between pt-2 border-t border-[#17231f]/10">
+                  <button
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCardIndex(prev => Math.max(0, prev - 1));
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Card Anterior
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsFlipped(false);
+                      const randomIdx = Math.floor(Math.random() * (totalDeckCards.length || 1));
+                      setCardIndex(randomIdx);
+                    }}
+                    className="px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
+                    title="Embaralhar flashcards deste baralho"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" /> Embaralhar
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsFlipped(false);
+                      setCardIndex(prev => (prev + 1) % (totalDeckCards.length || 1));
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1 shadow-sm"
+                  >
+                    Próximo Card <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
+            </div>
+          )}
+
+          {/* ===================================================== */}
+          {/* MODO 2: ROADMAP DE ESPECIALIZAÇÃO & RESIDÊNCIA (4 FASES) */}
+          {/* ===================================================== */}
+          {flashcardTabMode === 'roadmap' && (
+            <div className="space-y-6 animate-fadeIn">
               
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-[11px] text-[#5e6c65]">Revisados hoje: <strong>{cardStats.reviewedToday}</strong></span>
+              {/* Seletor de Programa de Residência Médica */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {[
+                  { id: 'cardio', name: 'Cardiologia & ECG', deck: 'cardio', count: 141 },
+                  { id: 'cirurgia', name: 'Cirurgia Geral & Trauma', deck: 'cirurgia', count: 776 },
+                  { id: 'pediatria', name: 'Pediatria & Puericultura', deck: 'pediatria', count: 323 },
+                  { id: 'go', name: 'Ginecologia & Obstetrícia', deck: 'go', count: 303 },
+                  { id: 'preventiva', name: 'Medicina Preventiva & SUS', deck: 'preventiva', count: 303 }
+                ].map((prog) => (
+                  <button
+                    key={prog.id}
+                    onClick={() => setSelectedResidencySpec(prog.id)}
+                    className={`p-4 rounded-3xl border text-left transition-all ${
+                      selectedResidencySpec === prog.id
+                        ? 'bg-[#213f34] text-white border-[#213f34] shadow-md scale-[1.02]'
+                        : 'bg-white text-[#17231f] border-[#17231f]/10 hover:border-[#213f34]/40'
+                    }`}
+                  >
+                    <span className="text-xs font-bold block truncate">{prog.name}</span>
+                    <span className={`text-[10px] ${selectedResidencySpec === prog.id ? 'text-emerald-200' : 'text-[#5e6c65]'}`}>
+                      {prog.count} flashcards vinculados
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Visão Estruturada das 4 Fases de Preparação */}
+              <div className="space-y-4">
+                <div className="bg-white p-6 rounded-3xl border border-[#17231f]/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-extrabold uppercase tracking-widest text-[#213f34] bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
+                      Plano Curricular de 18 Meses
+                    </span>
+                    <h3 className="text-xl font-bold text-[#17231f] mt-2">
+                      Roadmap Oficial: {roadmapData?.nome || 'Especialização Médica'}
+                    </h3>
+                    <p className="text-xs text-[#5e6c65] mt-1 max-w-xl">
+                      {roadmapData?.descricao || 'Cronograma estruturado para aprovação nas provas de residência médica (ENARE, USP, UNIFESP, AMRIGS).'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setSelectedDeckId(selectedResidencySpec);
+                      setFlashcardTabMode('decks');
+                      setCardIndex(0);
+                      setIsFlipped(false);
+                    }}
+                    className="px-5 py-3 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition shadow-md flex items-center gap-2 shrink-0"
+                  >
+                    <Layers className="w-4 h-4" />
+                    Estudar Flashcards Desta Especialidade
+                  </button>
+                </div>
+
+                {/* Grade das 4 Fases */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(roadmapData?.fases || [
+                    { fase: 1, nome: "Fase 1: Fundamentação", meses: "Meses 1-3", descricao: "Anatomia, fisiologia e semiologia fundamental da especialidade." },
+                    { fase: 2, nome: "Fase 2: Aprofundamento", meses: "Meses 4-8", descricao: "Fisiopatologia, condutas diagnósticas e casos clínicos progressivos." },
+                    { fase: 3, nome: "Fase 3: Especialização Clínica", meses: "Meses 9-15", descricao: "Casos complexos, exames complementares e terapêutica avançada." },
+                    { fase: 4, nome: "Fase 4: Consolidação & Provas", meses: "Meses 16-18", descricao: "Simulados oficiais, revisão de erros e preparação para o R1." }
+                  ]).map((fase) => (
+                    <div key={fase.fase} className="bg-white p-5 rounded-3xl border border-[#17231f]/10 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black bg-emerald-100 text-emerald-900 px-3 py-1 rounded-full border border-emerald-300">
+                          {fase.meses}
+                        </span>
+                        <span className="text-xs font-bold text-[#5e6c65]">Fase {fase.fase}</span>
+                      </div>
+                      
+                      <h4 className="text-sm font-bold text-[#17231f]">{fase.nome}</h4>
+                      <p className="text-xs text-[#5e6c65] leading-relaxed">{fase.descricao}</p>
+
+                      {fase.modulos && fase.modulos.length > 0 && (
+                        <div className="pt-2 border-t border-[#17231f]/5 space-y-1.5 text-xs">
+                          <span className="text-[10px] font-bold uppercase text-[#5e6c65]">Módulos Curriculares:</span>
+                          {fase.modulos.map((m, mIdx) => (
+                            <div key={mIdx} className="flex items-center gap-1.5 text-[#17231f]">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                              <span className="text-[11px] truncate">{m.nome}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-
-            {/* Cartão de Flashcard (Frente e Verso com Efeito) */}
-            <div
-              onClick={() => setIsFlipped(!isFlipped)}
-              className="min-h-[240px] bg-gradient-to-br from-[#faf8f5] to-[#ece7dc] p-8 rounded-3xl border-2 border-dashed border-[#213f34]/30 flex flex-col items-center justify-center space-y-4 cursor-pointer shadow-inner hover:border-[#213f34]/60 transition"
-            >
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#5e6c65] bg-white/90 px-3 py-1 rounded-full shadow-sm">
-                {isFlipped ? 'RESPOSTA & CONDUTA MÉDICA' : 'PERGUNTA / CONCEITO DE FIXAÇÃO'}
-              </span>
-              
-              <p className="text-base md:text-lg font-bold text-[#17231f] max-w-lg leading-relaxed">
-                {isFlipped ? currentCard.back : currentCard.front}
-              </p>
-
-              <span className="text-[11px] text-emerald-800 font-bold bg-white px-3 py-1 rounded-full shadow-sm">
-                {isFlipped ? 'Clique para virar o cartão' : 'Clique para ver a resposta (ou espaço)'}
-              </span>
-            </div>
-
-            {/* Botões de Autoavaliação da Repetição Espaçada (SM-2 / Estilo Anki) */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-[#5e6c65] uppercase block">Como foi sua retenção deste conceito?</span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <button
-                  onClick={() => handleRateCard('1m')}
-                  className="p-3 rounded-2xl bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold text-xs transition"
-                >
-                  <span className="block font-black">Errei / Repetir</span>
-                  <span className="text-[10px] opacity-80">&lt; 1 minuto</span>
-                </button>
-                <button
-                  onClick={() => handleRateCard('1d')}
-                  className="p-3 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs transition"
-                >
-                  <span className="block font-black">Difícil</span>
-                  <span className="text-[10px] opacity-80">Em 1 dia</span>
-                </button>
-                <button
-                  onClick={() => handleRateCard('3d')}
-                  className="p-3 rounded-2xl bg-sky-100 hover:bg-sky-200 text-sky-900 font-bold text-xs transition"
-                >
-                  <span className="block font-black">Bom</span>
-                  <span className="text-[10px] opacity-80">Em 3 dias</span>
-                </button>
-                <button
-                  onClick={() => handleRateCard('7d')}
-                  className="p-3 rounded-2xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-xs transition"
-                >
-                  <span className="block font-black">Fácil</span>
-                  <span className="text-[10px] opacity-80">Em 7 dias</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Controles de Navegação do Baralho */}
-            <div className="flex items-center justify-between pt-2 border-t border-[#17231f]/10">
-              <button
-                onClick={() => {
-                  setIsFlipped(false);
-                  setCardIndex(prev => Math.max(0, prev - 1));
-                }}
-                className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" /> Card Anterior
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsFlipped(false);
-                  const randomIdx = Math.floor(Math.random() * (totalDeckCards.length || 1));
-                  setCardIndex(randomIdx);
-                }}
-                className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
-                title="Embaralhar flashcards deste baralho"
-              >
-                <Shuffle className="w-3.5 h-3.5" /> Embaralhar
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsFlipped(false);
-                  setCardIndex(prev => (prev + 1) % (totalDeckCards.length || 1));
-                }}
-                className="px-4 py-2 rounded-xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1 shadow-sm"
-              >
-                Próximo Card <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
