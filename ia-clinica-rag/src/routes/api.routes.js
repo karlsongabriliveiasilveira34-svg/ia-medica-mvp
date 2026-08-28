@@ -30,6 +30,8 @@ import { authRouter } from "./auth.routes.js";
 import { iaRouter } from "./ia.routes.js";
 import { questoesRouter } from "./questoes.routes.js";
 import { pixFixRouter } from "./pix-fix.routes.js";
+import { clinicalStreamRouter } from "./clinical-stream.routes.js";
+import { advancedClinicalRouter } from "./drug-interaction.routes.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.js";
 
@@ -88,6 +90,8 @@ apiRouter.use(authRouter);
 apiRouter.use(iaRouter);
 apiRouter.use(questoesRouter);
 apiRouter.use(pixFixRouter);
+apiRouter.use(clinicalStreamRouter);
+apiRouter.use(advancedClinicalRouter);
 
 // --- ROTAS PÚBLICAS DO PORTAL DO PACIENTE (ANAMNESE PRÉVIA EM CASA) ---
 apiRouter.get("/api/public/pre-anamnese/:token", getPreAnamneseByTokenHandler);

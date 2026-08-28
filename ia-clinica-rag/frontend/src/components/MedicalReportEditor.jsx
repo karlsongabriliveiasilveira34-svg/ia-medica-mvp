@@ -26,6 +26,36 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
   const [attachments, setAttachments] = useState(consultation?.attachments || []);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [interactionAlerts, setInteractionAlerts] = useState(null);
+  const [isCheckingInteractions, setIsCheckingInteractions] = useState(false);
+
+  const handleCheckInteractions = async () => {
+    const rxMeds = (report.prescriptions || []).map(p => p.medication).filter(Boolean);
+    const currMeds = (report.currentMedications || []).filter(Boolean);
+    const allMeds = Array.from(new Set([...rxMeds, ...currMeds]));
+
+    if (allMeds.length < 2) {
+      alert("Adicione pelo menos 2 medicamentos para realizar a checagem cruzada de interações.");
+      return;
+    }
+
+    setIsCheckingInteractions(true);
+    try {
+      const res = await fetch('/api/clinical/check-interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ medications: allMeds })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setInteractionAlerts(data);
+      }
+    } catch (e) {
+      console.error("Erro ao checar interações:", e);
+    } finally {
+      setIsCheckingInteractions(false);
+    }
+  };
 
   // Manipuladores de Edição dos Campos Básicos
   const handleFieldChange = (field, value) => {
@@ -402,14 +432,49 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
             <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 print:text-black flex items-center gap-1.5">
               <Pill className="w-4 h-4" /> Prescrição Médica
             </h3>
-            <button
-              type="button"
-              onClick={handleAddPrescription}
-              className="print:hidden text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-bold"
-            >
-              <Plus className="w-3.5 h-3.5" /> Adicionar Medicamento
-            </button>
+            <div className="flex items-center gap-2 print:hidden">
+              <button
+                type="button"
+                onClick={handleCheckInteractions}
+                disabled={isCheckingInteractions}
+                className="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 rounded-lg px-2 py-1 font-semibold flex items-center gap-1 transition-all"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {isCheckingInteractions ? 'Checando...' : 'Checar Interações'}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddPrescription}
+                className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-bold"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar Medicamento
+              </button>
+            </div>
           </div>
+
+          {/* Banner de Interações Medicamentosas */}
+          {interactionAlerts && (
+            <div className={`p-3 rounded-xl border print:hidden text-xs space-y-1.5 ${
+              interactionAlerts.severityLevel === 'GRAVE'
+                ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                : (interactionAlerts.hasInteractions ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200')
+            }`}>
+              <div className="flex items-center justify-between font-bold">
+                <span className="flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4" />
+                  {interactionAlerts.safetySummary}
+                </span>
+                <button type="button" onClick={() => setInteractionAlerts(null)} className="text-[10px] text-slate-400 hover:text-white">✕ Fechar</button>
+              </div>
+              {interactionAlerts.interactions?.map((inter, i) => (
+                <div key={i} className="pl-5 border-l-2 border-rose-500/50 py-1 space-y-0.5">
+                  <p className="font-bold text-rose-300">🚨 {inter.pair.join(' + ')}: {inter.title}</p>
+                  <p className="text-[11px] opacity-90">{inter.mechanism}</p>
+                  <p className="text-[11px] font-semibold text-amber-300">💡 Conduta: {inter.recommendation}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-2">
             {(report.prescriptions || []).map((rx, idx) => (
