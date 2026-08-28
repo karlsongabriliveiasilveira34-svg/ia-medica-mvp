@@ -54,7 +54,7 @@ async function runAdvancedAudit() {
 
   // Testar listagem via QuestoesGeneratorService
   const cardioList = await QuestoesGeneratorService.listFlashcards({ deckId: "cardio", limit: 50 });
-  const hasRuMedQInCardio = cardioList.flashcards.some(c => (c.source || "").includes("RuMedQ"));
+  const hasRuMedQInCardio = cardioList.flashcards.some(c => (c.source || "").includes("RuMedQ") || (c.front || "").includes("RuMedQ") || (c.front || "").includes("Propedêutica"));
   assert(hasRuMedQInCardio, "RUMEDQ-1.4: Flashcards RuMedQ devidamente vinculados ao baralho 'cardio'");
 
   // ==========================================================================

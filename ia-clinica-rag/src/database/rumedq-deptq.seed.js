@@ -8,9 +8,26 @@
  * 2. Dept-Q-Bank: Banco de questões categorizado por departamentos médicos hospitalares.
  */
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { normalizeQuestion, normalizeFlashcard } from "../adapters/question-flashcard.adapter.js";
 
-export const RUMEDQ_FLASHCARDS = [
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const RUMEDQ_JSON_FILE = path.resolve(__dirname, "rumedq-dataset.json");
+
+let loadedRumedQCards = [];
+try {
+  if (fs.existsSync(RUMEDQ_JSON_FILE)) {
+    const rawData = fs.readFileSync(RUMEDQ_JSON_FILE, "utf8");
+    loadedRumedQCards = JSON.parse(rawData);
+  }
+} catch (e) {
+  console.warn("Aviso ao carregar rumedq-dataset.json:", e.message);
+}
+
+export const RUMEDQ_FLASHCARDS = loadedRumedQCards.length > 0 ? loadedRumedQCards : [
   // 1. CARDIOLOGIA & ECG (Deck 'cardio')
   {
     front: "RuMedQ: Quais os principais sintomas e critérios diagnósticos da Dissecção Aórtica Aguda (Classificação de Stanford A vs B)?",
