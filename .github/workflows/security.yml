@@ -1,0 +1,105 @@
+name: Security, Quality & DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  # 1. SAST (Static Application Security Testing) com Semgrep
+  sast_scan:
+    name: SAST - Semgrep Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST Scan (OWASP Top 10 & CWE Top 25)
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/cwe-top-25
+            p/javascript
+            p/react
+            p/nodejs
+
+  # 2. Secret Scanning (Detecção de Credenciais e Chaves Vazadas)
+  secret_scan:
+    name: Secret Scanning - TruffleHog & GitGuardian
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog Secret Scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  # 3. Dependency Vulnerability Scanning (Snyk + npm audit)
+  dependency_check:
+    name: SCA - Dependency & Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ia-clinica-rag/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ia-clinica-rag
+        run: npm ci --ignore-scripts || npm install
+
+      - name: Run Native npm audit (Backend)
+        working-directory: ia-clinica-rag
+        run: npm audit --audit-level=high || true
+
+      - name: Run Native npm audit (Frontend)
+        working-directory: ia-clinica-rag/frontend
+        run: npm audit --audit-level=high || true
+
+  # 4. Automated Tests & Quality Assurance (QA/Testing)
+  test_and_quality:
+    name: QA - Testes Automatizados e Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Backend & Frontend Dependencies
+        run: |
+          cd ia-clinica-rag && npm install
+          cd frontend && npm install
+
+      - name: Run Medical Residency & Roadmap Tests
+        working-directory: ia-clinica-rag
+        run: node tests/test-residency-roadmaps.js
+
+      - name: Run 5.000 Questions Dataset Validation
+        working-directory: ia-clinica-rag
+        run: node tests/validate-5000-questions.js
+
+      - name: Run UNIMONTES Roadmap Tests
+        working-directory: ia-clinica-rag
+        run: node tests/test-unimontes-roadmap.js
+
+      - name: Verify Frontend Production Build
+        working-directory: ia-clinica-rag/frontend
+        run: npm run build

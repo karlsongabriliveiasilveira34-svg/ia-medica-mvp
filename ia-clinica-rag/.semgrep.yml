@@ -1,0 +1,26 @@
+rules:
+  - id: no-hardcoded-jwt-secrets
+    patterns:
+      - pattern: const JWT_SECRET = "..."
+      - pattern-not: const JWT_SECRET = process.env.JWT_SECRET || ...
+    message: "Possível segredo JWT hardcoded detectado. Use sempre variáveis de ambiente."
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: sql-injection-prevention
+    pattern: pool.query(`... ${$VAR} ...`)
+    message: "Potencial injeção de SQL detectada. Utilize consultas parametrizadas ($1, $2)."
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: no-raw-passwords-in-logs
+    pattern: console.log(..., $USER.password, ...)
+    message: "Nunca registre senhas em texto puro nos logs do sistema."
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: enforce-secure-cors
+    pattern: cors({ origin: "*" })
+    message: "Evite CORS wildcard com credenciais habilitadas em produção médica."
+    languages: [javascript, typescript]
+    severity: WARNING

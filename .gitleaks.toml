@@ -1,0 +1,17 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Arquivos de exemplo e documentação permitidos"
+paths = [
+  '''\.env\.example$''',
+  '''package-lock\.json$''',
+  '''docs/''',
+  '''tests/'''
+]
+regexes = [
+  '''medico\.demo@media\.med\.br''',
+  '''estudante\.demo@media\.med\.br''',
+  '''clinica2026''',
+  '''senha123'''
+]

@@ -58,14 +58,17 @@ export class QuestoesGeneratorService {
         baseWhere += ` AND id IN (SELECT questao_id::uuid FROM questoes_respostas WHERE user_id = $${params.length} AND acertou = false)`;
       }
 
-      // 1. Obter total de questões
-      const countRes = await pool.query(`SELECT COUNT(*) FROM questoes ${baseWhere}`, params);
+      // 1. Obter total de questões de forma segura e parametrizada
+      const countSql = ["SELECT COUNT(*) FROM questoes", baseWhere].join(" ");
+      const countRes = await pool.query(countSql, params);
       const total = parseInt(countRes.rows[0]?.count || "0", 10);
 
       // 2. Obter página de questões
+      const limitParamIdx = params.length + 1;
+      const offsetParamIdx = params.length + 2;
+      const dataSql = ["SELECT * FROM questoes", baseWhere, `ORDER BY id ASC LIMIT $${limitParamIdx} OFFSET $${offsetParamIdx}`].join(" ");
       const queryParams = [...params, limitNum, offset];
-      const dataQuery = `SELECT * FROM questoes ${baseWhere} ORDER BY id ASC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-      const res = await pool.query(dataQuery, queryParams);
+      const res = await pool.query(dataSql, queryParams);
 
       if (res.rows.length > 0 || total > 0) {
         const questoes = res.rows.map((r, idx) => normalizeQuestion(r, offset + idx + 1)).filter(Boolean);
