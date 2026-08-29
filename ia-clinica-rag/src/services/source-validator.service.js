@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { query } from "../config/database.js";
 
 // Domínios médicos oficiais autorizados (Níveis 1 a 5)
@@ -166,7 +166,7 @@ export class SourceValidatorService {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'ACTIVE', 'approved', $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
-        `SRC-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        `SRC-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         s.sourceTitle,
         s.sourceOrganization,
         s.sourceType,

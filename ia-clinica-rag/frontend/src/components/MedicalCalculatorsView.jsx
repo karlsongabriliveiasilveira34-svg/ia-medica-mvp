@@ -224,8 +224,9 @@ export function MedicalCalculatorsView({ onSendToChat }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Idade (anos)</label>
+                <label htmlFor="crcl-age" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Idade (anos)</label>
                 <input
+                  id="crcl-age"
                   type="number"
                   value={crCl.age}
                   onChange={(e) => setCrCl({ ...crCl, age: e.target.value })}
@@ -234,8 +235,9 @@ export function MedicalCalculatorsView({ onSendToChat }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Peso Atual (kg)</label>
+                <label htmlFor="crcl-weight" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Peso Atual (kg)</label>
                 <input
+                  id="crcl-weight"
                   type="number"
                   value={crCl.weight}
                   onChange={(e) => setCrCl({ ...crCl, weight: e.target.value })}
@@ -244,8 +246,9 @@ export function MedicalCalculatorsView({ onSendToChat }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Creatinina Sérica (mg/dL)</label>
+                <label htmlFor="crcl-scr" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Creatinina Sérica (mg/dL)</label>
                 <input
+                  id="crcl-scr"
                   type="number"
                   step="0.1"
                   value={crCl.scr}
@@ -255,8 +258,9 @@ export function MedicalCalculatorsView({ onSendToChat }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Sexo Biológico</label>
+                <label htmlFor="crcl-gender" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Sexo Biológico</label>
                 <select
+                  id="crcl-gender"
                   value={crCl.gender}
                   onChange={(e) => setCrCl({ ...crCl, gender: e.target.value })}
                   className="w-full p-3 border border-[#17231f]/20 rounded-2xl bg-[#faf8f5] text-sm outline-none"

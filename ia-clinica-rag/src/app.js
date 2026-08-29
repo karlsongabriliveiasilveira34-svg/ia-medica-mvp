@@ -36,7 +36,32 @@ app.use((req, res, next) => {
 
 // 3. Middlewares Globais de Rede, Rate Limiting e Payload
 app.use(generalLimiter);
-app.use(cors());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
+  : [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:3000",
+      "https://ia-medica-mvp.vercel.app",
+      "capacitor://localhost"
+    ];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requisições sem origin (como mobile apps, curl ou scripts locais do mesmo host)
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.endsWith(".railway.app")) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+}));
+
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 

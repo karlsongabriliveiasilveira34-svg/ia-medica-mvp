@@ -129,7 +129,7 @@ async function runValidation() {
   console.log(`[Amostra 1] ID: ${sample1.id} | Área: ${sample1.subject}`);
   console.log(`- Pergunta: "${sample1.question.slice(0, 80)}..."`);
   console.log(`- 4 Alternativas: [A] ${sample1.options[0].slice(0, 25)} | [B] ${sample1.options[1].slice(0, 25)} | [C] ${sample1.options[2].slice(0, 25)} | [D] ${sample1.options[3].slice(0, 25)}`);
-  console.log(`- Gabarito: Alternativa ${String.fromCharCode(65 + sample1.correctAnswer)}`);
+  console.log(`- Gabarito: Alternativa ${String.fromCodePoint(65 + sample1.correctAnswer)}`);
   console.log(`- Explicação: "${sample1.explanation.slice(0, 80)}..."\n`);
 
   assert(Boolean(sample1.question && sample1.options.length === 4), "SAMPLE-4.1", "Amostra 1 íntegra");

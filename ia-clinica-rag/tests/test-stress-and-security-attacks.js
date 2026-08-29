@@ -4,6 +4,7 @@
  */
 import assert from "node:assert";
 import http from "node:http";
+import crypto from "node:crypto";
 import { app } from "../src/app.js";
 import jwt from "jsonwebtoken";
 
@@ -153,7 +154,8 @@ server.listen(0, async () => {
 
     // 4.2 Token com assinatura adulterada
     totalTests++;
-    const forgedToken = jwt.sign({ id: "hacker", email: "hacker@evil.com" }, "CHAVE_FALSA_HACKER_123");
+    const randomForgedSecret = crypto.randomBytes(16).toString("hex");
+    const forgedToken = jwt.sign({ id: "hacker", email: "hacker@evil.com" }, randomForgedSecret);
     const resForged = await makeRequest("/api/documents", {
       headers: { Authorization: `Bearer ${forgedToken}` }
     });

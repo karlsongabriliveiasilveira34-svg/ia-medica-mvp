@@ -5,10 +5,14 @@ export function CitationModal({ citation, onClose }) {
   if (!citation) return null;
 
   const pageNum = citation.page || citation.pageNumber || 1;
-  const targetUrl = citation.url || 
+  const rawUrl = citation.url || 
     (citation.doi ? `https://doi.org/${citation.doi}` : 
     (citation.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/` :
     (citation.filename ? `/knowledge/${encodeURIComponent(citation.filename)}#page=${pageNum}` : '#')));
+
+  const targetUrl = (typeof rawUrl === 'string' && (rawUrl.startsWith('https://') || rawUrl.startsWith('http://') || rawUrl.startsWith('/knowledge/')))
+    ? rawUrl
+    : '#';
 
   return (
     <div

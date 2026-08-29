@@ -180,10 +180,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                <label htmlFor="ped-weight" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                   Peso da Criança (kg)
                 </label>
                 <input
+                  id="ped-weight"
                   type="number"
                   step="0.1"
                   min="1"
@@ -195,10 +196,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                <label htmlFor="ped-age" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                   Idade (Meses)
                 </label>
                 <input
+                  id="ped-age"
                   type="number"
                   min="0"
                   max="216"
@@ -213,10 +215,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+              <label htmlFor="ped-medication" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                 Selecione o Medicamento
               </label>
               <select
+                id="ped-medication"
                 value={selectedMedId}
                 onChange={(e) => {
                   setSelectedMedId(e.target.value);
@@ -247,11 +250,12 @@ export function PediatricModule({ onOpenChatWithContext }) {
             {/* Toggle de Dose Dobrada / Alta para Otite e PAC */}
             {(selectedMedId === 'amoxicilina_simples' || selectedMedId === 'amoxicilina_clavulanato') && (
               <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
-                <div>
+                <label htmlFor="ped-high-dose" className="cursor-pointer flex-1 mr-2">
                   <span className="text-xs font-bold text-amber-900 block">Dose Otimizada (90 mg/kg/dia)</span>
                   <span className="text-[11px] text-amber-700">Indicada em Otite Média Aguda ou suspeita de Streptococcus resistente.</span>
-                </div>
+                </label>
                 <input
+                  id="ped-high-dose"
                   type="checkbox"
                   checked={isHighDose}
                   onChange={(e) => setIsHighDose(e.target.checked)}
@@ -306,7 +310,7 @@ export function PediatricModule({ onOpenChatWithContext }) {
                 {doseResult.safety.alerts && doseResult.safety.alerts.length > 0 && (
                   <div className="p-3 bg-rose-950/80 border border-rose-400/40 rounded-xl text-rose-200 text-xs space-y-1">
                     {doseResult.safety.alerts.map((al, idx) => (
-                      <p key={idx}>{al}</p>
+                      <p key={`alert-${idx}`}>{al}</p>
                     ))}
                   </div>
                 )}
@@ -375,10 +379,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+              <label htmlFor="growth-age" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                 Idade (Meses)
               </label>
               <input
+                id="growth-age"
                 type="number"
                 value={growthAgeMonths}
                 onChange={(e) => setGrowthAgeMonths(e.target.value)}
@@ -386,10 +391,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+              <label htmlFor="growth-weight" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                 Peso Atual (kg)
               </label>
               <input
+                id="growth-weight"
                 type="number"
                 step="0.1"
                 value={growthWeightKg}
@@ -398,10 +404,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+              <label htmlFor="growth-height" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                 Estatura / Comprimento (cm)
               </label>
               <input
+                id="growth-height"
                 type="number"
                 step="0.5"
                 value={growthHeightCm}

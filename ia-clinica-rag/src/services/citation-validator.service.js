@@ -23,7 +23,7 @@ export function validateClaimsAndCitations({ answerText, chunks }) {
   for (const sentence of sentences) {
     const hasSourceTag = /\[Fonte\s+\d+\]|\[\d+\]/i.test(sentence);
     const sourceMatches = sentence.match(/\[Fonte\s+(\d+)\]/gi) || [];
-    const sourceIndices = sourceMatches.map(m => parseInt(m.replace(/\D/g, ""), 10));
+    const sourceIndices = sourceMatches.map(m => Number.parseInt(m.replace(/\D/g, ""), 10));
 
     const isSupported = hasSourceTag && sourceIndices.some(idx => idx >= 1 && idx <= chunks.length);
 

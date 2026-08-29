@@ -29,8 +29,8 @@ export class QuestoesGeneratorService {
    */
   static async listQuestions({ especialidade, tema, banca, dificuldade, status = "todas", userId = null, page = 1, limit = 50 }) {
     await ensureUsersSchema();
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(1, parseInt(limit, 10) || 50);
+    const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Number.parseInt(limit, 10) || 50);
     const offset = (pageNum - 1) * limitNum;
 
     try {
@@ -61,7 +61,7 @@ export class QuestoesGeneratorService {
       // 1. Obter total de questões de forma segura e parametrizada
       const countSql = ["SELECT COUNT(*) FROM questoes", baseWhere].join(" ");
       const countRes = await pool.query(countSql, params);
-      const total = parseInt(countRes.rows[0]?.count || "0", 10);
+      const total = Number.parseInt(countRes.rows[0]?.count || "0", 10);
 
       // 2. Obter página de questões
       const limitParamIdx = params.length + 1;
@@ -147,8 +147,8 @@ export class QuestoesGeneratorService {
     await ensureUsersSchema();
     if (!userId || !userEmail) throw new Error("Usuário deve estar autenticado para registrar progresso.");
 
-    const selectedAlt = parseInt(alternativaSelecionada, 10);
-    if (isNaN(selectedAlt) || selectedAlt < 0 || selectedAlt > 4) {
+    const selectedAlt = Number.parseInt(alternativaSelecionada, 10);
+    if (Number.isNaN(selectedAlt) || selectedAlt < 0 || selectedAlt > 4) {
       throw new Error("Alternativa selecionada inválida.");
     }
 
@@ -273,7 +273,7 @@ export class QuestoesGeneratorService {
     try {
       const genAI = new GoogleGenAI({ apiKey });
       const response = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: env.geminiModel || "gemini-3.6-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json"
@@ -297,9 +297,21 @@ export class QuestoesGeneratorService {
       const result = await model.generateContent(prompt);
       const text = result?.response?.text();
       if (!text) return [];
-      const jsonMatch = text.match(/\[[\s\S]*\]/) || text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+
+      const firstOpenBracket = text.indexOf('[');
+      const lastCloseBracket = text.lastIndexOf(']');
+      const firstOpenBrace = text.indexOf('{');
+      const lastCloseBrace = text.lastIndexOf('}');
+      let jsonString = null;
+
+      if (firstOpenBracket !== -1 && lastCloseBracket > firstOpenBracket) {
+        jsonString = text.slice(firstOpenBracket, lastCloseBracket + 1);
+      } else if (firstOpenBrace !== -1 && lastCloseBrace > firstOpenBrace) {
+        jsonString = text.slice(firstOpenBrace, lastCloseBrace + 1);
+      }
+
+      if (jsonString) {
+        const parsed = JSON.parse(jsonString);
         if (Array.isArray(parsed)) return parsed;
         if (parsed && Array.isArray(parsed.questoes)) return parsed.questoes;
         if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
@@ -426,7 +438,7 @@ Retorne estritamente um JSON no formato:
 
       const res = await pool.query(sql, params);
       const countRes = await pool.query("SELECT COUNT(*) FROM flashcards");
-      const total = parseInt(countRes.rows[0]?.count || "0", 10);
+      const total = Number.parseInt(countRes.rows[0]?.count || "0", 10);
 
       if (res.rows.length > 0) {
         const flashcards = res.rows.map((r, idx) => normalizeFlashcard(r, offset + idx + 1)).filter(Boolean);
@@ -473,19 +485,19 @@ Retorne estritamente um JSON no formato:
 
     try {
       const countQ = await pool.query("SELECT COUNT(*) FROM questoes");
-      totalQuestions = parseInt(countQ.rows[0]?.count || "0", 10) || totalQuestions;
+      totalQuestions = Number.parseInt(countQ.rows[0]?.count || "0", 10) || totalQuestions;
 
       const countF = await pool.query("SELECT COUNT(*) FROM flashcards");
-      totalFlashcards = parseInt(countF.rows[0]?.count || "0", 10) || totalFlashcards;
+      totalFlashcards = Number.parseInt(countF.rows[0]?.count || "0", 10) || totalFlashcards;
 
       const groupQ = await pool.query("SELECT especialidade, COUNT(*) as qtd FROM questoes GROUP BY especialidade");
       groupQ.rows.forEach(r => {
-        if (r.especialidade) porEspecialidade[r.especialidade] = parseInt(r.qtd, 10);
+        if (r.especialidade) porEspecialidade[r.especialidade] = Number.parseInt(r.qtd, 10);
       });
 
       const groupF = await pool.query("SELECT deck_id, COUNT(*) as qtd FROM flashcards GROUP BY deck_id");
       groupF.rows.forEach(r => {
-        if (r.deck_id) porDeck[r.deck_id] = parseInt(r.qtd, 10);
+        if (r.deck_id) porDeck[r.deck_id] = Number.parseInt(r.qtd, 10);
       });
 
       const bancasRes = await pool.query("SELECT DISTINCT banca FROM questoes WHERE banca IS NOT NULL");

@@ -33,6 +33,8 @@ import { especialidadesRouter } from "./especialidades.routes.js";
 import { unimontesRouter } from "./unimontes.routes.js";
 import { pixFixRouter } from "./pix-fix.routes.js";
 import { clinicalStreamRouter } from "./clinical-stream.routes.js";
+import { studentNotesRouter } from "./student-notes.routes.js";
+import { simuladoRouter } from "./simulado.routes.js";
 import { advancedClinicalRouter } from "./drug-interaction.routes.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.js";
@@ -40,7 +42,10 @@ import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.j
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024 // Limite de 50MB por PDF
+    fileSize: 25 * 1024 * 1024, // Limite de 25MB por PDF
+    files: 1,
+    fields: 10,
+    fieldSize: 1024 * 1024 // 1MB para campos de texto do formulário
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf")) {
@@ -54,7 +59,10 @@ const upload = multer({
 const queryImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024 // Limite de 10MB para imagem clínica
+    fileSize: 10 * 1024 * 1024, // Limite de 10MB para imagem clínica
+    files: 1,
+    fields: 10,
+    fieldSize: 1024 * 1024
   }
 });
 
@@ -88,9 +96,11 @@ apiRouter.get("/health", checkHealth);
 // Rotas de Autenticação (Públicas)
 apiRouter.use(authRouter);
 
-// Rotas de IA Preceptora, Questões de Residência e Roadmaps de Especialização
+// Rotas de IA Preceptora, Questões de Residência, Anotações do Estudante e Simulado Oficial
 apiRouter.use(iaRouter);
 apiRouter.use(questoesRouter);
+apiRouter.use(studentNotesRouter);
+apiRouter.use(simuladoRouter);
 apiRouter.use(especialidadesRouter);
 apiRouter.use("/api/unimontes", unimontesRouter);
 apiRouter.use("/unimontes", unimontesRouter);

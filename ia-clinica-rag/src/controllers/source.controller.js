@@ -12,9 +12,9 @@ export async function handleListSources(req, res) {
     const queryParams = [];
     let paramIdx = 1;
 
-    if (authorityLevel && !isNaN(parseInt(authorityLevel, 10))) {
+    if (authorityLevel && !Number.isNaN(Number.parseInt(authorityLevel, 10))) {
       whereClause += ` AND s.authority_level = $${paramIdx}`;
-      queryParams.push(parseInt(authorityLevel, 10));
+      queryParams.push(Number.parseInt(authorityLevel, 10));
       paramIdx++;
     }
 
@@ -189,13 +189,13 @@ export async function handleGetSourcePage(req, res) {
         WHERE document_id = $1 AND page_number = $2
         ORDER BY chunk_index ASC
       `,
-      [doc.id, parseInt(page, 10) || 1]
+      [doc.id, Number.parseInt(page, 10) || 1]
     );
 
     return res.status(200).json({
       status: "success",
       document: doc,
-      requestedPage: parseInt(page, 10) || 1,
+      requestedPage: Number.parseInt(page, 10) || 1,
       chunks: chunksRes.rows,
       pdfUrl: `/knowledge/${encodeURIComponent(doc.filename)}#page=${page}`
     });

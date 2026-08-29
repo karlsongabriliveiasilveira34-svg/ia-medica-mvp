@@ -9,14 +9,28 @@ import {
   EXAM_BANKS, SPECIALTY_AREAS, FLASHCARD_DECKS, INITIAL_QUESTIONS, INITIAL_FLASHCARDS 
 } from '../data/medicalQuestionsAndCards';
 import { UnimontesRoadmapView } from './UnimontesRoadmapView';
+import { StudentNotes } from './StudentNotes';
+import { Quiz } from './Quiz';
+
+const getCryptoRandomIndex = (max) => {
+  if (!max || max <= 1) return 0;
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    const arr = new Uint32Array(1);
+    window.crypto.getRandomValues(arr);
+    return arr[0] % max;
+  }
+  return 0;
+};
 
 export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDocumentToChat, onOpenChatWithTopic }) {
   // Sincronizar subaba com o activeTab do Navbar
   const getSubtabFromTab = (tab) => {
+    if (tab === 'anotacoes' || tab === 'student_notes' || tab === 'notas') return 'anotacoes';
+    if (tab === 'simulado' || tab === 'simulado_50q' || tab === 'simulado_oficial') return 'simulado';
     if (tab === 'flashcards') return 'flashcards';
     if (tab === 'quizzes') return 'quizzes';
     if (tab === 'caderno') return 'caderno';
-    return 'notebook';
+    return 'anotacoes';
   };
 
   const [activeStudentSubtab, setActiveStudentSubtab] = useState(getSubtabFromTab(activeTab));
@@ -498,22 +512,34 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
         {/* Menu Lateral / Sub-Abas do Modo Estudante */}
         <div className="flex flex-wrap gap-1.5 bg-black/30 p-1.5 rounded-2xl backdrop-blur-md border border-white/10 shrink-0">
           <button
-            onClick={() => setActiveStudentSubtab('notebook')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'notebook' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
+            onClick={() => setActiveStudentSubtab('anotacoes')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'anotacoes' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
           >
-            <BookOpen className="w-4 h-4" /> NotebookLM
+            <FileText className="w-4 h-4" /> Anotacoes (IA)
+          </button>
+          <button
+            onClick={() => setActiveStudentSubtab('simulado')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'simulado' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
+          >
+            <Award className="w-4 h-4" /> Simulado Oficial (50Q)
           </button>
           <button
             onClick={() => setActiveStudentSubtab('quizzes')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'quizzes' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
           >
-            <HelpCircle className="w-4 h-4" /> Banco de Questões ({studyStats.totalQuestions || totalQuestionsInDb || questionsList.length})
+            <HelpCircle className="w-4 h-4" /> Banco de Questoes
           </button>
           <button
             onClick={() => setActiveStudentSubtab('flashcards')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'flashcards' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
           >
-            <Layers className="w-4 h-4" /> Flashcards ({studyStats.totalFlashcards || flashcardsList.length})
+            <Layers className="w-4 h-4" /> Flashcards
+          </button>
+          <button
+            onClick={() => setActiveStudentSubtab('notebook')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeStudentSubtab === 'notebook' ? 'bg-amber-400 text-amber-950 shadow-md font-black' : 'text-[#c1d3ca] hover:bg-white/10'}`}
+          >
+            <BookOpen className="w-4 h-4" /> NotebookLM
           </button>
           <button
             onClick={() => setActiveStudentSubtab('tutor_chat')}
@@ -523,6 +549,25 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 0. NOVO MODULO DE ANOTACOES DO ESTUDANTE (TEXTO, VOZ, PEN STYLUS & IA) */}
+      {/* ========================================================================= */}
+      {activeStudentSubtab === 'anotacoes' && (
+        <StudentNotes
+          onOpenTutorChat={() => setActiveStudentSubtab('tutor_chat')}
+        />
+      )}
+
+      {/* ========================================================================= */}
+      {/* 0.1 NOVO MODULO DE SIMULADO OFICIAL COM TIMER & 50 QUESTOES */}
+      {/* ========================================================================= */}
+      {activeStudentSubtab === 'simulado' && (
+        <Quiz
+          onOpenTutorWithTopic={onOpenChatWithTopic}
+          onBackToNotebook={() => setActiveStudentSubtab('anotacoes')}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* 1. MÓDULO DE BANCO DE QUESTÕES & SIMULADOS DE PROVAS (ENARE, REVALIDA, USP) */}
@@ -743,7 +788,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                     onClick={() => {
                       setSelectedAnswer(null);
                       setShowExplanation(false);
-                      const randomIdx = Math.floor(Math.random() * (questionsList.length || 1));
+                      const randomIdx = getCryptoRandomIndex(questionsList.length || 1);
                       setCurrentQuestionIndex(randomIdx);
                     }}
                     className="px-3 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"
@@ -1051,7 +1096,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   <button
                     onClick={() => {
                       setIsFlipped(false);
-                      const randomIdx = Math.floor(Math.random() * (totalDeckCards.length || 1));
+                      const randomIdx = getCryptoRandomIndex(totalDeckCards.length || 1);
                       setCardIndex(randomIdx);
                     }}
                     className="px-3.5 py-2 rounded-xl bg-[#faf8f5] border border-[#17231f]/10 text-xs font-bold hover:bg-gray-100 flex items-center gap-1"

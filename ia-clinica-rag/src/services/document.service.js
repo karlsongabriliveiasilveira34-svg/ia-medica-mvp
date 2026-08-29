@@ -23,8 +23,8 @@ export async function ingestDocument({
   let realPublicationYear = null;
   const rawYear = metadata.publicationYear || metadata.publication_year || metadata.publicationDate;
   if (rawYear) {
-    const parsed = parseInt(String(rawYear).split("-")[0], 10);
-    if (!isNaN(parsed)) realPublicationYear = parsed;
+    const parsed = Number.parseInt(String(rawYear).split("-")[0], 10);
+    if (!Number.isNaN(parsed)) realPublicationYear = parsed;
   }
   const realOrganization = metadata.sourceOrganization || metadata.organization || null;
 

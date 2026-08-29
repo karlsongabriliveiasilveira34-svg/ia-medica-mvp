@@ -12,9 +12,9 @@ export function generateToken(payload = {}, expiresInHours = 168) {
   const encodeBase64Url = (str) =>
     Buffer.from(typeof str === "string" ? str : JSON.stringify(str))
       .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
+      .replaceAll("=", "")
+      .replaceAll("+", "-")
+      .replaceAll("/", "_");
 
   const headerB64 = encodeBase64Url(header);
   const payloadB64 = encodeBase64Url(fullPayload);
@@ -24,9 +24,9 @@ export function generateToken(payload = {}, expiresInHours = 168) {
     .createHmac("sha256", env.jwtSecret)
     .update(data)
     .digest("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replaceAll("=", "")
+    .replaceAll("+", "-")
+    .replaceAll("/", "_");
 
   return `${data}.${signature}`;
 }
@@ -44,9 +44,9 @@ export function verifyToken(token) {
     .createHmac("sha256", env.jwtSecret)
     .update(data)
     .digest("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replaceAll("=", "")
+    .replaceAll("+", "-")
+    .replaceAll("/", "_");
 
   if (signature !== expectedSignature) {
     return null;
@@ -54,7 +54,7 @@ export function verifyToken(token) {
 
   try {
     const padBase64 = (str) => {
-      let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+      let b64 = str.replaceAll("-", "+").replaceAll("_", "/");
       while (b64.length % 4) b64 += "=";
       return b64;
     };

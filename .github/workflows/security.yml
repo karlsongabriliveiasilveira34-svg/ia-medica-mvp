@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Run Semgrep SAST Scan (OWASP Top 10 & CWE Top 25)
-        uses: returntocorp/semgrep-action@v1
+        uses: returntocorp/semgrep-action@713efdda3431ae666eb5002b7db936febc03c819 # v1
         with:
           config: >-
             p/owasp-top-ten
@@ -31,12 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
       - name: Run TruffleHog Secret Scanner
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@a277717d917f8a7fb85848c2c10b784a6b28df66 # v3.63.7
         with:
           extra_args: --only-verified
 
@@ -46,10 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f5252478332d3be2b9c054 # v4.0.2
         with:
           node-version: 20
           cache: 'npm'
@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ia-clinica-rag
-        run: npm ci --ignore-scripts || npm install
+        run: npm ci --ignore-scripts || npm install --ignore-scripts
 
       - name: Run Native npm audit (Backend)
         working-directory: ia-clinica-rag
@@ -73,17 +73,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@60edb5dd545a775178f5252478332d3be2b9c054 # v4.0.2
         with:
           node-version: 20
 
       - name: Install Backend & Frontend Dependencies
         run: |
-          cd ia-clinica-rag && npm install
-          cd frontend && npm install
+          cd ia-clinica-rag && (npm ci --ignore-scripts || npm install --ignore-scripts)
+          cd frontend && (npm ci --ignore-scripts || npm install --ignore-scripts)
 
       - name: Run Medical Residency & Roadmap Tests
         working-directory: ia-clinica-rag

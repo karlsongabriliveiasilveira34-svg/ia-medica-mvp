@@ -96,12 +96,28 @@ export function Navbar({
             <div className="inline-flex rounded-xl bg-[#e5dfd5] p-1 border border-[#17231f]/10 shrink-0">
               <button
                 onClick={() => {
-                  if (activeTab === 'student_notebook' || activeTab === 'flashcards' || activeTab === 'quizzes' || activeTab === 'caderno' || activeTab === 'library') {
+                  if (
+                    activeTab === 'anotacoes' ||
+                    activeTab === 'student_notes' ||
+                    activeTab === 'simulado' ||
+                    activeTab === 'student_notebook' ||
+                    activeTab === 'flashcards' ||
+                    activeTab === 'quizzes' ||
+                    activeTab === 'caderno' ||
+                    activeTab === 'library'
+                  ) {
                     setActiveTab('roteamento');
                   }
                 }}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab !== 'student_notebook' && activeTab !== 'flashcards' && activeTab !== 'quizzes' && activeTab !== 'caderno' && activeTab !== 'library'
+                  activeTab !== 'anotacoes' &&
+                  activeTab !== 'student_notes' &&
+                  activeTab !== 'simulado' &&
+                  activeTab !== 'student_notebook' &&
+                  activeTab !== 'flashcards' &&
+                  activeTab !== 'quizzes' &&
+                  activeTab !== 'caderno' &&
+                  activeTab !== 'library'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
                 }`}
@@ -112,12 +128,28 @@ export function Navbar({
 
               <button
                 onClick={() => {
-                  if (activeTab !== 'student_notebook' && activeTab !== 'flashcards' && activeTab !== 'quizzes' && activeTab !== 'caderno' && activeTab !== 'library') {
-                    setActiveTab('student_notebook');
+                  if (
+                    activeTab !== 'anotacoes' &&
+                    activeTab !== 'student_notes' &&
+                    activeTab !== 'simulado' &&
+                    activeTab !== 'student_notebook' &&
+                    activeTab !== 'flashcards' &&
+                    activeTab !== 'quizzes' &&
+                    activeTab !== 'caderno' &&
+                    activeTab !== 'library'
+                  ) {
+                    setActiveTab('anotacoes');
                   }
                 }}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'student_notebook' || activeTab === 'flashcards' || activeTab === 'quizzes' || activeTab === 'caderno' || activeTab === 'library'
+                  activeTab === 'anotacoes' ||
+                  activeTab === 'student_notes' ||
+                  activeTab === 'simulado' ||
+                  activeTab === 'student_notebook' ||
+                  activeTab === 'flashcards' ||
+                  activeTab === 'quizzes' ||
+                  activeTab === 'caderno' ||
+                  activeTab === 'library'
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
                 }`}
@@ -129,16 +161,26 @@ export function Navbar({
 
             {/* Navegação Exclusiva por Modo com Ícones Lucide */}
             <nav className="flex items-center gap-1 rounded-full border border-[#17231f]/10 bg-[#e8e2d7] p-1 overflow-x-auto max-w-full">
-              {/* MODO ESTUDANTE: Exibir APENAS NotebookLM, Flashcards, Quizzes, Caderno Sintético */}
-              {(activeTab === 'student_notebook' || activeTab === 'flashcards' || activeTab === 'quizzes' || activeTab === 'caderno' || activeTab === 'library') ? (
+              {/* MODO ESTUDANTE: Exibir Anotações IA, Simulado 50Q, Flashcards, Banco e NotebookLM */}
+              {(
+                activeTab === 'anotacoes' ||
+                activeTab === 'student_notes' ||
+                activeTab === 'simulado' ||
+                activeTab === 'student_notebook' ||
+                activeTab === 'flashcards' ||
+                activeTab === 'quizzes' ||
+                activeTab === 'caderno' ||
+                activeTab === 'library'
+              ) ? (
                 <>
-                  <TabButton active={activeTab === 'student_notebook'} onClick={() => setActiveTab('student_notebook')} icon={BookOpen}>NotebookLM</TabButton>
+                  <TabButton active={activeTab === 'anotacoes' || activeTab === 'student_notes'} onClick={() => setActiveTab('anotacoes')} icon={FileText}>Anotações (IA)</TabButton>
+                  <TabButton active={activeTab === 'simulado'} onClick={() => setActiveTab('simulado')} icon={Award}>Simulado 50Q</TabButton>
+                  <TabButton active={activeTab === 'quizzes'} onClick={() => setActiveTab('quizzes')} icon={HelpCircle}>Banco de Questões</TabButton>
                   <TabButton active={activeTab === 'flashcards'} onClick={() => setActiveTab('flashcards')} icon={Layers}>Flashcards</TabButton>
-                  <TabButton active={activeTab === 'quizzes'} onClick={() => setActiveTab('quizzes')} icon={HelpCircle}>Quizzes</TabButton>
-                  <TabButton active={activeTab === 'caderno'} onClick={() => setActiveTab('caderno')} icon={FileText}>Caderno Sintético</TabButton>
+                  <TabButton active={activeTab === 'student_notebook' || activeTab === 'caderno'} onClick={() => setActiveTab('student_notebook')} icon={BookOpen}>NotebookLM</TabButton>
                 </>
               ) : (
-                /* MODO MÉDICO: Exibir APENAS Especialidades, Roteamento (IA), Fila do Dia, Pacientes */
+                /* MODO MÉDICO: Exibir APENAS Especialidades, Roteamento (IA), Calculadoras, Fila do Dia, Pacientes */
                 <>
                   <TabButton active={activeTab === 'especialidades'} onClick={() => setActiveTab('especialidades')} icon={Stethoscope}>Especialidades</TabButton>
                   <TabButton active={activeTab === 'roteamento' || activeTab === 'chat'} onClick={() => setActiveTab('roteamento')} icon={Cpu}>Roteamento (IA)</TabButton>

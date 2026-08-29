@@ -39,7 +39,7 @@ function gerarPayloadPixEMV({ chave, valor, beneficiario = BENEFICIARIO_PADRAO, 
   // Cálculo CRC16-CCITT
   let crc = 0xFFFF;
   for (let i = 0; i < payload.length; i++) {
-    crc ^= payload.charCodeAt(i) << 8;
+    crc ^= (payload.codePointAt(i) || 0) << 8;
     for (let j = 0; j < 8; j++) {
       if ((crc & 0x8000) !== 0) {
         crc = ((crc << 1) ^ 0x1021) & 0xFFFF;
@@ -85,7 +85,7 @@ pixFixRouter.post(["/api/pix/qrcode", "/pix/qrcode"], authenticate, async (req, 
     const rawVal = valor !== undefined ? valor : amount;
     const numValor = Math.round(Number(rawVal) * 100) / 100;
 
-    if (isNaN(numValor) || !isFinite(numValor) || numValor < 1.00) {
+    if (Number.isNaN(numValor) || !Number.isFinite(numValor) || numValor < 1.00) {
       return res.status(400).json({
         sucesso: false,
         status: "error",

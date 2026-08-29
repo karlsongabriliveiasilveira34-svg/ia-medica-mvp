@@ -64,8 +64,8 @@ export function inferGenderFromName(nameString) {
  * Exemplo: 52 anos -> "faixa etária de 51 a 54 anos"
  */
 export function anonymizeAgeInYears(ageNumber) {
-  const age = parseInt(ageNumber, 10);
-  if (isNaN(age) || age < 0) return `${ageNumber} anos`;
+  const age = Number.parseInt(ageNumber, 10);
+  if (Number.isNaN(age) || age < 0) return `${ageNumber} anos`;
   const lower = Math.floor(age / 3) * 3;
   const upper = lower + 3;
   return `faixa etária de ${lower} a ${upper} anos`;
@@ -76,8 +76,8 @@ export function anonymizeAgeInYears(ageNumber) {
  * Exemplo: 7 meses -> "faixa etária de 6 a 9 meses"
  */
 export function anonymizeAgeInMonths(monthNumber) {
-  const months = parseInt(monthNumber, 10);
-  if (isNaN(months) || months < 0) return `${monthNumber} meses`;
+  const months = Number.parseInt(monthNumber, 10);
+  if (Number.isNaN(months) || months < 0) return `${monthNumber} meses`;
   const lower = Math.floor(months / 3) * 3;
   const upper = lower + 3;
   return `faixa etária de ${lower} a ${upper} meses`;
@@ -96,7 +96,7 @@ export function sanitizePHIAndAnonymize(input) {
   text = text.replace(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[0-9xX]\b/g, "[RG REDIGIDO LGPD]");
   text = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[EMAIL REDIGIDO LGPD]");
   text = text.replace(/\b(\(?\d{2}\)?\s?)?9?\d{4}-?\d{4}\b/g, "[TELEFONE REDIGIDO LGPD]");
-  text = text.replace(/\b(prontu[áa]rio|registro|carteira|hc)\s*[:#]?\s*\d+\b/gi, "[PRONTUÁRIO REDIGIDO LGPD]");
+  text = text.replace(/\b(?:prontu[áa]rio|registro|carteira|hc)\s*[:#]?\s*\d+/gi, "[PRONTUÁRIO REDIGIDO LGPD]");
 
   // 2. Anonimização de Idades em Meses (Crianças pequenas: 3 em 3 meses)
   // Ex: "7 meses", "7m", "bebê de 7 meses"

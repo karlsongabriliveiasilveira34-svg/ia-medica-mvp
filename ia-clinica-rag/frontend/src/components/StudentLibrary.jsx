@@ -269,7 +269,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
 
                 return (
                   <div
-                    key={qIdx}
+                    key={q.id || `quiz-q-${qIdx}`}
                     className="p-5 rounded-2xl bg-[#faf8f5] border border-[#17231f]/10 space-y-3"
                   >
                     <div className="flex items-start gap-2">
@@ -300,11 +300,11 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
 
                         return (
                           <button
-                            key={optIdx}
+                            key={`q-${qIdx}-opt-${optIdx}`}
                             onClick={() => handleSelectOption(qIdx, optIdx)}
                             className={`p-3 rounded-xl border text-left text-xs transition flex items-center justify-between ${optClass}`}
                           >
-                            <span>{String.fromCharCode(65 + optIdx)}) {opt}</span>
+                            <span>{String.fromCodePoint(65 + optIdx)}) {opt}</span>
                             {quizSubmitted && isTheCorrectOne && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
                             {quizSubmitted && isChosen && !isTheCorrectOne && <XCircle className="w-4 h-4 text-rose-600 shrink-0" />}
                           </button>

@@ -146,8 +146,8 @@ export function sortByEvidenceLevel(chunks) {
  */
 export function sortByRecency(chunks) {
   return [...chunks].sort((a, b) => {
-    const yearA = parseInt(a.pubYear || a.publication_year || a.document_publication_year || 0, 10);
-    const yearB = parseInt(b.pubYear || b.publication_year || b.document_publication_year || 0, 10);
+    const yearA = Number.parseInt(a.pubYear || a.publication_year || a.document_publication_year || 0, 10);
+    const yearB = Number.parseInt(b.pubYear || b.publication_year || b.document_publication_year || 0, 10);
     return yearB - yearA;
   });
 }

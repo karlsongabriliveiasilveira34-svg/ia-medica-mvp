@@ -243,34 +243,40 @@ export function MobileDrawer({
             </span>
             <div className="rounded-2xl bg-white border border-[#17231f]/10 divide-y divide-[#17231f]/5 overflow-hidden">
               <DrawerLink
-                active={activeTab === 'student_notebook'}
-                onClick={() => handleNavigate('student_notebook')}
-                icon={BookOpen}
-                title="NotebookLM & Análise"
+                active={activeTab === 'anotacoes' || activeTab === 'student_notes'}
+                onClick={() => handleNavigate('anotacoes')}
+                icon={FileText}
+                title="Anotações & Ditado por Voz (IA)"
               />
               <DrawerLink
-                active={activeTab === 'flashcards'}
-                onClick={() => handleNavigate('flashcards')}
-                icon={Layers}
-                title="Flashcards com Repetição"
+                active={activeTab === 'simulado'}
+                onClick={() => handleNavigate('simulado')}
+                icon={Award}
+                title="Simulado Oficial (50 Questões)"
               />
               <DrawerLink
                 active={activeTab === 'quizzes'}
                 onClick={() => handleNavigate('quizzes')}
                 icon={HelpCircle}
-                title="Simulados & Quizzes ENARE"
+                title="Banco de Questões de Residência"
               />
               <DrawerLink
-                active={activeTab === 'caderno'}
-                onClick={() => handleNavigate('caderno')}
-                icon={FileText}
-                title="Caderno Sintético"
+                active={activeTab === 'flashcards'}
+                onClick={() => handleNavigate('flashcards')}
+                icon={Layers}
+                title="Flashcards com Repetição SM-2"
+              />
+              <DrawerLink
+                active={activeTab === 'student_notebook' || activeTab === 'caderno'}
+                onClick={() => handleNavigate('student_notebook')}
+                icon={BookOpen}
+                title="NotebookLM & Análise"
               />
               <DrawerLink
                 active={activeTab === 'library'}
                 onClick={() => handleNavigate('library')}
                 icon={Database}
-                title="Biblioteca Científica"
+                title="Biblioteca Acadêmica"
               />
             </div>
           </div>

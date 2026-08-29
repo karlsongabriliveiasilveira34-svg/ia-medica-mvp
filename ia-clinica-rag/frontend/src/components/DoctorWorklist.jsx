@@ -361,10 +361,11 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
             ) : (
               <form onSubmit={handleCreateSchedule} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
+                  <label htmlFor="worklist-patient-name" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
                     Nome Completo do Paciente *
                   </label>
                   <input
+                    id="worklist-patient-name"
                     type="text"
                     required
                     value={newPatientName}
@@ -376,10 +377,11 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
+                    <label htmlFor="worklist-patient-age" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
                       Idade / Faixa
                     </label>
                     <input
+                      id="worklist-patient-age"
                       type="text"
                       value={newPatientAge}
                       onChange={(e) => setNewPatientAge(e.target.value)}
@@ -389,10 +391,11 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
+                    <label htmlFor="worklist-scheduled-time" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1">
                       Horário
                     </label>
                     <input
+                      id="worklist-scheduled-time"
                       type="text"
                       value={newScheduledTime}
                       onChange={(e) => setNewScheduledTime(e.target.value)}
@@ -402,8 +405,11 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                 </div>
 
                 <div className="p-3 rounded-2xl bg-[#faf8f5] border border-[#17231f]/10 flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#17231f]">Paciente Pediátrico (Criança)</span>
+                  <label htmlFor="worklist-pediatric-check" className="text-xs font-bold text-[#17231f] cursor-pointer flex-1">
+                    Paciente Pediátrico (Criança)
+                  </label>
                   <input
+                    id="worklist-pediatric-check"
                     type="checkbox"
                     checked={newIsPediatric}
                     onChange={(e) => setNewIsPediatric(e.target.checked)}

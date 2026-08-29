@@ -317,10 +317,11 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
+                  <label htmlFor="login-email" className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-3 h-4 w-4 text-[#8a9690]" />
                     <input
+                      id="login-email"
                       type="email"
                       required
                       value={email}
@@ -333,7 +334,7 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-bold text-[#17231f]">Senha</label>
+                    <label htmlFor="login-password" className="text-xs font-bold text-[#17231f]">Senha</label>
                     <button
                       type="button"
                       onClick={() => { setActiveTab('forgot'); setErrorMessage(''); setSuccessMessage(''); }}
@@ -345,6 +346,7 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[#8a9690]" />
                     <input
+                      id="login-password"
                       type="password"
                       required
                       value={password}
@@ -418,8 +420,9 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#17231f] mb-1">Nome Completo</label>
+                  <label htmlFor="register-name" className="block text-xs font-bold text-[#17231f] mb-1">Nome Completo</label>
                   <input
+                    id="register-name"
                     type="text"
                     required
                     value={name}
@@ -430,8 +433,9 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
+                  <label htmlFor="register-email" className="block text-xs font-bold text-[#17231f] mb-1">Email</label>
                   <input
+                    id="register-email"
                     type="email"
                     required
                     value={email}
@@ -442,8 +446,9 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#17231f] mb-1">Senha (Mínimo 6 dígitos)</label>
+                  <label htmlFor="register-password" className="block text-xs font-bold text-[#17231f] mb-1">Senha (Mínimo 6 dígitos)</label>
                   <input
+                    id="register-password"
                     type="password"
                     required
                     value={password}
@@ -455,8 +460,9 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
                 {selectedPlan === 'medico' && (
                   <div>
-                    <label className="block text-xs font-bold text-[#17231f] mb-1">CRM (Opcional)</label>
+                    <label htmlFor="register-crm" className="block text-xs font-bold text-[#17231f] mb-1">CRM (Opcional)</label>
                     <input
+                      id="register-crm"
                       type="text"
                       value={crm}
                       onChange={(e) => setCrm(e.target.value)}
@@ -544,8 +550,9 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] mb-1">Email Cadastrado</label>
+                <label htmlFor="forgot-email" className="block text-xs font-bold text-[#17231f] mb-1">Email Cadastrado</label>
                 <input
+                  id="forgot-email"
                   type="email"
                   required
                   value={email}

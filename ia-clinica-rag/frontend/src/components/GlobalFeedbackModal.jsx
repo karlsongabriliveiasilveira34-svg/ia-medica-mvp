@@ -195,6 +195,7 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
                   <button
                     key={star}
                     type="button"
+                    aria-label={`Avaliar com ${star} estrela${star > 1 ? 's' : ''}`}
                     onClick={() => setRating(star)}
                     className="p-1 text-amber-400 hover:scale-110 transition"
                   >
@@ -211,10 +212,11 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
 
             {/* Textarea de Descrição */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
+              <label htmlFor="feedback-comment" className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
                 Descreva o que aconteceu ou sua ideia:
               </label>
               <textarea
+                id="feedback-comment"
                 rows={4}
                 required
                 value={comment}

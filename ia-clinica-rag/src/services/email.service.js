@@ -14,7 +14,7 @@ class EmailService {
 
   initTransporter() {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const port = parseInt(process.env.SMTP_PORT || '465', 10);
+    const port = Number.parseInt(process.env.SMTP_PORT || '465', 10);
     const user = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
     const pass = (process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '').trim().replace(/\s+/g, '');
 
@@ -80,7 +80,7 @@ class EmailService {
     }
 
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const port = parseInt(process.env.SMTP_PORT || '465', 10);
+    const port = Number.parseInt(process.env.SMTP_PORT || '465', 10);
     console.log(`[EMAIL] SMTP conectado (${host}:${port})`);
 
     try {
@@ -115,7 +115,9 @@ class EmailService {
     if (!base || base.includes("localhost")) {
       base = 'https://ia-medica-mvp.vercel.app';
     }
-    base = base.replace(/\/+$/, '');
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
 
     // Rota direta de ativação que suporta GET no navegador e redireciona já autenticado
     const verifyLink = `${base}/api/auth/verify-email?token=${token}`;
@@ -174,7 +176,9 @@ class EmailService {
     if (!base || base.includes("localhost")) {
       base = 'https://ia-medica-mvp.vercel.app';
     }
-    base = base.replace(/\/+$/, '');
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
 
     const resetLink = `${base}/?reset_token=${token}`;
 

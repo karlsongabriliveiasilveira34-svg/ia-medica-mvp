@@ -227,6 +227,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
             </div>
             <div>
               <input
+                id="report-clinic-name"
                 type="text"
                 value={report.clinicName || 'MedIa — Registro Clínico e Laudo de Consulta'}
                 onChange={(e) => handleFieldChange('clinicName', e.target.value)}
@@ -251,8 +252,9 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
             <div className="sm:col-span-2">
-              <label className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Nome Completo</label>
+              <label htmlFor="report-patient-name" className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Nome Completo</label>
               <input
+                id="report-patient-name"
                 type="text"
                 value={report.patientInfo?.name || ''}
                 onChange={(e) => handlePatientInfoChange('name', e.target.value)}
@@ -260,17 +262,19 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Idade</label>
+              <label htmlFor="report-patient-age" className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Idade</label>
               <input
+                id="report-patient-age"
                 type="number"
                 value={report.patientInfo?.age || ''}
-                onChange={(e) => handlePatientInfoChange('age', parseInt(e.target.value) || 0)}
+                onChange={(e) => handlePatientInfoChange('age', Number.parseInt(e.target.value, 10) || 0)}
                 className="w-full bg-slate-900 print:bg-transparent border border-slate-800 print:border-b print:border-gray-300 rounded-xl px-3 py-2 text-xs text-slate-100 print:text-black focus:outline-none focus:border-emerald-500"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Sexo Biológico</label>
+              <label htmlFor="report-patient-gender" className="block text-[11px] text-slate-400 print:text-gray-600 mb-1">Sexo Biológico</label>
               <input
+                id="report-patient-gender"
                 type="text"
                 value={report.patientInfo?.gender || ''}
                 onChange={(e) => handlePatientInfoChange('gender', e.target.value)}
@@ -287,8 +291,9 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
           </h3>
           <div className="space-y-3 text-xs">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 print:text-black mb-1">Queixa Principal (QP)</label>
+              <label htmlFor="report-chief-complaint" className="block text-[11px] font-semibold text-slate-300 print:text-black mb-1">Queixa Principal (QP)</label>
               <input
+                id="report-chief-complaint"
                 type="text"
                 value={report.chiefComplaint || ''}
                 onChange={(e) => handleFieldChange('chiefComplaint', e.target.value)}
@@ -296,8 +301,9 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 print:text-black mb-1">História da Moléstia Atual (HMA)</label>
+              <label htmlFor="report-hma" className="block text-[11px] font-semibold text-slate-300 print:text-black mb-1">História da Moléstia Atual (HMA)</label>
               <textarea
+                id="report-hma"
                 rows={4}
                 value={report.historyOfPresentIllness || ''}
                 onChange={(e) => handleFieldChange('historyOfPresentIllness', e.target.value)}

@@ -65,9 +65,35 @@ if (typeof window !== 'undefined' && !window.__fetch_intercepted__) {
   };
 }
 
+// Sanitização de dados de entrada para proteção de LocalStorage e prevenção XSS
+function sanitizeToken(token) {
+  if (typeof token !== 'string') return null;
+  const trimmed = token.trim();
+  if (/^[A-Za-z0-9\-_.~+/=]{10,4096}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
+function sanitizeUserObject(user) {
+  if (!user || typeof user !== 'object') return null;
+  const safeUser = {};
+  if (typeof user.id === 'string' || typeof user.id === 'number') safeUser.id = String(user.id);
+  if (typeof user.name === 'string') safeUser.name = user.name.slice(0, 100);
+  if (typeof user.email === 'string') safeUser.email = user.email.slice(0, 150);
+  if (typeof user.role === 'string') safeUser.role = user.role.slice(0, 30);
+  if (typeof user.plan === 'string') safeUser.plan = user.plan.slice(0, 30);
+  if (typeof user.photo === 'string' && (user.photo.startsWith('http') || user.photo.startsWith('data:image/'))) {
+    safeUser.photo = user.photo.slice(0, 2048);
+  }
+  if (typeof user.avatar === 'string' && (user.avatar.startsWith('http') || user.avatar.startsWith('data:image/'))) {
+    safeUser.avatar = user.avatar.slice(0, 2048);
+  }
+  return Object.keys(safeUser).length > 0 ? safeUser : null;
+}
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [usageData, setUsageData] = useState({
     usage: { highestPercentage: 0 },
@@ -133,14 +159,20 @@ export default function App() {
           const hashRefreshToken = hashParams.get('refresh_token');
           const hashUserRaw = hashParams.get('user');
 
-          if (hashAccessToken) {
-            localStorage.setItem('access_token', hashAccessToken);
-            if (hashRefreshToken) localStorage.setItem('refresh_token', hashRefreshToken);
+          const safeAccessToken = sanitizeToken(hashAccessToken);
+          const safeRefreshToken = sanitizeToken(hashRefreshToken);
+
+          if (safeAccessToken) {
+            localStorage.setItem('access_token', safeAccessToken);
+            if (safeRefreshToken) localStorage.setItem('refresh_token', safeRefreshToken);
             let userObj = null;
             if (hashUserRaw) {
               try {
-                userObj = JSON.parse(decodeURIComponent(hashUserRaw));
-                localStorage.setItem('media_user', JSON.stringify(userObj));
+                const parsed = JSON.parse(decodeURIComponent(hashUserRaw));
+                userObj = sanitizeUserObject(parsed);
+                if (userObj) {
+                  localStorage.setItem('media_user', JSON.stringify(userObj));
+                }
               } catch (e) { }
             }
 
@@ -176,24 +208,27 @@ export default function App() {
       }
 
       const verifyToken = urlParams.get('verify_token') || urlParams.get('token');
-      if (verifyToken) {
+      const safeVerifyToken = sanitizeToken(verifyToken);
+      if (safeVerifyToken) {
         try {
           const verifyRes = await fetch('/api/auth/verify-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: verifyToken })
+            body: JSON.stringify({ token: safeVerifyToken })
           });
           const verifyData = await verifyRes.json();
           if (verifyRes.ok && verifyData.accessToken && verifyData.user) {
-            // 1. Guardar tokens de autenticação
-            localStorage.setItem('access_token', verifyData.accessToken);
-            if (verifyData.refreshToken) {
-              localStorage.setItem('refresh_token', verifyData.refreshToken);
-            }
-            localStorage.setItem('media_user', JSON.stringify(verifyData.user));
+            const safeAcc = sanitizeToken(verifyData.accessToken);
+            const safeRef = sanitizeToken(verifyData.refreshToken);
+            const safeUser = sanitizeUserObject(verifyData.user);
+
+            // 1. Guardar tokens de autenticação sanitizados
+            if (safeAcc) localStorage.setItem('access_token', safeAcc);
+            if (safeRef) localStorage.setItem('refresh_token', safeRef);
+            if (safeUser) localStorage.setItem('media_user', JSON.stringify(safeUser));
 
             // 2. Definir estado de autenticação imediato
-            setCurrentUser(verifyData.user);
+            setCurrentUser(safeUser);
             setIsAuthenticated(true);
             setShowLogin(false);
 
@@ -246,11 +281,14 @@ export default function App() {
         if (meRes.ok) {
           const meData = await meRes.json();
           if (meData && meData.user) {
-            setCurrentUser(meData.user);
-            setIsAuthenticated(true);
-            localStorage.setItem('media_user', JSON.stringify(meData.user));
-            refreshUsageData();
-            return;
+            const safeMeUser = sanitizeUserObject(meData.user);
+            if (safeMeUser) {
+              setCurrentUser(safeMeUser);
+              setIsAuthenticated(true);
+              localStorage.setItem('media_user', JSON.stringify(safeMeUser));
+              refreshUsageData();
+              return;
+            }
           }
         }
       } catch (e) { }
@@ -465,8 +503,16 @@ export default function App() {
           />
         )}
 
-        {/* MODO ESTUDANTE: NotebookLM, Flashcards, Quizzes, Caderno Sintético */}
-        {(activeTab === 'student_notebook' || activeTab === 'flashcards' || activeTab === 'quizzes' || activeTab === 'caderno') && (
+        {/* MODO ESTUDANTE: Anotacoes IA, Simulado 50Q, NotebookLM, Flashcards, Quizzes, Caderno Sintetico */}
+        {(
+          activeTab === 'anotacoes' ||
+          activeTab === 'student_notes' ||
+          activeTab === 'simulado' ||
+          activeTab === 'student_notebook' ||
+          activeTab === 'flashcards' ||
+          activeTab === 'quizzes' ||
+          activeTab === 'caderno'
+        ) && (
           <StudentNotebookView
             activeTab={activeTab}
             onAttachDocumentToChat={(doc) => {

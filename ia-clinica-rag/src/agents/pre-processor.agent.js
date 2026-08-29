@@ -32,7 +32,7 @@ export class PreProcessorAgent {
     }
 
     // 2. Camada 1: Interceptador Determinístico Rápido (< 1ms) para Saudações Puras
-    const greetingRegex = /^(ol[áa]|bom\s+dia|boa\s+tarde|boa\s+noite|oi|oii+|ol[aá]!*|oi!*|e\s+a[íi]|tudo\s+bem\??|sauda[çc][õo]es)[\s!.]*$/i;
+    const greetingRegex = /^(ol[áa]!*|bom\s+dia|boa\s+tarde|boa\s+noite|oi+!*|e\s+a[íi]|tudo\s+bem\??|sauda[çc][õo]es)[\s!.]*$/i;
     if (greetingRegex.test(sanitized.trim())) {
       console.log(`⚡ [LOG INTENT CLASSIFIER] Saudação Rápida Detectada via Regex: "${sanitized}" -> GREETING`);
       return {

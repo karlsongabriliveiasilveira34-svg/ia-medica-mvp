@@ -15,6 +15,12 @@ export function validateInputSanity(input) {
     return { isValid: false, reason: "EMPTY_INPUT" };
   }
 
+  // Permitir saudações curtas legítimas (ex.: "oi", "olá", "hi")
+  const validShortGreetings = /^(oi+!*|ol[áa]!*|hi!*|hey!*|bom\s+dia|boa\s+tarde|boa\s+noite)[\s!.]*$/i;
+  if (validShortGreetings.test(trimmed)) {
+    return { isValid: true, reason: "GREETING" };
+  }
+
   // 1. Verificar se contém apenas pontuações ou símbolos (ex: "...", "!!!", "???", "---")
   const symbolsOnlyRegex = /^[\s\p{P}\p{S}\d]+$/u;
   if (symbolsOnlyRegex.test(trimmed) && !/\w{2,}/.test(trimmed)) {

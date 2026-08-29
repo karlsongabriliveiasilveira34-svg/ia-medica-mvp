@@ -510,8 +510,9 @@ export function KnowledgeManager() {
           <form onSubmit={handleUpload} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Título Oficial do Documento</label>
+                <label htmlFor="ingest-doc-title" className="block text-xs font-medium text-slate-300 mb-1.5">Título Oficial do Documento</label>
                 <input
+                  id="ingest-doc-title"
                   type="text"
                   required
                   placeholder="Ex: Protocolo Clínico e Diretrizes Terapêuticas — Asma"
@@ -522,8 +523,9 @@ export function KnowledgeManager() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Instituição Emissora Oficial</label>
+                <label htmlFor="ingest-doc-org" className="block text-xs font-medium text-slate-300 mb-1.5">Instituição Emissora Oficial</label>
                 <input
+                  id="ingest-doc-org"
                   type="text"
                   required
                   placeholder="Ex: Ministério da Saúde do Brasil / CONITEC"
@@ -534,8 +536,9 @@ export function KnowledgeManager() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Nível de Autoridade (Hierarquia 1 a 5)</label>
+                <label htmlFor="ingest-doc-auth" className="block text-xs font-medium text-slate-300 mb-1.5">Nível de Autoridade (Hierarquia 1 a 5)</label>
                 <select
+                  id="ingest-doc-auth"
                   value={docAuthLevel}
                   onChange={(e) => setDocAuthLevel(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-clinical-500"
@@ -549,8 +552,9 @@ export function KnowledgeManager() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Versão / Ano de Publicação</label>
+                <label htmlFor="ingest-doc-version" className="block text-xs font-medium text-slate-300 mb-1.5">Versão / Ano de Publicação</label>
                 <input
+                  id="ingest-doc-version"
                   type="text"
                   placeholder="Ex: 2024.1 ou 2024"
                   value={docVersion}
@@ -560,8 +564,9 @@ export function KnowledgeManager() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">URL Oficial da Fonte (gov.br, who.int, paho.org, msf.org...)</label>
+                <label htmlFor="ingest-doc-url" className="block text-xs font-medium text-slate-300 mb-1.5">URL Oficial da Fonte (gov.br, who.int, paho.org, msf.org...)</label>
                 <input
+                  id="ingest-doc-url"
                   type="url"
                   placeholder="https://www.gov.br/conitec/pt-br/assuntos/avaliacao-de-tecnologias-em-saude/pcdt"
                   value={docUrl}

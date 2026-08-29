@@ -643,7 +643,7 @@ export class UnimontesRoadmapService {
    * Obtém detalhes completos de um período específico
    */
   static getPeriodo(periodoId) {
-    const pId = parseInt(periodoId, 10);
+    const pId = Number.parseInt(periodoId, 10);
     const periodo = UNIMONTES_PERIODOS.find(p => p.id === pId);
     if (!periodo) return null;
     return periodo;
@@ -653,7 +653,7 @@ export class UnimontesRoadmapService {
    * Obtém questões/quiz do período para autoavaliação
    */
   static getPeriodoQuiz(periodoId) {
-    const pId = parseInt(periodoId, 10);
+    const pId = Number.parseInt(periodoId, 10);
     const periodo = UNIMONTES_PERIODOS.find(p => p.id === pId);
     if (!periodo) return [];
 

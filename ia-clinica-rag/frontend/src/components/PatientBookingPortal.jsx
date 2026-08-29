@@ -48,10 +48,11 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
           <form onSubmit={handleBook} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Nome Completo</label>
+                <label htmlFor="booking-patient-name" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Nome Completo</label>
                 <div className="flex items-center gap-2 border border-[#17231f]/20 rounded-2xl p-3 bg-[#faf8f5]">
                   <User className="w-4 h-4 text-[#5e6c65]" />
                   <input
+                    id="booking-patient-name"
                     type="text"
                     required
                     placeholder="Ex: Maria Silva Santos"
@@ -63,10 +64,11 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Telefone / WhatsApp</label>
+                <label htmlFor="booking-phone" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Telefone / WhatsApp</label>
                 <div className="flex items-center gap-2 border border-[#17231f]/20 rounded-2xl p-3 bg-[#faf8f5]">
                   <Phone className="w-4 h-4 text-[#5e6c65]" />
                   <input
+                    id="booking-phone"
                     type="tel"
                     required
                     placeholder="(11) 99999-9999"
@@ -80,10 +82,11 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Data Desejada</label>
+                <label htmlFor="booking-date" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Data Desejada</label>
                 <div className="flex items-center gap-2 border border-[#17231f]/20 rounded-2xl p-3 bg-[#faf8f5]">
                   <Calendar className="w-4 h-4 text-[#5e6c65]" />
                   <input
+                    id="booking-date"
                     type="date"
                     required
                     value={formData.date}
@@ -94,10 +97,11 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Horário</label>
+                <label htmlFor="booking-time" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Horário</label>
                 <div className="flex items-center gap-2 border border-[#17231f]/20 rounded-2xl p-3 bg-[#faf8f5]">
                   <Clock className="w-4 h-4 text-[#5e6c65]" />
                   <select
+                    id="booking-time"
                     value={formData.time}
                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                     className="bg-transparent text-sm w-full outline-none text-[#17231f]"
@@ -136,10 +140,11 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
 
           <form onSubmit={handleFinishAnamnese} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">
+              <label htmlFor="booking-symptoms" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">
                 O que você está sentindo? (Descreva os sintomas)
               </label>
               <textarea
+                id="booking-symptoms"
                 required
                 rows={4}
                 placeholder="Ex: Estou com dor de cabeça forte há 2 dias, acompanhada de enjoo e sensibilidade à luz..."
@@ -151,8 +156,9 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Medicamentos em uso</label>
+                <label htmlFor="booking-medications" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Medicamentos em uso</label>
                 <input
+                  id="booking-medications"
                   type="text"
                   placeholder="Ex: Losartana 50mg, Dipirona se dor"
                   value={formData.medicationsInUse}
@@ -162,8 +168,9 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Alergias conhecidas</label>
+                <label htmlFor="booking-allergies" className="block text-xs font-bold text-[#17231f] uppercase tracking-wider mb-1">Alergias conhecidas</label>
                 <input
+                  id="booking-allergies"
                   type="text"
                   placeholder="Ex: Alergia a Penicilina / Nenhuma"
                   value={formData.allergies}

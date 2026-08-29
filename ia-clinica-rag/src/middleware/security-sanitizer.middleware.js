@@ -91,9 +91,9 @@ export function sanitizeInput(text, userPlan = 'free') {
     }
   } else if (userPlan === 'estudante') {
     sanitized = sanitized
-      .replace(/--/g, '')
-      .replace(/\/\*/g, '')
-      .replace(/\*\//g, '');
+      .replaceAll('--', '')
+      .replaceAll('/*', '')
+      .replaceAll('*/', '');
   }
 
   return sanitized;
@@ -209,8 +209,8 @@ export function validateFeedbackInputMiddleware(req, res, next) {
   }
 
   if (rating !== undefined) {
-    const numRating = parseInt(rating, 10);
-    req.body.rating = isNaN(numRating) ? 5 : Math.max(1, Math.min(5, numRating));
+    const numRating = Number.parseInt(rating, 10);
+    req.body.rating = Number.isNaN(numRating) ? 5 : Math.max(1, Math.min(5, numRating));
   }
 
   next();

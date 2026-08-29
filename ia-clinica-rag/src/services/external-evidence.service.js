@@ -1,5 +1,6 @@
-import fs from "fs/promises";
-import path from "path";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // Dicionário de tradução médica expandido para buscas no PubMed/NCBI e Openi API (Inglês)
 const ptToEnMap = {
@@ -275,7 +276,7 @@ export class ExternalEvidenceService {
       const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
       for (const item of items) {
-        const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]+>/g, "") : "Artigo Científico SciELO";
+        const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]*>/g, "") : "Artigo Científico SciELO";
         const titleLower = title.toLowerCase();
         
         // Validação Semântica Estrita: o título deve conter ao menos um dos termos clínicos pesquisados
@@ -288,7 +289,7 @@ export class ExternalEvidenceService {
         // Filtro anti-ruído: descartar periódicos ou artigos de artes, cinema, literatura e filosofia
         const journalLower = (item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "").toLowerCase();
         const nonMedicalNoise = ["filme", "cinema", "poesia", "romance", "teatro", "sociologia", "filosofia", "antropologia", "educação física", "esporte", "turismo"];
-        if (nonMedicalNoise.some(noise => titleLower.includes(noise) || journalLower.includes(noise))) {
+        if (nonMedicalNoise.some(n => journalLower.includes(n) || titleLower.includes(n))) {
           continue;
         }
 
@@ -297,10 +298,11 @@ export class ExternalEvidenceService {
         const journal = item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "SciELO Brasil / América Latina";
         const doi = item.DOI;
         const scieloUrlFinal = doi ? `https://doi.org/${doi}` : (item.URL || "https://www.scielo.br");
+        const safeSuffix = crypto.randomUUID().slice(0, 8);
 
         results.push({
-          id: `scielo-${doi || Math.random().toString(36).slice(2)}`,
-          document_id: `scielo-${doi || Math.random().toString(36).slice(2)}`,
+          id: `scielo-${doi || safeSuffix}`,
+          document_id: `scielo-${doi || safeSuffix}`,
           title: `[SciELO] ${title}`,
           document_title: `[SciELO] ${title}`,
           document_filename: `SciELO DOI: ${doi || "N/A"}`,
@@ -361,7 +363,7 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Cochrane Systematic Review";
+        const title = item.title ? item.title.replace(/<[^>]*>/g, "") : "Cochrane Systematic Review";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const doiArticle = item.articleids?.find(a => a.idtype === "doi")?.value || null;
@@ -430,7 +432,7 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Artigo PubMed";
+        const title = item.title ? item.title.replace(/<[^>]*>/g, "") : "Artigo PubMed";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const sourceName = item.source || "NCBI PubMed";
@@ -494,10 +496,11 @@ export class ExternalEvidenceService {
         const journal = item.journal_title || "PubMed Central Open Access Collection";
         const pmid = item.pmid || "N/A";
         const pmcUrl = item.pmc_url || (pmid !== "N/A" ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/` : "https://openi.nlm.nih.gov");
+        const safeSuffix = crypto.randomUUID().slice(0, 8);
 
         results.push({
-          id: `openi-${item.uid || Math.random().toString(36).slice(2)}`,
-          document_id: `openi-${item.uid || Math.random().toString(36).slice(2)}`,
+          id: `openi-${item.uid || safeSuffix}`,
+          document_id: `openi-${item.uid || safeSuffix}`,
           document_title: `[Imagens NIH / Openi] ${title}`,
           document_filename: `NIH Openi PMID: ${pmid}`,
           document_category: "BIOMEDICAL_IMAGES",

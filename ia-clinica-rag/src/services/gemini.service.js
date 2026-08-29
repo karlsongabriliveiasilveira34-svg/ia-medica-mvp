@@ -23,7 +23,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * Wrapper com retry automático e LOG ABSOLUTO / TOTAL (Prompt enviado + Pensamento / Resposta bruta)
  */
-export async function generateWithRetry(params, retries = 4, delayMs = 6000) {
+export async function generateWithRetry(params, retries = 5, delayMs = 8000) {
   const modelName = params.model || env.geminiModel;
   const promptText = typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents);
 
@@ -56,10 +56,15 @@ export async function generateWithRetry(params, retries = 4, delayMs = 6000) {
       console.error(`   - Mensagem de Erro: ${error.message}`);
       console.error(`======================================================\n`);
 
-      const isRateLimit = error.status === 429 || (error.message && error.message.includes("429"));
-      if (isRateLimit && i < retries - 1) {
-        console.warn(`⚠️ [LOG COTA GEMINI] Rate Limit (429). Aguardando ${delayMs / 1000}s para tentar novamente...`);
-        await sleep(delayMs);
+      const isTransient = error.status === 429 || error.status === 503 || (error.message && (error.message.includes("429") || error.message.includes("503") || error.message.includes("high demand") || error.message.includes("UNAVAILABLE") || error.message.includes("RESOURCE_EXHAUSTED")));
+      if (isTransient && i < retries - 1) {
+        let waitMs = delayMs;
+        const retryMatch = typeof error.message === "string" && error.message.match(/retry in (\d+(\.\d+)?)s/i);
+        if (retryMatch && retryMatch[1]) {
+          waitMs = Math.max(waitMs, (Number.parseFloat(retryMatch[1]) + 2) * 1000);
+        }
+        console.warn(`⚠️ [LOG COTA GEMINI] Erro temporário / alta demanda (${error.status || "503/429"}). Aguardando ${Math.round(waitMs / 1000)}s para tentar novamente...`);
+        await sleep(waitMs);
         delayMs *= 1.5;
       } else {
         throw error;

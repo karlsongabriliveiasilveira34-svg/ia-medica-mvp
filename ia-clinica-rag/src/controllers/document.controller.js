@@ -1,7 +1,7 @@
-import fs from "fs/promises";
-import path from "path";
-import crypto from "crypto";
-import { fileURLToPath } from "url";
+import fs from "node:fs/promises";
+import path from "node:path";
+import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { extractPdf } from "../utils/pdf.js";
 import { ingestDocument, deleteDocument as removeDocFromDb, listDocuments } from "../services/document.service.js";
 
@@ -11,8 +11,8 @@ const knowledgePath = path.resolve(__dirname, "../../knowledge");
 
 export async function handleListDocuments(req, res) {
   try {
-    const page = Math.max(1, parseInt(req.query.page || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || "20", 10)));
+    const page = Math.max(1, Number.parseInt(req.query.page || "1", 10));
+    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit || "20", 10)));
     const offset = (page - 1) * limit;
 
     const data = await listDocuments({ limit, offset });
@@ -78,7 +78,7 @@ export async function handleUploadDocument(req, res) {
     const pdfData = await extractPdf(targetFilePath);
     const checksum = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
 
-    const docTitle = title ? String(title).slice(0, 200) : safeFilename.replace(/\.pdf$/i, "").replace(/_/g, " ");
+    const docTitle = title ? String(title).slice(0, 200) : safeFilename.replace(/\.pdf$/i, "").replaceAll("_", " ");
 
     const result = await ingestDocument({
       title: docTitle,

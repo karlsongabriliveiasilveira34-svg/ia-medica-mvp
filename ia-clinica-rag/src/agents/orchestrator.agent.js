@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { getAgentById } from "../config/agents.config.js";
 import { QueryAnalyzerAgent } from "./query-analyzer.agent.js";
 import { PreProcessorAgent } from "./pre-processor.agent.js";
@@ -18,7 +19,7 @@ export class OrchestratorAgent {
     const isDeepResearchMode = Boolean(deepResearch || isDeepResearch);
     const startTime = Date.now();
     const debugLogs = [];
-    const auditTraceId = `TRACE-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    const auditTraceId = `TRACE-${Date.now()}-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 
     const logStep = (stepName, detail) => {
       const entry = `[${new Date().toISOString()}] [${stepName}] ${detail}`;
@@ -476,7 +477,7 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
 
     // 8. Extrair quais marcadores [Fonte X] foram efetivamente citados no texto
     const citedMatches = Array.from(rawAnswerText.matchAll(/\[Fonte\s+(\d+)\]/gi));
-    const citedIndices = new Set(citedMatches.map(m => parseInt(m[1], 10) - 1));
+    const citedIndices = new Set(citedMatches.map(m => Number.parseInt(m[1], 10) - 1));
 
     // Mapear chunks diretamente citados
     const directlyCitedChunks = promptChunks.filter((_, idx) => citedIndices.has(idx));

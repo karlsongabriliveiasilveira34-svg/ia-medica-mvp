@@ -210,10 +210,11 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
               
               {/* 1. Sintomas Principais */}
               <div>
-                <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                <label htmlFor="pre-anamnese-symptoms" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                   O que você está sentindo? Descreva com suas palavras: *
                 </label>
                 <textarea
+                  id="pre-anamnese-symptoms"
                   rows={4}
                   required
                   value={symptomsText}
@@ -226,10 +227,11 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
               {/* 2. Duração e Dados Antropométricos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                  <label htmlFor="pre-anamnese-duration" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                     Há quantos dias começaram os sintomas?
                   </label>
                   <input
+                    id="pre-anamnese-duration"
                     type="text"
                     value={durationDays}
                     onChange={(e) => setDurationDays(e.target.value)}
@@ -239,10 +241,11 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                  <label htmlFor="pre-anamnese-weight" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                     Peso Aproximado (kg) {session?.isPediatric && ' *'}
                   </label>
                   <input
+                    id="pre-anamnese-weight"
                     type="number"
                     step="0.1"
                     value={weightKg}
@@ -256,10 +259,11 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
               {/* 3. Medicamentos e Alergias */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                  <label htmlFor="pre-anamnese-medications" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                     Medicamentos que já tomou em casa:
                   </label>
                   <input
+                    id="pre-anamnese-medications"
                     type="text"
                     value={medicationsInUse}
                     onChange={(e) => setMedicationsInUse(e.target.value)}
@@ -269,10 +273,11 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                  <label htmlFor="pre-anamnese-allergies" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                     Alergias conhecidas:
                   </label>
                   <input
+                    id="pre-anamnese-allergies"
                     type="text"
                     value={allergies}
                     onChange={(e) => setAllergies(e.target.value)}

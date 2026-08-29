@@ -5,22 +5,25 @@ import {
   Check, Play, HelpCircle, Layers, ShieldCheck, Activity
 } from 'lucide-react';
 
+const sanitizeSafeUrl = (url) => {
+  if (!url || typeof url !== 'string') return '#';
+  try {
+    const parsed = new URL(url.trim(), window.location.origin);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.href;
+    }
+  } catch {
+    return '#';
+  }
+  return '#';
+};
+
 export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
-  const [periodosList, setPeriodosList] = useState([]);
   const [selectedPeriodoId, setSelectedPeriodoId] = useState(1);
   const [periodoData, setPeriodoData] = useState(null);
   const [activeSection, setActiveSection] = useState('modulos'); // 'modulos' | 'videos' | 'livros' | 'checkpoints'
-  const [studentProgress, setStudentProgress] = useState({
-    periodoAtual: 1,
-    videosAssistidos: ['1.1', '1.2'],
-    casosResolvidos: ['1.1'],
-    checkpointsConcluidos: [0],
-    horasInvestidas: 65,
-    mediaQuizzes: 78
-  });
   const [completedCheckpoints, setCompletedCheckpoints] = useState({});
   const [completedVideos, setCompletedVideos] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [quizActive, setQuizActive] = useState(false);
   const [periodoQuiz, setPeriodoQuiz] = useState([]);
 
@@ -43,18 +46,16 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
   // 2. Carregar detalhes do período selecionado
   useEffect(() => {
     const fetchPeriodoDetail = async () => {
-      setIsLoading(true);
       setQuizActive(false);
       try {
-        const res = await fetch(`/api/unimontes/periodos/${selectedPeriodoId}`);
+        const safeId = encodeURIComponent(String(selectedPeriodoId).replace(/[^\w-]/g, ''));
+        const res = await fetch(`/api/unimontes/periodos/${safeId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.dados) setPeriodoData(data.dados);
         }
       } catch (err) {
         console.warn('Falha ao obter dados do período:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchPeriodoDetail();
@@ -63,7 +64,8 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
   // 3. Carregar quiz do período
   const handleOpenPeriodoQuiz = async () => {
     try {
-      const res = await fetch(`/api/unimontes/periodos/${selectedPeriodoId}/quiz`);
+      const safeId = encodeURIComponent(String(selectedPeriodoId).replace(/[^\w-]/g, ''));
+      const res = await fetch(`/api/unimontes/periodos/${safeId}/quiz`);
       if (res.ok) {
         const data = await res.json();
         if (data.questoes) {
@@ -241,7 +243,7 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
                       <span className="text-[10px] font-bold uppercase text-[#5e6c65] block">Tópicos de Estudo:</span>
                       <ul className="space-y-1 text-xs text-[#2c3b35]">
                         {mod.topicos.map((top, tIdx) => (
-                          <li key={tIdx} className="flex items-center gap-1.5">
+                          <li key={`${mod.id}-topico-${tIdx}`} className="flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                             <span>{top}</span>
                           </li>
@@ -273,7 +275,7 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
                         <span className="text-[10px] font-bold uppercase text-[#5e6c65]">Questões para Resolução:</span>
                         <ul className="list-decimal list-inside text-[11px] text-[#2c3b35] space-y-0.5">
                           {mod.casoClinico.questoes.map((q, qIdx) => (
-                            <li key={qIdx}>{q}</li>
+                            <li key={`${mod.id}-caso-q-${qIdx}`}>{q}</li>
                           ))}
                         </ul>
                       </div>
@@ -308,9 +310,9 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
 
                     <div className="flex items-center justify-between pt-2 border-t border-[#17231f]/5">
                       <a
-                        href={v.url}
+                        href={sanitizeSafeUrl(v.url)}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] transition flex items-center gap-1.5"
                       >
                         <Play className="w-3 h-3 fill-current" /> Assistir Aula
@@ -336,7 +338,7 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
           {activeSection === 'livros' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {periodoData.livros.map((livro, lIdx) => (
-                <div key={lIdx} className="bg-white p-4 rounded-2xl border border-[#17231f]/10 shadow-sm space-y-3 flex flex-col justify-between">
+                <div key={`${livro.titulo}-${lIdx}`} className="bg-white p-4 rounded-2xl border border-[#17231f]/10 shadow-sm space-y-3 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -349,9 +351,9 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
 
                   <div className="pt-2 border-t border-[#17231f]/5">
                     <a
-                      href={livro.link}
+                      href={sanitizeSafeUrl(livro.link)}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="w-full py-2 px-3 rounded-xl bg-[#faf8f5] hover:bg-[#ede8df] text-[#17231f] border border-[#17231f]/10 font-bold text-xs transition flex items-center justify-center gap-1.5"
                     >
                       <BookOpen className="w-3.5 h-3.5 text-[#213f34]" /> Acessar Livro Aberto <ExternalLink className="w-3 h-3 text-[#5e6c65]" />
@@ -378,10 +380,11 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
                   const isChecked = completedCheckpoints[chkKey];
 
                   return (
-                    <div
-                      key={chkIdx}
+                    <button
+                      type="button"
+                      key={chkKey}
                       onClick={() => toggleCheckpoint(chkIdx)}
-                      className={`p-3.5 rounded-2xl border flex items-center justify-between cursor-pointer transition ${
+                      className={`w-full text-left p-3.5 rounded-2xl border flex items-center justify-between transition ${
                         isChecked
                           ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold'
                           : 'bg-[#faf8f5] border-[#17231f]/10 text-[#17231f] hover:border-[#213f34]/40'
@@ -396,7 +399,7 @@ export function UnimontesRoadmapView({ onOpenChatWithTopic }) {
                       <span className="text-[10px] text-[#5e6c65] uppercase tracking-wider font-semibold">
                         {isChecked ? 'Concluído' : 'Pendente'}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

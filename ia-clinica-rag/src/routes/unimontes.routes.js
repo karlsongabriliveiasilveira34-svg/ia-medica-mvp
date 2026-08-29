@@ -76,7 +76,7 @@ unimontesRouter.post("/progresso", (req, res) => {
     }
 
     const prog = studentProgressStore.get(userId);
-    if (periodoId) prog.periodoAtual = parseInt(periodoId, 10);
+    if (periodoId) prog.periodoAtual = Number.parseInt(periodoId, 10);
     if (videoId && !prog.videosAssistidos.includes(videoId)) prog.videosAssistidos.push(videoId);
     if (casoId && !prog.casosResolvidos.includes(casoId)) prog.casosResolvidos.push(casoId);
     if (checkpointIdx !== undefined && !prog.checkpointsConcluidos.includes(checkpointIdx)) {

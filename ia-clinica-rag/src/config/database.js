@@ -15,7 +15,7 @@ function getPoolConfig(rawUrl) {
       user: decodeURIComponent(parsed.username || ""),
       password: decodeURIComponent(parsed.password || ""),
       host: parsed.hostname || "localhost",
-      port: parsed.port ? parseInt(parsed.port, 10) : 5432,
+      port: parsed.port ? Number.parseInt(parsed.port, 10) : 5432,
       database: parsed.pathname ? parsed.pathname.replace(/^\//, "") : "postgres",
       ssl
     };
@@ -144,7 +144,7 @@ export async function ensureUsersSchema() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
-        -- 7. TABELA DE DOAÇÕES E PAGAMENTOS PIX
+        -- 7. TABELA DE DOACOES E PAGAMENTOS PIX
         CREATE TABLE IF NOT EXISTS doacoes_pix (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           txid VARCHAR(100) UNIQUE NOT NULL,
@@ -156,13 +156,41 @@ export async function ensureUsersSchema() {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           confirmed_at TIMESTAMP
         );
+
+        -- 8. TABELA DE ANOTACOES DO ESTUDANTE (TEXTO, VOZ, STYLUS CANVAS & IA)
+        CREATE TABLE IF NOT EXISTS student_notes (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(255) NOT NULL,
+          user_email VARCHAR(255),
+          title VARCHAR(255) NOT NULL DEFAULT 'Nova Anotacao',
+          content TEXT NOT NULL DEFAULT '',
+          drawing_data TEXT,
+          ai_suggestions JSONB DEFAULT '[]'::jsonb,
+          tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        -- 9. TABELA DE HISTORICO E RELATORIOS DE SIMULADOS (50 QUESTOES)
+        CREATE TABLE IF NOT EXISTS quiz_history (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR(255) NOT NULL,
+          user_email VARCHAR(255),
+          score INT NOT NULL DEFAULT 0,
+          total_questions INT NOT NULL DEFAULT 50,
+          percentage NUMERIC(5,2) NOT NULL DEFAULT 0.0,
+          answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+          theme_stats JSONB NOT NULL DEFAULT '{}'::jsonb,
+          duration_seconds INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
       `;
       await pool.query(ddl);
 
       // Seed inicial de questões se a tabela estiver vazia
       try {
         const countRes = await pool.query("SELECT COUNT(*) FROM questoes");
-        const total = parseInt(countRes.rows[0].count, 10);
+        const total = Number.parseInt(countRes.rows[0].count, 10);
         if (total === 0 && Array.isArray(INITIAL_QUESTIONS) && INITIAL_QUESTIONS.length > 0) {
           console.log(`[DATABASE] 📥 Inserindo acervo inicial de ${INITIAL_QUESTIONS.length} questões oficiais no PostgreSQL...`);
           for (const q of INITIAL_QUESTIONS) {
@@ -186,7 +214,7 @@ export async function ensureUsersSchema() {
 
         // Seed inicial de flashcards se a tabela estiver vazia
         const countCardsRes = await pool.query("SELECT COUNT(*) FROM flashcards");
-        const totalCards = parseInt(countCardsRes.rows[0].count, 10);
+        const totalCards = Number.parseInt(countCardsRes.rows[0].count, 10);
         if (totalCards === 0 && Array.isArray(INITIAL_FLASHCARDS) && INITIAL_FLASHCARDS.length > 0) {
           console.log(`[DATABASE] 📥 Inserindo acervo inicial de ${INITIAL_FLASHCARDS.length} flashcards oficiais no PostgreSQL...`);
           for (const c of INITIAL_FLASHCARDS) {

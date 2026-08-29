@@ -81,14 +81,14 @@ function parsePdfMetadata(fullText, info = {}) {
   // 1. Extrair Ano
   if (info.CreationDate) {
     const yearMatch = info.CreationDate.match(/(?:D:)?(19\d\d|20[0-2]\d)/);
-    if (yearMatch) publicationYear = parseInt(yearMatch[1], 10);
+    if (yearMatch) publicationYear = Number.parseInt(yearMatch[1], 10);
   }
   if (!publicationYear && fullText) {
     const textSnippet = fullText.substring(0, 3000);
-    const yearMatch = textSnippet.match(/(?:©|copyright|publicad[oa]\s+em|ano|brasília[^\n]*|edição[^\n]*)\s*(19[89]\d|20[0-2]\d)/i) ||
+    const yearMatch = textSnippet.match(/(?:©|copyright|publicad[oa]\s+em|ano|brasília[^\n]{0,50}|edição[^\n]{0,50})\s*(19[89]\d|20[0-2]\d)/i) ||
                       textSnippet.match(/\b(19[89]\d|20[0-2]\d)\b/);
     if (yearMatch) {
-      const yr = parseInt(yearMatch[1], 10);
+      const yr = Number.parseInt(yearMatch[1], 10);
       if (yr >= 1970 && yr <= 2026) publicationYear = yr;
     }
   }

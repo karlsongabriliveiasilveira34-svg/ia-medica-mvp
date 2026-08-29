@@ -21,7 +21,7 @@ class PixService {
   calculateCRC16(payload) {
     let crc = 0xffff;
     for (let i = 0; i < payload.length; i++) {
-      crc ^= payload.charCodeAt(i) << 8;
+      crc ^= (payload.codePointAt(i) || 0) << 8;
       for (let j = 0; j < 8; j++) {
         if ((crc & 0x8000) !== 0) {
           crc = (crc << 1) ^ 0x1021;
@@ -86,7 +86,7 @@ class PixService {
    */
   createPixOrder({ userId, amount = 10.00, purpose = "contribuicao", planType = null }) {
     const rawVal = Number(amount);
-    if (isNaN(rawVal) || !isFinite(rawVal) || rawVal < 1.00) {
+    if (Number.isNaN(rawVal) || !Number.isFinite(rawVal) || rawVal < 1.00) {
       throw new Error("O valor da contribuição PIX deve ser de no mínimo R$ 1,00.");
     }
     const cleanAmount = Math.round(rawVal * 100) / 100;

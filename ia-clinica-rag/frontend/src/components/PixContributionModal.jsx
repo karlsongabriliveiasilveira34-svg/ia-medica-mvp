@@ -25,7 +25,7 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
   // Gerar QR Code e Payload PIX Oficial
   const fetchPixOrder = async (selectedAmount) => {
     const rawNum = Number(selectedAmount);
-    if (isNaN(rawNum) || rawNum < 1.00) {
+    if (Number.isNaN(rawNum) || rawNum < 1.00) {
       setInputError('O valor mínimo de contribuição é R$ 1,00');
       return;
     }
@@ -220,13 +220,14 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
 
               {/* Digitação Livre de Outro Valor */}
               <div className="mt-3">
-                <label className="text-[11px] font-semibold text-[#5e6c65] block mb-1">
+                <label htmlFor="pix-custom-amount" className="text-[11px] font-semibold text-[#5e6c65] block mb-1">
                   Ou digite um valor personalizado (mínimo R$ 1,00):
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <span className="absolute left-3 top-2 text-xs font-bold text-[#5e6c65]">R$</span>
                     <input
+                      id="pix-custom-amount"
                       type="number"
                       min="1"
                       step="0.50"
@@ -243,7 +244,7 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
                     type="button"
                     onClick={() => {
                       const val = Number(customInput.replace(',', '.'));
-                      if (!val || isNaN(val) || val < 1.00) {
+                      if (!val || Number.isNaN(val) || val < 1.00) {
                         setInputError('Por favor, informe um valor de no mínimo R$ 1,00.');
                         return;
                       }

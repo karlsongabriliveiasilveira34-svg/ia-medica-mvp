@@ -374,7 +374,7 @@ export class EspecializacaoRoadmapService {
   static getFase(especialidadeId, faseNumero) {
     const esp = this.getEspecialidadeById(especialidadeId);
     if (!esp) return null;
-    return esp.fases.find(f => f.fase === parseInt(faseNumero, 10)) || null;
+    return esp.fases.find(f => f.fase === Number.parseInt(faseNumero, 10)) || null;
   }
 
   static async iniciarEspecializacao({ usuarioId, especialidadeId }) {

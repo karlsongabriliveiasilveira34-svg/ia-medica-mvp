@@ -5,9 +5,9 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: clinica
-      POSTGRES_PASSWORD: clinica_dev
-      POSTGRES_DB: clinica_rag
+      POSTGRES_USER: ${POSTGRES_USER:-clinica_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-clinica_rag}
 
     ports:
       - "5432:5432"

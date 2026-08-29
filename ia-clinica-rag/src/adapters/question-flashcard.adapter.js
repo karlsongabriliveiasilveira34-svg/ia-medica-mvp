@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 /**
  * ====================================================================
@@ -83,7 +83,7 @@ export function normalizeQuestion(raw, fallbackIndex = 1) {
 
   const options = rawOptions.slice(0, 4).map((opt, idx) => {
     const str = String(opt || "").trim();
-    const prefix = String.fromCharCode(65 + idx) + ") ";
+    const prefix = String.fromCodePoint(65 + idx) + ") ";
     return str.startsWith(prefix) ? str : `${prefix}${str}`;
   });
 
@@ -92,8 +92,8 @@ export function normalizeQuestion(raw, fallbackIndex = 1) {
     const matchIdx = options.findIndex(opt => opt.toLowerCase().includes(correctAnswer.toLowerCase()));
     correctAnswer = matchIdx >= 0 ? matchIdx : 0;
   } else {
-    correctAnswer = parseInt(correctAnswer, 10);
-    if (isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
+    correctAnswer = Number.parseInt(correctAnswer, 10);
+    if (Number.isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
       correctAnswer = 0;
     }
   }
