@@ -95,7 +95,7 @@ export function sanitizePHIAndAnonymize(input) {
   text = text.replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "[CPF REDIGIDO LGPD]");
   text = text.replace(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[0-9xX]\b/g, "[RG REDIGIDO LGPD]");
   text = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[EMAIL REDIGIDO LGPD]");
-  text = text.replace(/\b(\(?\d{2}\)?\s?)?9?\d{4}-?\d{4}\b/g, "[TELEFONE REDIGIDO LGPD]");
+  text = text.replace(/\b(?:\(?\d{2}\)?\s)?9?\d{4}-?\d{4}\b/g, "[TELEFONE REDIGIDO LGPD]");
   text = text.replace(/\b(?:prontu[áa]rio|registro|carteira|hc)\s*[:#]?\s*\d+/gi, "[PRONTUÁRIO REDIGIDO LGPD]");
 
   // 2. Anonimização de Idades em Meses (Crianças pequenas: 3 em 3 meses)
@@ -112,7 +112,7 @@ export function sanitizePHIAndAnonymize(input) {
 
   // 4. Anonimização e Conversão de Gênero para Nomes com Prefixos Formais
   // Ex: "paciente Renato", "o paciente Carlos Silva", "Dra. Maria", "Seu Joaquim", "Dona Francisca"
-  text = text.replace(/(?:(o|a)\s+)?(?:paciente|pac|sr|sra|dr|dra|seu|dona)\.?\s+([A-Za-zÀ-Úà-ú]+(?:\s+[A-Za-zÀ-Úà-ú]+)*)/gi, (match, article, nameStr) => {
+  text = text.replace(/(?:(o|a)\s+)?(?:paciente|pac|sr|sra|dr|dra|seu|dona)\.?\s+([A-Za-zÀ-Úà-ú]+(?:\s[A-Za-zÀ-Úà-ú]+){0,5})/gi, (match, article, nameStr) => {
     const gender = inferGenderFromName(nameStr) || (article === 'a' || /sra|dra|dona/i.test(match) ? 'feminino' : 'masculino');
     return gender === 'feminino' ? "paciente do sexo feminino" : "paciente do sexo masculino";
   });

@@ -350,9 +350,9 @@ export function Quiz({ onOpenTutorWithTopic, onBackToNotebook }) {
 
           {/* Seletor de Tempo de Prova */}
           <div className="space-y-3 pt-2 border-t border-[#17231f]/10">
-            <label className="text-xs font-bold uppercase tracking-wider text-[#17231f] block">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#17231f] block">
               Selecione o Tempo Limite da Prova:
-            </label>
+            </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { mins: 60, label: '60 Minutos', desc: '1,2 min/questao (Ritmo Acelerado)' },

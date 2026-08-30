@@ -129,7 +129,15 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
               return (
                 <div
                   key={c.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedCase(c)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedCase(c);
+                    }
+                  }}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 ${
                     isSelected
                       ? 'bg-white border-[#213f34] shadow-md ring-2 ring-[#213f34]/15'
@@ -322,8 +330,12 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
       {/* Modal de Criação de Novo Agendamento */}
       {showNewScheduleModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/60 p-4 backdrop-blur-sm animate-fadeIn"
           onMouseDown={(e) => e.target === e.currentTarget && setShowNewScheduleModal(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setShowNewScheduleModal(false)}
         >
           <div className="relative w-full max-w-lg rounded-3xl bg-white p-7 sm:p-8 shadow-2xl border border-[#17231f]/10 space-y-5">
             <h3 className="font-editorial text-2xl font-bold text-[#17231f]">

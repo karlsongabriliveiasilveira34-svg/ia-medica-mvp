@@ -218,7 +218,7 @@ function parseSymptomDetails(ruSymptom) {
 
 // Construtor semiológico rico para cada pergunta investigativa única
 function buildClinicalInvestigationCard(rawQuestion, symptomPt, index) {
-  let cleanQ = rawQuestion.replace(/^["'\s]+|["'\s]+$/g, "").trim();
+  let cleanQ = String(rawQuestion || "").trim().replace(/^["']+|["']+$/g, "").trim();
 
   // Categorização da pergunta para gerar verso clinicamente aprofundado
   let investigationType = "Caracterização Geral do Sintoma";

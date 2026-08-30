@@ -48,8 +48,12 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/75 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-5">
         
@@ -98,9 +102,9 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
 
             {/* Tipo de Feedback */}
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
+              <span className="block text-xs font-bold uppercase tracking-wider text-[#17231f]">
                 Categoria do Relato:
-              </label>
+              </span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -120,32 +124,32 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
                   onClick={() => setFeedbackType('feature')}
                   className={`flex items-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
                     feedbackType === 'feature'
-                      ? 'bg-amber-50 border-amber-500 text-amber-900 shadow-sm ring-1 ring-amber-400'
+                      ? 'bg-emerald-50 border-[#213f34] text-[#17231f] shadow-sm ring-1 ring-[#213f34]'
                       : 'bg-[#faf8f5] border-[#17231f]/10 text-[#5e6c65] hover:bg-[#eae5d9]'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Sugestão de Recurso</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setFeedbackType('medical')}
+                  onClick={() => setFeedbackType('ux')}
                   className={`flex items-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                    feedbackType === 'medical'
-                      ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm ring-1 ring-emerald-400'
+                    feedbackType === 'ux'
+                      ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-sm ring-1 ring-blue-400'
                       : 'bg-[#faf8f5] border-[#17231f]/10 text-[#5e6c65] hover:bg-[#eae5d9]'
                   }`}
                 >
-                  <HelpCircle className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span>Dúvida ou Diretriz</span>
+                  <Lightbulb className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>Usabilidade / Layout</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setFeedbackType('compliment')}
+                  onClick={() => setFeedbackType('other')}
                   className={`flex items-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                    feedbackType === 'compliment'
+                    feedbackType === 'other'
                       ? 'bg-purple-50 border-purple-500 text-purple-900 shadow-sm ring-1 ring-purple-400'
                       : 'bg-[#faf8f5] border-[#17231f]/10 text-[#5e6c65] hover:bg-[#eae5d9]'
                   }`}
@@ -159,9 +163,9 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
             {/* Nível de Gravidade (se for Bug) */}
             {feedbackType === 'bug' && (
               <div className="space-y-1.5 animate-fadeIn">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
+                <span className="block text-xs font-bold uppercase tracking-wider text-[#17231f]">
                   Gravidade do Erro:
-                </label>
+                </span>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'low', label: 'Baixa (Visual)' },
@@ -187,9 +191,9 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
 
             {/* Avaliação em Estrelas */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#17231f]">
+              <span className="block text-xs font-bold uppercase tracking-wider text-[#17231f]">
                 Sua Avaliação da Experiência:
-              </label>
+              </span>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button

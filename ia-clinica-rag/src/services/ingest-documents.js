@@ -65,7 +65,7 @@ export async function runIngestion() {
       const filename = path.basename(file);
       const relative = path.relative(knowledgePath, file);
       const category = relative.split(path.sep)[0] || "geral";
-      const title = filename.replace(/\.(pdf|md|txt)$/i, "").replace(/_/g, " ").replace(/-/g, " ");
+      const title = filename.replace(/\.(pdf|md|txt)$/i, "").replaceAll("_", " ").replaceAll("-", " ");
 
       const buffer = await fs.readFile(file);
       const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
@@ -95,7 +95,7 @@ export async function runIngestion() {
 
       await ingestDocument({
         title: finalTitle,
-        filename: relative.replace(/\\/g, "/"), // Manter relativo normalizado
+        filename: relative.replaceAll("\\", "/"), // Manter relativo normalizado
         category,
         text: textContent,
         checksum,

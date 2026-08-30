@@ -317,9 +317,9 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div className="space-y-2">
             <div className="flex items-center justify-between border-b border-slate-800 print:border-gray-300 pb-1">
-              <label className="font-bold uppercase tracking-wider text-emerald-400 print:text-black text-[11px]">
+              <span className="font-bold uppercase tracking-wider text-emerald-400 print:text-black text-[11px]">
                 Antecedentes e Comorbidades
-              </label>
+              </span>
               <button
                 type="button"
                 onClick={() => handleAddListItem('pastMedicalHistory')}
@@ -349,9 +349,9 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
 
           <div className="space-y-2">
             <div className="flex items-center justify-between border-b border-slate-800 print:border-gray-300 pb-1">
-              <label className="font-bold uppercase tracking-wider text-emerald-400 print:text-black text-[11px]">
+              <span className="font-bold uppercase tracking-wider text-emerald-400 print:text-black text-[11px]">
                 Medicamentos em Uso e Alergias
-              </label>
+              </span>
               <button
                 type="button"
                 onClick={() => handleAddListItem('currentMedications')}

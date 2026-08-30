@@ -342,7 +342,7 @@ Responda APENAS o JSON puro no formato:
       });
 
       const rawText = response.text || "";
-      const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const cleaned = rawText.replaceAll("```json", "").replaceAll("```JSON", "").replaceAll("```", "").trim();
       const parsed = JSON.parse(cleaned);
 
       if (Array.isArray(parsed) && parsed.length > 0) {

@@ -276,7 +276,7 @@ export class ExternalEvidenceService {
       const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
       for (const item of items) {
-        const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]*>/g, "") : "Artigo Científico SciELO";
+        const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]+>/g, "") : "Artigo Científico SciELO";
         const titleLower = title.toLowerCase();
         
         // Validação Semântica Estrita: o título deve conter ao menos um dos termos clínicos pesquisados
@@ -363,7 +363,7 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]*>/g, "") : "Cochrane Systematic Review";
+        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Cochrane Systematic Review";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const doiArticle = item.articleids?.find(a => a.idtype === "doi")?.value || null;
@@ -432,7 +432,7 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]*>/g, "") : "Artigo PubMed";
+        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Artigo PubMed";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const sourceName = item.source || "NCBI PubMed";

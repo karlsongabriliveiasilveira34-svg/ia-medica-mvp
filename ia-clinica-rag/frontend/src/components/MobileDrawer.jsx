@@ -68,12 +68,20 @@ export function MobileDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex md:hidden">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex md:hidden"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
       
       {/* Overlay com Backdrop Blur */}
-      <div 
+      <button 
+        type="button"
+        aria-label="Fechar menu lateral"
         onClick={onClose}
-        className="fixed inset-0 bg-[#17231f]/60 backdrop-blur-sm transition-opacity animate-fadeIn"
+        className="fixed inset-0 bg-[#17231f]/60 backdrop-blur-sm transition-opacity animate-fadeIn cursor-default border-none p-0 w-full h-full"
       />
 
       {/* Painel da Gaveta Deslizante */}

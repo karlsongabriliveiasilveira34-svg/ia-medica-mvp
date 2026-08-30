@@ -226,7 +226,7 @@ simuladoRouter.get(
             userEmail: r.user_email,
             score: r.score,
             totalQuestions: r.total_questions,
-            percentage: parseFloat(r.percentage),
+            percentage: Number.parseFloat(r.percentage),
             themeStats: typeof r.theme_stats === 'string' ? JSON.parse(r.theme_stats) : r.theme_stats,
             durationSeconds: r.duration_seconds,
             createdAt: r.created_at

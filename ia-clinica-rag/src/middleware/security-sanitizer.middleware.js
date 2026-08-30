@@ -62,7 +62,7 @@ export function cleanXSSString(val) {
 
   return val
     // Remove null bytes
-    .replace(/\0/g, '')
+    .replaceAll('\0', '')
     // Remove tags de script
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     // Remove iframes e embeds

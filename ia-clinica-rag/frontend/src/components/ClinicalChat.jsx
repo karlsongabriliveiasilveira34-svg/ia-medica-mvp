@@ -444,7 +444,7 @@ export function ClinicalChat({
         return <strong key={i} className="font-semibold text-[#17231f]">{part.slice(2, -2)}</strong>;
       }
       if (/^\[Fonte \d+\]$/.test(part)) {
-        const num = parseInt(part.replace(/\D/g, ''), 10);
+        const num = Number.parseInt(part.replace(/\D/g, ''), 10);
         return (
           <span
             key={i}

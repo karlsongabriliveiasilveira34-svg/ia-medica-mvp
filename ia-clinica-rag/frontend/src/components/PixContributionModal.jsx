@@ -143,8 +143,12 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[92vh] overflow-y-auto space-y-5 text-[#17231f]">
         
@@ -196,9 +200,9 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
           <div className="space-y-5 animate-fadeIn">
             {/* Seletor de Valores Sugeridos */}
             <div>
-              <label className="text-xs font-bold text-[#17231f] block mb-2">
+              <span className="text-xs font-bold text-[#17231f] block mb-2">
                 Escolha o valor da contribuição:
-              </label>
+              </span>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {suggestedAmounts.map((val) => (
                   <button
@@ -291,11 +295,12 @@ export function PixContributionModal({ isOpen, onClose, initialData, onPaymentCo
 
                 {/* Copia e Cola */}
                 <div>
-                  <label className="text-xs font-bold text-[#17231f] block mb-1">
+                  <label htmlFor="pix-copia-cola" className="text-xs font-bold text-[#17231f] block mb-1">
                     Código PIX (Copia e Cola):
                   </label>
                   <div className="flex items-center gap-2">
                     <input
+                      id="pix-copia-cola"
                       type="text"
                       readOnly
                       value={pixOrder.copyPasteCode || ''}

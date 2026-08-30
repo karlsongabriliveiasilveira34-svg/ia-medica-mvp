@@ -127,8 +127,12 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <div className="relative w-full max-w-4xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-6">
         
@@ -241,9 +245,13 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
               <span className="font-semibold">{usageData.ui.statusMessage}</span>
             </div>
             {usageData.plan.id !== 'medico' && (
-              <span className="font-bold text-[11px] uppercase tracking-wider underline cursor-pointer" onClick={() => document.getElementById('plans-grid')?.scrollIntoView({ behavior: 'smooth' })}>
+              <button
+                type="button"
+                className="font-bold text-[11px] uppercase tracking-wider underline cursor-pointer bg-transparent border-none p-0 text-inherit"
+                onClick={() => document.getElementById('plans-grid')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 Fazer Upgrade
-              </span>
+              </button>
             )}
           </div>
         )}

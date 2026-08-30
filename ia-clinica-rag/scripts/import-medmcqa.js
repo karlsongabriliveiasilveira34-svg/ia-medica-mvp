@@ -151,12 +151,12 @@ async function runImportPipeline() {
               }
 
               // Validar resposta correta (cop pode vir de 0 a 3 ou 1 a 4)
-              let copIndex = typeof row.cop === "number" ? row.cop : parseInt(row.cop, 10);
+              let copIndex = typeof row.cop === "number" ? row.cop : Number.parseInt(row.cop, 10);
               if (copIndex >= 1 && copIndex <= 4 && row.cop_type !== "zero_based") {
                 // Ajustar se vier 1-indexado
                 copIndex = copIndex >= 0 && copIndex < 4 ? copIndex : (copIndex - 1);
               }
-              if (isNaN(copIndex) || copIndex < 0 || copIndex > 3) {
+              if (Number.isNaN(copIndex) || copIndex < 0 || copIndex > 3) {
                 copIndex = 0;
               }
 

@@ -238,9 +238,9 @@ export function PediatricModule({ onOpenChatWithContext }) {
             {/* Apresentação do Fármaco */}
             {doseResult && doseResult.medication && (
               <div>
-                <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+                <span className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                   Apresentação / Concentração
-                </label>
+                </span>
                 <div className="p-3 bg-[#f4f1ea] rounded-2xl border border-[#17231f]/10 text-xs font-medium text-[#17231f]">
                   {doseResult.medication.presentation}
                 </div>
@@ -503,10 +503,11 @@ export function PediatricModule({ onOpenChatWithContext }) {
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="w-48">
-              <label className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
+              <label htmlFor="vaccine-age-months" className="text-xs font-bold text-[#4f5c56] uppercase tracking-wider block mb-1.5">
                 Idade Atual (Meses)
               </label>
               <input
+                id="vaccine-age-months"
                 type="number"
                 value={vaccineAgeMonths}
                 onChange={(e) => setVaccineAgeMonths(e.target.value)}

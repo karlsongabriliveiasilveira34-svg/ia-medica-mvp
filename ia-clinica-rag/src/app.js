@@ -54,7 +54,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.endsWith(".railway.app")) {
       callback(null, true);
     } else {
-      callback(null, true);
+      callback(new Error("Origem não autorizada por política de CORS"));
     }
   },
   credentials: true,

@@ -885,7 +885,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
                   />
                   <button
                     onClick={() => {
-                      const num = parseInt(pageJumpInput, 10);
+                      const num = Number.parseInt(pageJumpInput, 10);
                       if (num >= 1 && num <= totalPages) {
                         setCurrentPage(num);
                         setCurrentQuestionIndex(0);
@@ -1030,7 +1030,15 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
 
                 {/* Cartão de Flashcard (Frente e Verso com Efeito) */}
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setIsFlipped(!isFlipped)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsFlipped(!isFlipped);
+                    }
+                  }}
                   className="min-h-[240px] bg-gradient-to-br from-[#faf8f5] to-[#ece7dc] p-8 rounded-3xl border-2 border-dashed border-[#213f34]/30 flex flex-col items-center justify-center space-y-4 cursor-pointer shadow-inner hover:border-[#213f34]/60 transition"
                 >
                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#5e6c65] bg-white/90 px-3 py-1 rounded-full shadow-sm">

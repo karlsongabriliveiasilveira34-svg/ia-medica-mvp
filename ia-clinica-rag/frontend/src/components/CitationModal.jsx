@@ -16,8 +16,12 @@ export function CitationModal({ citation, onClose }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose?.()}
     >
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden glass-panel">
         {/* Header */}

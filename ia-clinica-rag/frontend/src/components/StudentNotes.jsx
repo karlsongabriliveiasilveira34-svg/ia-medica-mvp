@@ -600,7 +600,15 @@ export function StudentNotes({ user, activeTab, onOpenTutorChat }) {
                 return (
                   <div
                     key={note.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => selectNote(note)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectNote(note);
+                      }
+                    }}
                     className={`p-3.5 rounded-2xl cursor-pointer transition-all border text-left ${
                       isSelected
                         ? 'bg-[#213f34] text-white border-[#213f34] shadow-md ring-1 ring-[#213f34]'

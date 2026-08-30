@@ -150,7 +150,7 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
 
     // Calcular tamanho aproximado em KB a partir do base64
     const stringLength = capturedPhoto.length - 'data:image/jpeg;base64,'.length;
-    const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.5624896334383615;
+    const sizeInBytes = Math.round(stringLength * 0.75);
     const sizeKb = (sizeInBytes / 1024).toFixed(1);
 
     onPhotoCaptured({
@@ -197,8 +197,12 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17231f]/85 p-3 sm:p-5 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && handleCloseModal()}
+      onKeyDown={(e) => e.key === 'Escape' && handleCloseModal()}
     >
       <div className="relative flex flex-col w-full max-w-xl max-h-[92vh] overflow-hidden rounded-[2rem] bg-slate-950 border border-slate-800 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)] text-white">
         
@@ -211,6 +215,7 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
             <div>
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 Captura de Foto Clínica
+                {' '}
                 <span className="text-[10px] font-semibold bg-[#213f34] text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
                   LGPD Segura
                 </span>

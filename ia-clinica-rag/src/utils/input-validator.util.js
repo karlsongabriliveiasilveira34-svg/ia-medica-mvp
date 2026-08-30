@@ -16,7 +16,7 @@ export function validateInputSanity(input) {
   }
 
   // Permitir saudações curtas legítimas (ex.: "oi", "olá", "hi")
-  const validShortGreetings = /^(oi+!*|ol[áa]!*|hi!*|hey!*|bom\s+dia|boa\s+tarde|boa\s+noite)[\s!.]*$/i;
+  const validShortGreetings = /^(oi+|ol[áa]|hi|hey|bom\s+dia|boa\s+tarde|boa\s+noite)[!?.\s]*$/i;
   if (validShortGreetings.test(trimmed)) {
     return { isValid: true, reason: "GREETING" };
   }

@@ -25,7 +25,7 @@ async function ingestUserPdfArticles() {
       const checksum = crypto.createHash("sha256").update(buffer).digest("hex");
 
       const pdfData = await extractPdf(buffer);
-      const title = filename.replace(/\.pdf$/i, "").replace(/_/g, " ").replace(/-/g, " ");
+      const title = filename.replace(/\.pdf$/i, "").replaceAll("_", " ").replaceAll("-", " ");
 
       if (!pdfData.text || pdfData.text.trim().length < 50) {
         console.warn(`⚠️ Texto insuficiente no PDF ${filename}, ignorando.`);

@@ -168,7 +168,9 @@ export function ConsultationMediaManager({ images = [], attachments = [], onAddM
           </div>
 
           <div className="relative rounded-xl overflow-hidden bg-black max-w-lg mx-auto aspect-video flex items-center justify-center">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover">
+              <track kind="captions" />
+            </video>
             <canvas ref={canvasRef} className="hidden" />
           </div>
 
@@ -201,12 +203,17 @@ export function ConsultationMediaManager({ images = [], attachments = [], onAddM
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {images.map((img) => (
               <div key={img.id} className="relative group rounded-xl overflow-hidden bg-slate-950 border border-slate-800 p-1.5 flex flex-col justify-between">
-                <img
-                  src={img.dataUrl}
-                  alt={img.name}
-                  className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                <button
+                  type="button"
                   onClick={() => setPreviewMedia(img)}
-                />
+                  className="w-full p-0 bg-transparent border-0 rounded-lg overflow-hidden cursor-pointer text-left focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <img
+                    src={img.dataUrl}
+                    alt={img.name}
+                    className="w-full h-24 object-cover rounded-lg hover:opacity-90 transition-opacity"
+                  />
+                </button>
                 <div className="pt-1.5 px-1 flex items-center justify-between">
                   <span className="text-[10px] text-slate-300 truncate max-w-[100px]">{img.name}</span>
                   <div className="flex items-center gap-1">

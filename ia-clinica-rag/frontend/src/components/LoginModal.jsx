@@ -210,8 +210,12 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => closable && e.target === e.currentTarget && onClose?.()}
+      onKeyDown={(e) => closable && e.key === 'Escape' && onClose?.()}
     >
       <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto">
         {closable && (
@@ -359,7 +363,15 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
                 {/* Google reCAPTCHA Checkbox Box */}
                 <div 
+                  role="button"
+                  tabIndex={0}
                   onClick={handleRecaptchaToggle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleRecaptchaToggle();
+                    }
+                  }}
                   className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition shadow-inner"
                 >
                   <div className="flex items-center gap-3">
@@ -474,7 +486,15 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
                 {/* reCAPTCHA Checkbox Box */}
                 <div 
+                  role="button"
+                  tabIndex={0}
                   onClick={handleRecaptchaToggle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleRecaptchaToggle();
+                    }
+                  }}
                   className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition"
                 >
                   <div className="flex items-center gap-3">
@@ -564,7 +584,15 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
               {/* reCAPTCHA Checkbox Box */}
               <div 
+                role="button"
+                tabIndex={0}
                 onClick={handleRecaptchaToggle}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleRecaptchaToggle();
+                  }
+                }}
                 className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition"
               >
                 <div className="flex items-center gap-3">

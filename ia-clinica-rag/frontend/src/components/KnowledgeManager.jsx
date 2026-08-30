@@ -577,9 +577,10 @@ export function KnowledgeManager() {
 
               {/* File Dropzone */}
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Arquivo PDF Oficial</label>
+                <label htmlFor="ingest-pdf-file" className="block text-xs font-medium text-slate-300 mb-1.5">Arquivo PDF Oficial</label>
                 <div className="flex items-center gap-3">
                   <input
+                    id="ingest-pdf-file"
                     type="file"
                     accept=".pdf"
                     required
