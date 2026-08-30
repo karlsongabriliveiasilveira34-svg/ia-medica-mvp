@@ -23,6 +23,84 @@ let memoryFlashcards = allRawFlashcards.map((f, idx) => normalizeFlashcard(f, id
 let memoryAnswers = [];
 const seenQuestionHashes = new Set(memoryQuestions.map(q => q.hash));
 
+function parseQuestionsJson(text) {
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.questoes)) return parsed.questoes;
+    if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function extractJsonSnippet(text) {
+  if (!text) return "";
+  const firstOpenBracket = text.indexOf("[");
+  const lastCloseBracket = text.lastIndexOf("]");
+  const firstOpenBrace = text.indexOf("{");
+  const lastCloseBrace = text.lastIndexOf("}");
+
+  if (firstOpenBracket !== -1 && lastCloseBracket > firstOpenBracket) {
+    return text.slice(firstOpenBracket, lastCloseBracket + 1);
+  }
+  if (firstOpenBrace !== -1 && lastCloseBrace > firstOpenBrace) {
+    return text.slice(firstOpenBrace, lastCloseBrace + 1);
+  }
+  return "";
+}
+
+function buildBatchPrompt(needed, especialidade, tema, dificuldadeEspecifica) {
+  return `Você é um preceptor médico especialista e elaborador de provas do ENARE e Revalida.
+Gere exatamente ${needed} questões de múltipla escolha inéditas de residência médica.
+Especialidade: "${especialidade}".
+Tema/Foco: "${tema}".
+Dificuldade: "${dificuldadeEspecifica}".
+
+Retorne estritamente um JSON no formato:
+{
+  "questoes": [
+    {
+      "enunciado": "Caso clínico detalhado com idade, queixa principal, tempo de evolução, exame físico com sinais vitais e dados laboratoriais...",
+      "alternativas": [
+        "A) Conduta ou diagnóstico 1",
+        "B) Conduta ou diagnóstico 2",
+        "C) Conduta ou diagnóstico 3",
+        "D) Conduta ou diagnóstico 4"
+      ],
+      "resposta_correta": 0,
+      "explicacao": "Resolução comentada profunda explicando por que a alternativa correta é a conduta de escolha e refutando detalhadamente cada uma das outras alternativas.",
+      "banca": "ENARE / MedIa Inédita",
+      "dificuldade": "${dificuldadeEspecifica}"
+    }
+  ]
+}`;
+}
+
+function processBatchItems(rawBatch, meta, validQuestions, targetCount) {
+  for (const item of rawBatch) {
+    if (validQuestions.length >= targetCount) break;
+    const normalized = normalizeQuestion({
+      ...item,
+      subject: meta.especialidade,
+      topic: meta.tema,
+      difficulty: meta.dificuldadeEspecifica,
+      source: "ENARE / MedIa Inédita",
+      sourceUrl: "https://enare.ebserh.gov.br"
+    }, validQuestions.length + 1);
+
+    if (!normalized) continue;
+    if (seenQuestionHashes.has(normalized.hash)) continue;
+    const isDuplicate = validQuestions.some((existing) => calculateJaccardSimilarity(existing.question, normalized.question) > 0.80);
+    if (isDuplicate) continue;
+
+    seenQuestionHashes.add(normalized.hash);
+    validQuestions.push(normalized);
+  }
+}
+
 export class QuestoesGeneratorService {
   /**
    * 1. LISTA QUESTÕES COM PAGINAÇÃO, FILTROS E CONEXÃO REAL AO BANCO
@@ -275,18 +353,11 @@ export class QuestoesGeneratorService {
       const response = await genAI.models.generateContent({
         model: env.geminiModel || "gemini-3.6-flash",
         contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
+        config: { responseMimeType: "application/json" }
       });
-
       const text = response?.text?.();
-      if (!text) return [];
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed)) return parsed;
-      if (parsed && Array.isArray(parsed.questoes)) return parsed.questoes;
-      if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
-      return [];
+      const parsed = parseQuestionsJson(text);
+      if (parsed.length > 0) return parsed;
     } catch (err) {
       console.warn("[QUESTOES] Fallback para SDK legada do Gemini:", err.message);
     }
@@ -296,31 +367,12 @@ export class QuestoesGeneratorService {
       const model = legacyAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       const result = await model.generateContent(prompt);
       const text = result?.response?.text();
-      if (!text) return [];
-
-      const firstOpenBracket = text.indexOf('[');
-      const lastCloseBracket = text.lastIndexOf(']');
-      const firstOpenBrace = text.indexOf('{');
-      const lastCloseBrace = text.lastIndexOf('}');
-      let jsonString = null;
-
-      if (firstOpenBracket !== -1 && lastCloseBracket > firstOpenBracket) {
-        jsonString = text.slice(firstOpenBracket, lastCloseBracket + 1);
-      } else if (firstOpenBrace !== -1 && lastCloseBrace > firstOpenBrace) {
-        jsonString = text.slice(firstOpenBrace, lastCloseBrace + 1);
-      }
-
-      if (jsonString) {
-        const parsed = JSON.parse(jsonString);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed && Array.isArray(parsed.questoes)) return parsed.questoes;
-        if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
-      }
+      const jsonString = extractJsonSnippet(text);
+      return parseQuestionsJson(jsonString);
     } catch (legacyErr) {
       console.error("[QUESTOES] Erro ao chamar IA para gerar questões:", legacyErr.message);
+      return [];
     }
-
-    return [];
   }
 
   /**
@@ -335,56 +387,11 @@ export class QuestoesGeneratorService {
     while (validQuestions.length < TARGET_COUNT && attempts < maxAttempts) {
       attempts++;
       const needed = TARGET_COUNT - validQuestions.length;
-      const prompt = `Você é um preceptor médico especialista e elaborador de provas do ENARE e Revalida.
-Gere exatamente ${needed} questões de múltipla escolha inéditas de residência médica.
-Especialidade: "${especialidade}".
-Tema/Foco: "${tema}".
-Dificuldade: "${dificuldadeEspecifica}".
-
-Retorne estritamente um JSON no formato:
-{
-  "questoes": [
-    {
-      "enunciado": "Caso clínico detalhado com idade, queixa principal, tempo de evolução, exame físico com sinais vitais e dados laboratoriais...",
-      "alternativas": [
-        "A) Conduta ou diagnóstico 1",
-        "B) Conduta ou diagnóstico 2",
-        "C) Conduta ou diagnóstico 3",
-        "D) Conduta ou diagnóstico 4"
-      ],
-      "resposta_correta": 0,
-      "explicacao": "Resolução comentada profunda explicando por que a alternativa correta é a conduta de escolha e refutando detalhadamente cada uma das outras alternativas.",
-      "banca": "ENARE / MedIa Inédita",
-      "dificuldade": "${dificuldadeEspecifica}"
-    }
-  ]
-}`;
-
+      const prompt = buildBatchPrompt(needed, especialidade, tema, dificuldadeEspecifica);
       const rawBatch = await this.callGeminiForQuestions(prompt);
-      for (const item of rawBatch) {
-        if (validQuestions.length >= TARGET_COUNT) break;
-        const normalized = normalizeQuestion({
-          ...item,
-          subject: especialidade,
-          topic: tema,
-          difficulty: dificuldadeEspecifica,
-          source: "ENARE / MedIa Inédita",
-          sourceUrl: "https://enare.ebserh.gov.br"
-        }, validQuestions.length + 1);
-
-        if (normalized) {
-          // Deduplicação estrita por hash SHA-256 e similaridade de Jaccard
-          if (seenQuestionHashes.has(normalized.hash)) continue;
-          const isDuplicate = validQuestions.some(existing => calculateJaccardSimilarity(existing.question, normalized.question) > 0.80);
-          if (isDuplicate) continue;
-
-          seenQuestionHashes.add(normalized.hash);
-          validQuestions.push(normalized);
-        }
-      }
+      processBatchItems(rawBatch, { especialidade, tema, dificuldadeEspecifica }, validQuestions, TARGET_COUNT);
     }
 
-    // Persistir questões geradas no PostgreSQL e na memória
     for (const q of validQuestions) {
       try {
         await pool.query(
@@ -401,7 +408,7 @@ Retorne estritamente um JSON no formato:
             q.explanation || q.explicacao
           ]
         );
-      } catch (e) {}
+      } catch { }
 
       memoryQuestions.unshift(q);
     }

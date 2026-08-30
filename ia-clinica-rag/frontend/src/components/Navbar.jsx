@@ -2,6 +2,60 @@ import React, { useState } from 'react';
 import { ArrowRight, Database, FileText, MessageSquareText, Users, Baby, Smartphone, GraduationCap, Zap, DollarSign, LogOut, User, Sparkles, Stethoscope, BookOpen, Layers, HelpCircle, Cpu, Calculator, MessageSquarePlus, Gift, Bug, Menu } from 'lucide-react';
 import { MedIaIcon } from './MedIaLogo';
 
+function isStudentTab(tab) {
+  return [
+    'anotacoes',
+    'student_notes',
+    'simulado',
+    'student_notebook',
+    'flashcards',
+    'quizzes',
+    'caderno',
+    'library'
+  ].includes(tab);
+}
+
+function LandingNavActions({ scrollToSection, onOpenUsageModal, onOpenFeedbackModal, setActiveTab, onOpenDrawer }) {
+  return (
+    <>
+      <nav className="hidden items-center gap-7 text-sm text-[#5e6c65] md:flex">
+        <button onClick={() => scrollToSection('produto')} className="transition hover:text-[#17231f]">Produto</button>
+        <button onClick={() => scrollToSection('como-funciona')} className="transition hover:text-[#17231f]">Como funciona</button>
+        <button onClick={() => scrollToSection('planos')} className="transition hover:text-[#17231f]">Planos</button>
+        <button onClick={() => scrollToSection('faq')} className="transition hover:text-[#17231f]">Dúvidas</button>
+      </nav>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onOpenUsageModal}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/90 text-amber-950 text-xs font-black hover:bg-amber-400 transition shadow-sm"
+        >
+          <Gift className="w-3.5 h-3.5" />
+          <span>Cupom 7 Dias Grátis</span>
+        </button>
+        <button
+          onClick={onOpenFeedbackModal}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#17231f]/15 bg-white/70 text-[#17231f] text-xs font-bold hover:bg-white transition"
+        >
+          <Bug className="w-3.5 h-3.5 text-rose-600" />
+          <span>Feedback & Bugs</span>
+        </button>
+        <button onClick={() => setActiveTab('roteamento')} className="group flex min-h-10 items-center gap-2 rounded-full bg-[#213f34] px-4 sm:px-5 text-sm font-semibold text-white transition hover:bg-[#172f27]">
+          Testar <span className="hidden sm:inline">a demo</span><ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </button>
+        {onOpenDrawer && (
+          <button
+            onClick={onOpenDrawer}
+            className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl bg-[#e5dfd5] text-[#17231f] active:scale-95 transition"
+            aria-label="Abrir Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function Navbar({
   activeTab,
   setActiveTab,
@@ -17,6 +71,7 @@ export function Navbar({
 }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const isLanding = activeTab === 'landing';
+  const isStudent = isStudentTab(activeTab);
 
   const scrollToSection = (id) => {
     if (!isLanding) {
@@ -40,8 +95,6 @@ export function Navbar({
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#17231f]/10 bg-[#f4f1ea]/95 text-[#17231f] backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-3 px-3 sm:px-6 lg:px-12">
-        
-        {/* Logo MedIa */}
         <button onClick={() => setActiveTab('landing')} className="flex items-center gap-2.5 group shrink-0" aria-label="Ir para o início">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#213f34] text-[#f4f1ea] transition-transform group-hover:scale-105 shadow-sm">
             <MedIaIcon className="h-6 w-6 text-[#f4f1ea]" strokeWidth={5} ringStrokeWidth={4} />
@@ -53,71 +106,22 @@ export function Navbar({
         </button>
 
         {isLanding ? (
-          <>
-            <nav className="hidden items-center gap-7 text-sm text-[#5e6c65] md:flex">
-              <button onClick={() => scrollToSection('produto')} className="transition hover:text-[#17231f]">Produto</button>
-              <button onClick={() => scrollToSection('como-funciona')} className="transition hover:text-[#17231f]">Como funciona</button>
-              <button onClick={() => scrollToSection('planos')} className="transition hover:text-[#17231f]">Planos</button>
-              <button onClick={() => scrollToSection('faq')} className="transition hover:text-[#17231f]">Dúvidas</button>
-            </nav>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onOpenUsageModal}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/90 text-amber-950 text-xs font-black hover:bg-amber-400 transition shadow-sm"
-              >
-                <Gift className="w-3.5 h-3.5" />
-                <span>Cupom 7 Dias Grátis</span>
-              </button>
-              <button
-                onClick={onOpenFeedbackModal}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#17231f]/15 bg-white/70 text-[#17231f] text-xs font-bold hover:bg-white transition"
-              >
-                <Bug className="w-3.5 h-3.5 text-rose-600" />
-                <span>Feedback & Bugs</span>
-              </button>
-              <button onClick={() => setActiveTab('roteamento')} className="group flex min-h-10 items-center gap-2 rounded-full bg-[#213f34] px-4 sm:px-5 text-sm font-semibold text-white transition hover:bg-[#172f27]">
-                Testar <span className="hidden sm:inline">a demo</span><ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </button>
-              {onOpenDrawer && (
-                <button
-                  onClick={onOpenDrawer}
-                  className="flex md:hidden h-9 w-9 items-center justify-center rounded-xl bg-[#e5dfd5] text-[#17231f] active:scale-95 transition"
-                  aria-label="Abrir Menu"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </>
+          <LandingNavActions
+            scrollToSection={scrollToSection}
+            onOpenUsageModal={onOpenUsageModal}
+            onOpenFeedbackModal={onOpenFeedbackModal}
+            setActiveTab={setActiveTab}
+            onOpenDrawer={onOpenDrawer}
+          />
         ) : (
           <div className="flex items-center gap-4 flex-1 justify-between max-w-6xl">
-            
-            {/* Seletor Minimalista de 2 Modos: Médico | Estudante com Ícones */}
             <div className="inline-flex rounded-xl bg-[#e5dfd5] p-1 border border-[#17231f]/10 shrink-0">
               <button
                 onClick={() => {
-                  if (
-                    activeTab === 'anotacoes' ||
-                    activeTab === 'student_notes' ||
-                    activeTab === 'simulado' ||
-                    activeTab === 'student_notebook' ||
-                    activeTab === 'flashcards' ||
-                    activeTab === 'quizzes' ||
-                    activeTab === 'caderno' ||
-                    activeTab === 'library'
-                  ) {
-                    setActiveTab('roteamento');
-                  }
+                  if (isStudent) setActiveTab('roteamento');
                 }}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab !== 'anotacoes' &&
-                  activeTab !== 'student_notes' &&
-                  activeTab !== 'simulado' &&
-                  activeTab !== 'student_notebook' &&
-                  activeTab !== 'flashcards' &&
-                  activeTab !== 'quizzes' &&
-                  activeTab !== 'caderno' &&
-                  activeTab !== 'library'
+                  !isStudent
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
                 }`}
@@ -128,28 +132,10 @@ export function Navbar({
 
               <button
                 onClick={() => {
-                  if (
-                    activeTab !== 'anotacoes' &&
-                    activeTab !== 'student_notes' &&
-                    activeTab !== 'simulado' &&
-                    activeTab !== 'student_notebook' &&
-                    activeTab !== 'flashcards' &&
-                    activeTab !== 'quizzes' &&
-                    activeTab !== 'caderno' &&
-                    activeTab !== 'library'
-                  ) {
-                    setActiveTab('anotacoes');
-                  }
+                  if (!isStudent) setActiveTab('anotacoes');
                 }}
                 className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  activeTab === 'anotacoes' ||
-                  activeTab === 'student_notes' ||
-                  activeTab === 'simulado' ||
-                  activeTab === 'student_notebook' ||
-                  activeTab === 'flashcards' ||
-                  activeTab === 'quizzes' ||
-                  activeTab === 'caderno' ||
-                  activeTab === 'library'
+                  isStudent
                     ? 'bg-[#213f34] text-white shadow-sm'
                     : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
                 }`}
@@ -159,19 +145,8 @@ export function Navbar({
               </button>
             </div>
 
-            {/* Navegação Exclusiva por Modo com Ícones Lucide */}
             <nav className="flex items-center gap-1 rounded-full border border-[#17231f]/10 bg-[#e8e2d7] p-1 overflow-x-auto max-w-full">
-              {/* MODO ESTUDANTE: Exibir Anotações IA, Simulado 50Q, Flashcards, Banco e NotebookLM */}
-              {(
-                activeTab === 'anotacoes' ||
-                activeTab === 'student_notes' ||
-                activeTab === 'simulado' ||
-                activeTab === 'student_notebook' ||
-                activeTab === 'flashcards' ||
-                activeTab === 'quizzes' ||
-                activeTab === 'caderno' ||
-                activeTab === 'library'
-              ) ? (
+              {isStudent ? (
                 <>
                   <TabButton active={activeTab === 'anotacoes' || activeTab === 'student_notes'} onClick={() => setActiveTab('anotacoes')} icon={FileText}>Anotações (IA)</TabButton>
                   <TabButton active={activeTab === 'simulado'} onClick={() => setActiveTab('simulado')} icon={Award}>Simulado 50Q</TabButton>
@@ -180,7 +155,6 @@ export function Navbar({
                   <TabButton active={activeTab === 'student_notebook' || activeTab === 'caderno'} onClick={() => setActiveTab('student_notebook')} icon={BookOpen}>NotebookLM</TabButton>
                 </>
               ) : (
-                /* MODO MÉDICO: Exibir APENAS Especialidades, Roteamento (IA), Calculadoras, Fila do Dia, Pacientes */
                 <>
                   <TabButton active={activeTab === 'especialidades'} onClick={() => setActiveTab('especialidades')} icon={Stethoscope}>Especialidades</TabButton>
                   <TabButton active={activeTab === 'roteamento' || activeTab === 'chat'} onClick={() => setActiveTab('roteamento')} icon={Cpu}>Roteamento (IA)</TabButton>

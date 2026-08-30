@@ -68,6 +68,27 @@ export function calculateJaccardSimilarity(textA, textB) {
   return union === 0 ? 0 : intersection / union;
 }
 
+function formatQuestionOptions(rawOptions) {
+  if (!rawOptions || rawOptions.length < 4) return null;
+  return rawOptions.slice(0, 4).map((opt, idx) => {
+    const str = String(opt || "").trim();
+    const prefix = `${String.fromCodePoint(65 + idx)}) `;
+    return str.startsWith(prefix) ? str : `${prefix}${str}`;
+  });
+}
+
+function resolveCorrectAnswerIndex(rawCorrect, options) {
+  if (typeof rawCorrect === "string") {
+    const matchIdx = options.findIndex((opt) => opt.toLowerCase().includes(rawCorrect.toLowerCase()));
+    return matchIdx >= 0 ? matchIdx : 0;
+  }
+  const parsed = Number.parseInt(rawCorrect, 10);
+  if (Number.isNaN(parsed) || parsed < 0 || parsed >= options.length) {
+    return 0;
+  }
+  return parsed;
+}
+
 /**
  * Normaliza e padroniza qualquer objeto de questão (banco, IA ou API externa)
  */
@@ -78,25 +99,12 @@ export function normalizeQuestion(raw, fallbackIndex = 1) {
   const question = (raw.question || raw.enunciado || "").trim();
   if (!question || question.length < 15) return null;
 
-  let rawOptions = Array.isArray(raw.options) ? raw.options : (Array.isArray(raw.alternativas) ? raw.alternativas : []);
-  if (!rawOptions || rawOptions.length < 4) return null;
+  const rawOptions = Array.isArray(raw.options) ? raw.options : (Array.isArray(raw.alternativas) ? raw.alternativas : []);
+  const options = formatQuestionOptions(rawOptions);
+  if (!options) return null;
 
-  const options = rawOptions.slice(0, 4).map((opt, idx) => {
-    const str = String(opt || "").trim();
-    const prefix = String.fromCodePoint(65 + idx) + ") ";
-    return str.startsWith(prefix) ? str : `${prefix}${str}`;
-  });
-
-  let correctAnswer = raw.correctAnswer !== undefined ? raw.correctAnswer : (raw.resposta_correta !== undefined ? raw.resposta_correta : (raw.correct !== undefined ? raw.correct : 0));
-  if (typeof correctAnswer === "string") {
-    const matchIdx = options.findIndex(opt => opt.toLowerCase().includes(correctAnswer.toLowerCase()));
-    correctAnswer = matchIdx >= 0 ? matchIdx : 0;
-  } else {
-    correctAnswer = Number.parseInt(correctAnswer, 10);
-    if (Number.isNaN(correctAnswer) || correctAnswer < 0 || correctAnswer >= options.length) {
-      correctAnswer = 0;
-    }
-  }
+  const rawCorrect = raw.correctAnswer !== undefined ? raw.correctAnswer : (raw.resposta_correta !== undefined ? raw.resposta_correta : (raw.correct !== undefined ? raw.correct : 0));
+  const correctAnswer = resolveCorrectAnswerIndex(rawCorrect, options);
 
   const explanation = (raw.explanation || raw.explicacao || "Gabarito comentado baseado nas diretrizes oficiais vigentes.").trim();
   const subject = (raw.subject || raw.especialidade || raw.area || "Clínica Médica").trim();

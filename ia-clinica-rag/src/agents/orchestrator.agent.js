@@ -11,6 +11,198 @@ import { gemini, generateWithRetry } from "../services/gemini.service.js";
 import { env } from "../config/env.js";
 import { query } from "../config/database.js";
 
+async function loadConversationHistory(sessionId, logStep) {
+  if (!sessionId) return { historyFormattedText: "", conversationHistory: [] };
+  try {
+    const historyRes = await query(
+      `SELECT sender, text FROM conversation_messages WHERE session_id = $1 ORDER BY created_at ASC LIMIT 20`,
+      [sessionId]
+    );
+    const conversationHistory = historyRes.rows || [];
+    let historyFormattedText = "";
+    if (conversationHistory.length > 0) {
+      historyFormattedText = conversationHistory.map(m =>
+        `[${m.sender === 'user' ? 'Médico' : 'IA Clínica'}]: ${m.text}`
+      ).join("\n\n");
+      logStep("SESSION_HISTORY_LOADED", `Histórico de ${conversationHistory.length} mensagens carregado da sessão ${sessionId}.`);
+    }
+    return { historyFormattedText, conversationHistory };
+  } catch (err) {
+    console.warn("⚠️ Aviso ao carregar histórico da sessão:", err.message);
+    return { historyFormattedText: "", conversationHistory: [] };
+  }
+}
+
+function handleEarlyIntentShortCircuits({ prepResult, question, agent, userMode, auditTraceId, startTime, logStep }) {
+  if (prepResult.intentType === 'INVALID_INPUT') {
+    logStep("INVALID_INPUT_RESPONSE", `Entrada sem sentido ou lixo detectada`);
+    return {
+      status: "success",
+      answer: "Não foi possível interpretar sua solicitação. Por favor, envie uma pergunta, dúvida ou caso clínico válido relacionado à área da saúde.",
+      agent,
+      userMode,
+      auditTraceId,
+      consensusMatrix: null,
+      citations: [],
+      differentialDiagnoses: [],
+      warnings: [],
+      missingInformation: [],
+      followUpQuestions: ["O que é hipertensão arterial?", "Quais as condutas para dor torácica?", "Como tratar diabetes tipo 2?"],
+      confidence: { score: 1.0 },
+      metadata: { latencyMs: Date.now() - startTime }
+    };
+  }
+
+  if (prepResult.intentType === 'OUT_OF_SCOPE') {
+    logStep("OUT_OF_SCOPE_RESPONSE", `Pergunta fora do escopo médico detectada`);
+    return {
+      status: "success",
+      answer: "Esta pergunta está fora do objetivo da plataforma MedIa. Posso ajudar com conteúdos relacionados à medicina, saúde, prática clínica e estudos médicos.",
+      agent,
+      userMode,
+      auditTraceId,
+      consensusMatrix: null,
+      citations: [],
+      differentialDiagnoses: [],
+      warnings: [],
+      missingInformation: [],
+      followUpQuestions: ["Quais tópicos médicos estão disponíveis?", "Como explorar condutas clínicas?", "Como funciona a busca de diretrizes?"],
+      confidence: { score: 1.0 },
+      metadata: { latencyMs: Date.now() - startTime }
+    };
+  }
+
+  if (prepResult.intentType === 'CLINICAL_CASE_INCOMPLETE') {
+    logStep("INCOMPLETE_CASE_RESPONSE", `Caso clínico incompleto detectado`);
+    return {
+      status: "success",
+      answer: "Para analisar este caso clínico com precisão, preciso de mais informações sobre o paciente (como queixa principal, tempo de evolução, histórico de comorbidades ou sinais vitais disponíveis).",
+      agent,
+      userMode,
+      auditTraceId,
+      consensusMatrix: null,
+      citations: [],
+      differentialDiagnoses: [],
+      warnings: ["Entrada clínica incompleta — Dados anamnéticos vitais ausentes."],
+      missingInformation: ["Idade e sexo do paciente", "Tempo de evolução dos sintomas", "Histórico de comorbidades e medicações", "Sinais vitais atuais"],
+      followUpQuestions: [
+        "Paciente de 65 anos com dor torácica retroesternal há 2 horas",
+        "Criança de 5 anos com febre alta e tosse produtiva há 3 dias"
+      ],
+      confidence: { score: 1.0 },
+      metadata: { latencyMs: Date.now() - startTime }
+    };
+  }
+
+  if (prepResult.intentType === 'GREETING') {
+    logStep("GREETING_RESPONSE", `Saudação interceptada (Modo: ${userMode})`);
+    const greetingAnswer = userMode === 'student'
+      ? "👋 Olá! Seja bem-vindo ao Modo Estudante da plataforma MedIa. Como posso apoiar seus estudos hoje? Fique à vontade para fazer perguntas sobre conceitos médicos, mecanismos de fisiopatologia, farmacologia ou resumir temas de estudo."
+      : "👋 Olá! Este módulo é dedicado exclusivamente à análise de casos clínicos estruturados e apoio à decisão médica. Para saudações, conceitos ou dúvidas teóricas gerais, utilize o **Modo Estudante**. Se deseja avaliar um paciente, por favor descreva a queixa inicial, histórico ou sintomas do caso.";
+
+    return {
+      status: "success",
+      answer: greetingAnswer,
+      agent,
+      userMode,
+      auditTraceId,
+      consensusMatrix: null,
+      citations: [],
+      differentialDiagnoses: [],
+      warnings: [],
+      missingInformation: [],
+      followUpQuestions: userMode === 'student'
+        ? [
+            "O que é hipertensão arterial e qual sua fisiopatologia?",
+            "Explique o mecanismo de ação da metformina.",
+            "Quais os principais sintomas e diagnóstico de anemia ferropriva?"
+          ]
+        : [
+            "Descrever caso de paciente de 65 anos com dor torácica aguda",
+            "Avaliar paciente hipertenso descompensado na emergência",
+            "Investigar vertigem posicional paroxística benigna (VPPB)"
+          ],
+      confidence: { score: 1.0 },
+      metadata: { latencyMs: Date.now() - startTime }
+    };
+  }
+
+  return null;
+}
+
+function formatEvidenceContext(chunks, isDeepResearchMode) {
+  const promptChunks = (chunks && chunks.length > 0)
+    ? chunks.slice(0, isDeepResearchMode ? 14 : 8)
+    : [];
+
+  if (promptChunks.length === 0) return "Bases de conhecimento e literatura médica padrão.";
+
+  return promptChunks.map((c, idx) => {
+    const authorsStr = c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0
+      ? c.document_authors.join(", ")
+      : (c.authors ? (Array.isArray(c.authors) ? c.authors.join(", ") : c.authors) : "Metadado indisponível");
+    const yearStr = c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || "Metadado indisponível";
+    const orgStr = c.document_organization || c.organization || "Metadado indisponível";
+    const authStr = c.authority_level ? `Nível ${c.authority_level}` : "Nível 4 (Diretriz Oficial)";
+    const urlStr = c.canonical_url || c.url || "Metadado indisponível";
+
+    return `
+--- TRECHO [Fonte ${idx + 1}] ---
+Título Oficial do Documento: ${c.document_title || c.title || "Documento Clínico"}
+Nome do Arquivo / Registro: ${c.document_filename || c.filename || "Registro Oficial"}
+Instituição / Emissor Oficial: ${orgStr}
+Nível de Autoridade: ${authStr} | Nível de Evidência GRADE: ${c.gradeLevel || "Nível 2"}
+Autor(es): ${authorsStr}
+Ano de Publicação / Atualização: ${yearStr}
+URL Oficial Canônica: ${urlStr}
+Página: ${c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1)} | Seção: ${c.section_title || "Geral"}
+DOI / PMID: ${c.doi || c.pmid || "N/A"}
+Trecho do Texto:
+${c.content}
+`;
+  }).join("\n");
+}
+
+function buildPersonaAndIntentInstructions(isFollowUp, intentType, userMode, agent, historyFormattedText, imagePayload) {
+  const historyPromptSection = historyFormattedText
+    ? `\nHISTÓRICO ACUMULADO DO CASO CLÍNICO DA SESSÃO:\n${historyFormattedText}\n\nATENÇÃO: A mensagem atual do médico traz um novo dado ou pergunta que se SOMA ao histórico acima. Considere todo o quadro clínico acumulado para compor seu raciocínio integrativo.\n`
+    : "";
+
+  const strictModeInstructions = agent.strictEvidenceMode
+    ? `\nMODO DE ALTA ANCORAGEM: Priorize os fatos e dados diretamente contidos nos DOCUMENTOS DE REFERÊNCIA abaixo. Sempre que as diretrizes abordarem o tópico, fundamente com precisão e cite [Fonte X]. Caso um detalhe específico não conste nos trechos, forneça a orientação baseada no consenso médico consolidado com o devido aviso de transparência.\n`
+    : "";
+
+  const intentInstruction = isFollowUp
+    ? `\nINTENÇÃO IDENTIFICADA: PERGUNTA DE ACOMPANHAMENTO / TRATAMENTO (${intentType}).
+O médico fez uma dúvida pontual sobre o caso já em andamento.
+RESPONDA DIRETAMENTE À DÚVIDA (ex: conduta terapêutica, posologia exata, exames ou mecanismo), utilizando o histórico clínico já estabelecido.
+É TERMINANTEMENTE PROIBIDO:
+- Reiniciar a anamnese do zero ou solicitar que o médico relate os sintomas novamente.
+- Repetir perguntas de abertura de caso clínico.
+- Dizer frases genéricas como "para investigar o quadro, preciso saber...".
+Foque de forma imediata na conduta terapêutica, posologia, fármacos de 1ª linha e fundamentação científica.\n`
+    : `\nINTENÇÃO IDENTIFICADA: NOVO CASO / NOVOS SINTOMAS (${intentType}). Avalie o quadro completo apresentando diagnóstico integrativo, estratificação de gravidade e condutas indicadas.\n`;
+
+  const studentPersonaPrompt = userMode === 'student'
+    ? `\nMODO ESTUDANTE DE MEDICINA ATIVADO:
+- Explique detalhadamente a fisiopatologia molecular e anatômica subjacente.
+- Detalhe o raciocínio semiológico clínico passo a passo (como pensar clinicamente diante do sinal/sintoma).
+- Inclua ao final a seção: "## Correlação Prática e Pérola Clínica" com síntese acadêmica e pontos-chave para fixação.\n`
+    : `\nMODO MÉDICO ASSISTENTE ATIVADO:
+- Foco em objetividade, segurança da decisão, posologia exata e conduta imediata.
+- Destaque claro de alertas de gravidade (Red Flags) e suporte para registro em prontuário.\n`;
+
+  const imageInstruction = imagePayload
+    ? `\nANÁLISE DE IMAGEM CLÍNICA / EXAME (VISÃO COMPUTACIONAL MULTIMODAL ATIVADA):
+1. Foi anexada uma imagem clínica (exame, ECG, foto de lesão ou laudo) a esta consulta.
+2. Analise minuciosamente os achados visuais (morfologia, ritmos/intervalos em ECG, lesões cutâneas, alterações de imagem ou texto de laudo).
+3. DISCLAIMER OBRIGATÓRIO: Em '## Resposta Direta', inicie ressaltando que a análise visual por IA é um instrumento de apoio complementar e que a confirmação clínica por exame presencial pelo médico é obrigatória antes de qualquer conduta.
+4. QUALIDADE E RESOLUÇÃO DA IMAGEM: Se a imagem estiver desfocada, com iluminação insuficiente, cortada ou com resolução inadequada para leitura conclusiva, declare EXPLICITAMENTE em '## Sinais de Alarme (Red Flags)': "⚠️ Imagem com resolução ou iluminação insuficiente para análise visual conclusiva. Recomenda-se nova captura." NUNCA deduza ou invente laudos sobre imagens ilegíveis.\n`
+    : "";
+
+  return { historyPromptSection, strictModeInstructions, intentInstruction, studentPersonaPrompt, imageInstruction };
+}
+
 export class OrchestratorAgent {
   /**
    * Orquestrador Principal com Raciocínio Clínico Resolutivo e Matriz de Diagnósticos Diferenciais (Soma 100%)
@@ -26,42 +218,10 @@ export class OrchestratorAgent {
       debugLogs.push(entry);
     };
 
-    console.log(`
-================================================================================
-📥 [LOG DE ENTRADA DO USUÁRIO - INPUT]
-================================================================================
-📌 Pergunta / Caso Clínico: "${question}"
-🔀 Modo de Especialidade: ${specialty}
-👤 Modo de Usuário (Persona): ${userMode.toUpperCase()}
-📷 Imagem Anexada: ${imagePayload ? `SIM (${imagePayload.mimeType})` : 'NÃO'}
-🆔 Trace de Auditoria: ${auditTraceId}
-🤖 Modelo LLM Em Uso: ${env.geminiModel}
-📐 Modelo de Embeddings: ${env.embeddingModel} (768d)
-⏱️ Timestamp: ${new Date().toISOString()}
---------------------------------------------------------------------------------
-`);
     logStep("START", `Input recebido: "${question}" (Imagem: ${!!imagePayload}, Especialidade: ${specialty}, Modo: ${userMode})`);
 
-    // 0. Carregar Histórico da Sessão (se sessionId for informado)
-    let historyFormattedText = "";
-    let conversationHistory = [];
-    if (sessionId) {
-      try {
-        const historyRes = await query(
-          `SELECT sender, text FROM conversation_messages WHERE session_id = $1 ORDER BY created_at ASC LIMIT 20`,
-          [sessionId]
-        );
-        conversationHistory = historyRes.rows || [];
-        if (conversationHistory.length > 0) {
-          historyFormattedText = conversationHistory.map(m =>
-            `[${m.sender === 'user' ? 'Médico' : 'IA Clínica'}]: ${m.text}`
-          ).join("\n\n");
-          logStep("SESSION_HISTORY_LOADED", `Histórico de ${conversationHistory.length} mensagens carregado da sessão ${sessionId}.`);
-        }
-      } catch (err) {
-        console.warn("⚠️ Aviso ao carregar histórico da sessão:", err.message);
-      }
-    }
+    // 0. Carregar Histórico da Sessão
+    const { historyFormattedText, conversationHistory } = await loadConversationHistory(sessionId, logStep);
 
     // 1. Analisar intenção clínica e contexto do paciente com histórico
     const analysis = await QueryAnalyzerAgent.analyzeQuery(question, historyFormattedText);
@@ -78,149 +238,19 @@ export class OrchestratorAgent {
     // 4. Pré-Processamento & Expansão Médica com Histórico e LGPD
     const prepResult = await PreProcessorAgent.expandMedicalQuery(question, historyFormattedText);
 
-    // ROTA 1: Entrada Inválida / Gibberish / Lixo
-    if (prepResult.intentType === 'INVALID_INPUT') {
-      logStep("INVALID_INPUT_RESPONSE", `Entrada sem sentido ou lixo detectada`);
-      console.log("📊 [OBSERVABILITY LOG]", JSON.stringify({
-        timestamp: new Date().toISOString(),
-        auditTraceId,
-        userMode,
-        input: question,
-        intent: "INVALID_INPUT",
-        route: "invalid_input_handler",
-        ragCalled: false,
-        llmCalled: false,
-        diagnosisCalled: false
-      }));
+    // Short-circuits de intenções imediatas
+    const shortCircuitResult = handleEarlyIntentShortCircuits({
+      prepResult,
+      question,
+      agent,
+      userMode,
+      auditTraceId,
+      startTime,
+      logStep
+    });
 
-      return {
-        status: "success",
-        answer: "Não foi possível interpretar sua solicitação. Por favor, envie uma pergunta, dúvida ou caso clínico válido relacionado à área da saúde.",
-        agent,
-        userMode,
-        auditTraceId,
-        consensusMatrix: null,
-        citations: [],
-        differentialDiagnoses: [],
-        warnings: [],
-        missingInformation: [],
-        followUpQuestions: ["O que é hipertensão arterial?", "Quais as condutas para dor torácica?", "Como tratar diabetes tipo 2?"],
-        confidence: { score: 1.0 },
-        metadata: { latencyMs: Date.now() - startTime }
-      };
-    }
-
-    // ROTA 2: Pergunta Fora do Escopo Médico
-    if (prepResult.intentType === 'OUT_OF_SCOPE') {
-      logStep("OUT_OF_SCOPE_RESPONSE", `Pergunta fora do escopo médico detectada`);
-      console.log("📊 [OBSERVABILITY LOG]", JSON.stringify({
-        timestamp: new Date().toISOString(),
-        auditTraceId,
-        userMode,
-        input: question,
-        intent: "OUT_OF_SCOPE",
-        route: "out_of_scope_handler",
-        ragCalled: false,
-        llmCalled: false,
-        diagnosisCalled: false
-      }));
-
-      return {
-        status: "success",
-        answer: "Esta pergunta está fora do objetivo da plataforma MedIa. Posso ajudar com conteúdos relacionados à medicina, saúde, prática clínica e estudos médicos.",
-        agent,
-        userMode,
-        auditTraceId,
-        consensusMatrix: null,
-        citations: [],
-        differentialDiagnoses: [],
-        warnings: [],
-        missingInformation: [],
-        followUpQuestions: ["Quais tópicos médicos estão disponíveis?", "Como explorar condutas clínicas?", "Como funciona a busca de diretrizes?"],
-        confidence: { score: 1.0 },
-        metadata: { latencyMs: Date.now() - startTime }
-      };
-    }
-
-    // ROTA 3: Caso Clínico Incompleto / Vago
-    if (prepResult.intentType === 'CLINICAL_CASE_INCOMPLETE') {
-      logStep("INCOMPLETE_CASE_RESPONSE", `Caso clínico incompleto detectado`);
-      console.log("📊 [OBSERVABILITY LOG]", JSON.stringify({
-        timestamp: new Date().toISOString(),
-        auditTraceId,
-        userMode,
-        input: question,
-        intent: "CLINICAL_CASE_INCOMPLETE",
-        route: "incomplete_case_handler",
-        ragCalled: false,
-        llmCalled: false,
-        diagnosisCalled: false
-      }));
-
-      return {
-        status: "success",
-        answer: "Para analisar este caso clínico com precisão, preciso de mais informações sobre o paciente (como queixa principal, tempo de evolução, histórico de comorbidades ou sinais vitais disponíveis).",
-        agent,
-        userMode,
-        auditTraceId,
-        consensusMatrix: null,
-        citations: [],
-        differentialDiagnoses: [],
-        warnings: ["Entrada clínica incompleta — Dados anamnéticos vitais ausentes."],
-        missingInformation: ["Idade e sexo do paciente", "Tempo de evolução dos sintomas", "Histórico de comorbidades e medicações", "Sinais vitais atuais"],
-        followUpQuestions: [
-          "Paciente de 65 anos com dor torácica retroesternal há 2 horas",
-          "Criança de 5 anos com febre alta e tosse produtiva há 3 dias"
-        ],
-        confidence: { score: 1.0 },
-        metadata: { latencyMs: Date.now() - startTime }
-      };
-    }
-
-    // ROTA 4: Saudação Simples ("Oi", "Olá", "Bom dia")
-    if (prepResult.intentType === 'GREETING') {
-      logStep("GREETING_RESPONSE", `Saudação interceptada (Modo: ${userMode})`);
-      console.log("📊 [OBSERVABILITY LOG]", JSON.stringify({
-        timestamp: new Date().toISOString(),
-        auditTraceId,
-        userMode,
-        input: question,
-        intent: "GREETING",
-        route: "greeting_handler",
-        ragCalled: false,
-        llmCalled: false,
-        diagnosisCalled: false
-      }));
-
-      const greetingAnswer = userMode === 'student'
-        ? "👋 Olá! Seja bem-vindo ao Modo Estudante da plataforma MedIa. Como posso apoiar seus estudos hoje? Fique à vontade para fazer perguntas sobre conceitos médicos, mecanismos de fisiopatologia, farmacologia ou resumir temas de estudo."
-        : "👋 Olá! Este módulo é dedicado exclusivamente à análise de casos clínicos estruturados e apoio à decisão médica. Para saudações, conceitos ou dúvidas teóricas gerais, utilize o **Modo Estudante**. Se deseja avaliar um paciente, por favor descreva a queixa inicial, histórico ou sintomas do caso.";
-
-      return {
-        status: "success",
-        answer: greetingAnswer,
-        agent,
-        userMode,
-        auditTraceId,
-        consensusMatrix: null,
-        citations: [],
-        differentialDiagnoses: [],
-        warnings: [],
-        missingInformation: [],
-        followUpQuestions: userMode === 'student'
-          ? [
-              "O que é hipertensão arterial e qual sua fisiopatologia?",
-              "Explique o mecanismo de ação da metformina.",
-              "Quais os principais sintomas e diagnóstico de anemia ferropriva?"
-            ]
-          : [
-              "Descrever caso de paciente de 65 anos com dor torácica aguda",
-              "Avaliar paciente hipertenso descompensado na emergência",
-              "Investigar vertigem posicional paroxística benigna (VPPB)"
-            ],
-        confidence: { score: 1.0 },
-        metadata: { latencyMs: Date.now() - startTime }
-      };
+    if (shortCircuitResult) {
+      return shortCircuitResult;
     }
 
     // Determinar se é pergunta teórica/didática ou abertura de caso completo
@@ -307,70 +337,23 @@ Total de Fontes/Trechos Selecionados: ${chunks ? chunks.length : 0}
     }
 
     // 6. Formatar contexto de evidências estruturado para o LLM (Top 8 no padrão / Top 14 na pesquisa profunda)
-    const promptChunks = (chunks && chunks.length > 0)
-      ? chunks.slice(0, isDeepResearchMode ? 14 : 8)
-      : [];
+    // 6. Formatar contexto de evidências estruturado para o LLM
+    const contextFormatted = formatEvidenceContext(chunks, isDeepResearchMode);
 
-    const contextFormatted = promptChunks.length > 0 ? promptChunks.map((c, idx) => {
-      const authorsStr = c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0
-        ? c.document_authors.join(", ")
-        : (c.authors ? (Array.isArray(c.authors) ? c.authors.join(", ") : c.authors) : "Metadado indisponível");
-      const yearStr = c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || "Metadado indisponível";
-      const orgStr = c.document_organization || c.organization || "Metadado indisponível";
-      const authStr = c.authority_level ? `Nível ${c.authority_level}` : "Nível 4 (Diretriz Oficial)";
-      const urlStr = c.canonical_url || c.url || "Metadado indisponível";
-
-      return `
---- TRECHO [Fonte ${idx + 1}] ---
-Título Oficial do Documento: ${c.document_title || c.title || "Documento Clínico"}
-Nome do Arquivo / Registro: ${c.document_filename || c.filename || "Registro Oficial"}
-Instituição / Emissor Oficial: ${orgStr}
-Nível de Autoridade: ${authStr} | Nível de Evidência GRADE: ${c.gradeLevel || "Nível 2"}
-Autor(es): ${authorsStr}
-Ano de Publicação / Atualização: ${yearStr}
-URL Oficial Canônica: ${urlStr}
-Página: ${c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1)} | Seção: ${c.section_title || "Geral"}
-DOI / PMID: ${c.doi || c.pmid || "N/A"}
-Trecho do Texto:
-${c.content}
-`;
-    }).join("\n") : "Bases de conhecimento e literatura médica padrão.";
-
-    const historyPromptSection = historyFormattedText
-      ? `\nHISTÓRICO ACUMULADO DO CASO CLÍNICO DA SESSÃO:\n${historyFormattedText}\n\nATENÇÃO: A mensagem atual do médico traz um novo dado ou pergunta que se SOMA ao histórico acima. Considere todo o quadro clínico acumulado para compor seu raciocínio integrativo.\n`
-      : "";
-
-    const strictModeInstructions = agent.strictEvidenceMode
-      ? `\nMODO DE ALTA ANCORAGEM: Priorize os fatos e dados diretamente contidos nos DOCUMENTOS DE REFERÊNCIA abaixo. Sempre que as diretrizes abordarem o tópico, fundamente com precisão e cite [Fonte X]. Caso um detalhe específico não conste nos trechos, forneça a orientação baseada no consenso médico consolidado com o devido aviso de transparência.\n`
-      : "";
-
-    const intentInstruction = isFollowUp
-      ? `\nINTENÇÃO IDENTIFICADA: PERGUNTA DE ACOMPANHAMENTO / TRATAMENTO (${prepResult.intentType}).
-O médico fez uma dúvida pontual sobre o caso já em andamento.
-RESPONDA DIRETAMENTE À DÚVIDA (ex: conduta terapêutica, posologia exata, exames ou mecanismo), utilizando o histórico clínico já estabelecido.
-É TERMINANTEMENTE PROIBIDO:
-- Reiniciar a anamnese do zero ou solicitar que o médico relate os sintomas novamente.
-- Repetir perguntas de abertura de caso clínico.
-- Dizer frases genéricas como "para investigar o quadro, preciso saber...".
-Foque de forma imediata na conduta terapêutica, posologia, fármacos de 1ª linha e fundamentação científica.\n`
-      : `\nINTENÇÃO IDENTIFICADA: NOVO CASO / NOVOS SINTOMAS (${prepResult.intentType}). Avalie o quadro completo apresentando diagnóstico integrativo, estratificação de gravidade e condutas indicadas.\n`;
-
-    const studentPersonaPrompt = userMode === 'student'
-      ? `\nMODO ESTUDANTE DE MEDICINA ATIVADO:
-- Explique detalhadamente a fisiopatologia molecular e anatômica subjacente.
-- Detalhe o raciocínio semiológico clínico passo a passo (como pensar clinicamente diante do sinal/sintoma).
-- Inclua ao final a seção: "## Correlação Prática e Pérola Clínica" com síntese acadêmica e pontos-chave para fixação.\n`
-      : `\nMODO MÉDICO ASSISTENTE ATIVADO:
-- Foco em objetividade, segurança da decisão, posologia exata e conduta imediata.
-- Destaque claro de alertas de gravidade (Red Flags) e suporte para registro em prontuário.\n`;
-
-    const imageInstruction = imagePayload
-      ? `\nANÁLISE DE IMAGEM CLÍNICA / EXAME (VISÃO COMPUTACIONAL MULTIMODAL ATIVADA):
-1. Foi anexada uma imagem clínica (exame, ECG, foto de lesão ou laudo) a esta consulta.
-2. Analise minuciosamente os achados visuais (morfologia, ritmos/intervalos em ECG, lesões cutâneas, alterações de imagem ou texto de laudo).
-3. DISCLAIMER OBRIGATÓRIO: Em '## Resposta Direta', inicie ressaltando que a análise visual por IA é um instrumento de apoio complementar e que a confirmação clínica por exame presencial pelo médico é obrigatória antes de qualquer conduta.
-4. QUALIDADE E RESOLUÇÃO DA IMAGEM: Se a imagem estiver desfocada, com iluminação insuficiente, cortada ou com resolução inadequada para leitura conclusiva, declare EXPLICITAMENTE em '## Sinais de Alarme (Red Flags)': "⚠️ Imagem com resolução ou iluminação insuficiente para análise visual conclusiva. Recomenda-se nova captura." NUNCA deduza ou invente laudos sobre imagens ilegíveis.\n`
-      : "";
+    const {
+      historyPromptSection,
+      strictModeInstructions,
+      intentInstruction,
+      studentPersonaPrompt,
+      imageInstruction
+    } = buildPersonaAndIntentInstructions(
+      isFollowUp,
+      prepResult.intentType,
+      userMode,
+      agent,
+      historyFormattedText,
+      imagePayload
+    );
 
     const systemPrompt = `
 ${agent.systemPrompt}

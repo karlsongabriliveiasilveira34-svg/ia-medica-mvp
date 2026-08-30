@@ -34,6 +34,29 @@ import {
   HelpCircle
 } from 'lucide-react';
 
+const DEFAULT_SAMPLE_NOTE = {
+  id: 'note_initial_sample',
+  title: 'Semiologia Cardiovascular: Sopros e Ausculta',
+  content: `Mecanismo dos Sopros Cardiacos:\n\n1. Estenose Aortica:\n- Sopro mesossistolico ejetivo em diamante (crescendo-decrescendo) em foco aortico.\n- Irradiacao caracteristica para carotidas e apex (fenomeno de Gallavardin).\n- Triade de gravidade: Dispneia, Angina e Sincope.\n\n2. Insuficiencia Mitral:\n- Sopro holossistolico em regurgitacao no foco mitral com irradiacao para axila esquerda.\n\nConduta Diagnostica:\n- Solicitar Ecocardiograma Transtoracico com Doppler para quantificacao de gradientes valvares.`,
+  tags: ['Cardiologia', 'Semiologia'],
+  aiSuggestions: [
+    {
+      id: 'sug_def_1',
+      tipo: 'citacao',
+      titulo: 'Diretriz de Valvopatias SBC',
+      descricao: 'Cite essa fonte: Diretriz Brasileira de Valvopatias (SBC 2024) para alvos de indicacao cirurgica.',
+      textoInsercao: '\n\nReferencia oficial: Diretriz Brasileira de Valvopatias - Sociedade Brasileira de Cardiologia (SBC).'
+    },
+    {
+      id: 'sug_def_2',
+      tipo: 'melhoria',
+      titulo: 'Manobras Propedeuticas',
+      descricao: 'Seu texto ficaria mais forte com a Manobra de Rivero-Carvalho e Handgrip para diferenciacao.',
+      textoInsercao: '\n\nManobras semiologicas: Handgrip (aumenta pos-carga e intensifica sopros regurgitantes esquerdos); Rivero-Carvalho (aumenta sopros de camaras direitas na inspiracao).'
+    }
+  ]
+};
+
 /**
  * Componente: StudentNotes (Modulo de Anotacoes do Estudante com IA Preceptora)
  * 3 Formas de entrada: Digitacao com Rich-Text, Ditado por Voz (Web Speech API) e Pen/Stylus Canvas.
@@ -104,32 +127,13 @@ export function StudentNotes({ user, activeTab, onOpenTutorChat }) {
 
     // Criar primeira nota modelo se nao houver nenhuma
     if (notes.length === 0) {
-      const defaultNote = {
-        id: `note_initial_${Date.now()}`,
-        title: 'Semiologia Cardiovascular: Sopros e Ausculta',
-        content: `Mecanismo dos Sopros Cardiacos:\n\n1. Estenose Aortica:\n- Sopro mesossistolico ejetivo em diamante (crescendo-decrescendo) em foco aortico.\n- Irradiacao caracteristica para carotidas e apex (fenomeno de Gallavardin).\n- Triade de gravidade: Dispneia, Angina e Sincope.\n\n2. Insuficiencia Mitral:\n- Sopro holossistolico em regurgitacao no foco mitral com irradiacao para axila esquerda.\n\nConduta Diagnostica:\n- Solicitar Ecocardiograma Transtoracico com Doppler para quantificacao de gradientes valvares.`,
-        tags: ['Cardiologia', 'Semiologia'],
-        aiSuggestions: [
-          {
-            id: 'sug_def_1',
-            tipo: 'citacao',
-            titulo: 'Diretriz de Valvopatias SBC',
-            descricao: 'Cite essa fonte: Diretriz Brasileira de Valvopatias (SBC 2024) para alvos de indicacao cirurgica.',
-            textoInsercao: '\n\nReferencia oficial: Diretriz Brasileira de Valvopatias - Sociedade Brasileira de Cardiologia (SBC).'
-          },
-          {
-            id: 'sug_def_2',
-            tipo: 'melhoria',
-            titulo: 'Manobras Propedeuticas',
-            descricao: 'Seu texto ficaria mais forte com a Manobra de Rivero-Carvalho e Handgrip para diferenciacao.',
-            textoInsercao: '\n\nManobras semiologicas: Handgrip (aumenta pos-carga e intensifica sopros regurgitantes esquerdos); Rivero-Carvalho (aumenta sopros de camaras direitas na inspiracao).'
-          }
-        ],
+      const initial = {
+        ...DEFAULT_SAMPLE_NOTE,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      setNotes([defaultNote]);
-      selectNote(defaultNote);
+      setNotes([initial]);
+      selectNote(initial);
     }
   };
 

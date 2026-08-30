@@ -139,6 +139,79 @@ export const PEDIATRIC_MEDICATIONS = [
   }
 ];
 
+function calculateDailyAndPerDoseMg(med, weight, isHighDose, dosesPerDay) {
+  let calculatedMgTotal = 0;
+  let calculatedMgPerDose = 0;
+
+  if (med.defaultDoseMgKgDay) {
+    const dosePerKgDay = isHighDose ? med.highDoseMgKgDay : med.defaultDoseMgKgDay;
+    calculatedMgTotal = weight * dosePerKgDay;
+    if (med.maxDailyDoseMg && calculatedMgTotal > med.maxDailyDoseMg) {
+      calculatedMgTotal = med.maxDailyDoseMg;
+    }
+    calculatedMgPerDose = calculatedMgTotal / dosesPerDay;
+  } else if (med.dosePerDoseMgKg) {
+    calculatedMgPerDose = weight * med.dosePerDoseMgKg;
+    if (med.maxDosePerDoseMg && calculatedMgPerDose > med.maxDosePerDoseMg) {
+      calculatedMgPerDose = med.maxDosePerDoseMg;
+    }
+    calculatedMgTotal = calculatedMgPerDose * dosesPerDay;
+  }
+
+  return { calculatedMgTotal, calculatedMgPerDose };
+}
+
+function getPediatricAgeAlerts(medId, ageMonths, weight) {
+  const alerts = [];
+  if (medId === "ibuprofeno_gotas" && ageMonths < 6) {
+    alerts.push("⚠️ Ibuprofeno não é recomendado para menores de 6 meses.");
+  }
+  if (medId === "dipirona_gotas" && (ageMonths < 3 || weight < 5)) {
+    alerts.push("⚠️ Dipirona não é recomendada para menores de 3 meses ou < 5kg.");
+  }
+  return alerts;
+}
+
+function getWeightZScore(weight, age, isMale) {
+  if (!weight) return { zWeightForAge: null, weightStatus: "Não avaliado" };
+  const meanWeight = isMale ? (3.3 + age * 0.45) : (3.2 + age * 0.42);
+  const sdWeight = meanWeight * 0.14;
+  const z = Number(((weight - meanWeight) / sdWeight).toFixed(2));
+  let status = "Peso Elevado para a Idade";
+  if (z < -3) status = "Muito Baixo Peso para a Idade";
+  else if (z < -2) status = "Baixo Peso para a Idade";
+  else if (z <= 2) status = "Peso Adequado para a Idade";
+  return { zWeightForAge: z, weightStatus: status };
+}
+
+function getHeightZScore(height, age, isMale) {
+  if (!height) return { zHeightForAge: null, heightStatus: "Não avaliado" };
+  let meanHeight = isMale ? (50 + age * 1.5) : (49 + age * 1.45);
+  if (age > 24) {
+    meanHeight = isMale ? (86 + (age - 24) * 0.6) : (85 + (age - 24) * 0.58);
+  }
+  const sdHeight = meanHeight * 0.045;
+  const z = Number(((height - meanHeight) / sdHeight).toFixed(2));
+  let status = "Estatura Adequada para a Idade";
+  if (z < -3) status = "Muito Baixa Estatura para a Idade";
+  else if (z < -2) status = "Baixa Estatura para a Idade";
+  return { zHeightForAge: z, heightStatus: status };
+}
+
+function getImcZScore(weight, height) {
+  if (!weight || !height) return { imc: null, zImcForAge: null, imcStatus: "Não avaliado" };
+  const heightMeters = height / 100;
+  const imc = Number((weight / (heightMeters * heightMeters)).toFixed(2));
+  const z = Number(((imc - 16.0) / 1.4).toFixed(2));
+  let status = "Obesidade";
+  if (z < -3) status = "Magreza Acentuada";
+  else if (z < -2) status = "Magreza";
+  else if (z <= 1) status = "Eutrofia (Normal)";
+  else if (z <= 2) status = "Risco de Sobrepeso";
+  else if (z <= 3) status = "Sobrepeso";
+  return { imc, zImcForAge: z, imcStatus: status };
+}
+
 /**
  * 1. Calcula a dosagem personalizada com base no peso da criança
  */
@@ -150,9 +223,7 @@ export function calculatePediatricDose({
   presentationIndex = 0
 }) {
   const med = PEDIATRIC_MEDICATIONS.find((m) => m.id === medicationId);
-  if (!med) {
-    throw new Error(`Medicamento pediátrico "${medicationId}" não encontrado.`);
-  }
+  if (!med) throw new Error(`Medicamento pediátrico "${medicationId}" não encontrado.`);
 
   const weight = Number(weightKg);
   if (!weight || weight <= 0 || weight > 120) {
@@ -161,54 +232,13 @@ export function calculatePediatricDose({
 
   const presentation = med.presentations[presentationIndex] || med.presentations[0];
   const conc = presentation.concentrationMgPerMl;
+  const dosesPerDay = 24 / (med.frequencyHours || 8);
 
-  let calculatedMgTotal = 0;
-  let calculatedMgPerDose = 0;
-  let volumeMlPerDose = 0;
-  let dropsPerDose = 0;
-  let dosesPerDay = 24 / (med.frequencyHours || 8);
-
-  // Dosagem diária (mg/kg/dia)
-  if (med.defaultDoseMgKgDay) {
-    const dosePerKgDay = isHighDose ? med.highDoseMgKgDay : med.defaultDoseMgKgDay;
-    calculatedMgTotal = weight * dosePerKgDay;
-
-    // Aplicar teto de dose máxima adulta
-    if (med.maxDailyDoseMg && calculatedMgTotal > med.maxDailyDoseMg) {
-      calculatedMgTotal = med.maxDailyDoseMg;
-    }
-
-    calculatedMgPerDose = calculatedMgTotal / dosesPerDay;
-  } 
-  // Dosagem por tomada (mg/kg/dose)
-  else if (med.dosePerDoseMgKg) {
-    calculatedMgPerDose = weight * med.dosePerDoseMgKg;
-
-    if (med.maxDosePerDoseMg && calculatedMgPerDose > med.maxDosePerDoseMg) {
-      calculatedMgPerDose = med.maxDosePerDoseMg;
-    }
-
-    calculatedMgTotal = calculatedMgPerDose * dosesPerDay;
-  }
-
-  // Volume em mL
-  if (conc > 0) {
-    volumeMlPerDose = calculatedMgPerDose / conc;
-  }
-
-  // Quantidade de gotas (se houver apresentação em gotas)
-  if (presentation.mgPerDrop && presentation.mgPerDrop > 0) {
-    dropsPerDose = Math.round(calculatedMgPerDose / presentation.mgPerDrop);
-  }
-
-  // Alerta para idade
-  const ageAlerts = [];
-  if (med.id === "ibuprofeno_gotas" && ageMonths < 6) {
-    ageAlerts.push("⚠️ Ibuprofeno não é recomendado para menores de 6 meses.");
-  }
-  if (med.id === "dipirona_gotas" && (ageMonths < 3 || weight < 5)) {
-    ageAlerts.push("⚠️ Dipirona não é recomendada para menores de 3 meses ou < 5kg.");
-  }
+  const { calculatedMgTotal, calculatedMgPerDose } = calculateDailyAndPerDoseMg(med, weight, isHighDose, dosesPerDay);
+  const volumeMlPerDose = conc > 0 ? calculatedMgPerDose / conc : 0;
+  const dropsPerDose = (presentation.mgPerDrop && presentation.mgPerDrop > 0)
+    ? Math.round(calculatedMgPerDose / presentation.mgPerDrop)
+    : 0;
 
   return {
     medication: {
@@ -219,10 +249,7 @@ export function calculatePediatricDose({
       indications: med.indications,
       notes: med.notes
     },
-    patient: {
-      weightKg: weight,
-      ageMonths
-    },
+    patient: { weightKg: weight, ageMonths },
     posology: {
       isHighDose,
       frequency: `A cada ${med.frequencyHours} horas (${dosesPerDay}x ao dia)`,
@@ -238,7 +265,7 @@ export function calculatePediatricDose({
     },
     safety: {
       maxDailyDoseCeilingReached: Boolean(med.maxDailyDoseMg && calculatedMgTotal >= med.maxDailyDoseMg),
-      alerts: ageAlerts
+      alerts: getPediatricAgeAlerts(med.id, ageMonths, weight)
     }
   };
 }
@@ -252,53 +279,9 @@ export function calculateZScores({ ageMonths, gender = "M", weightKg, heightCm }
   const height = Number(heightCm) || null;
   const isMale = gender.toUpperCase() === "M" || gender.toUpperCase() === "MASCULINO";
 
-  // Médias e Desvios Padrão aproximados da OMS para cálculo analítico de escore-z
-  // Escore-Z = (Valor - Média) / Desvio Padrão
-  let meanWeight = isMale ? (3.3 + age * 0.45) : (3.2 + age * 0.42);
-  let sdWeight = meanWeight * 0.14;
-
-  let meanHeight = isMale ? (50 + age * 1.5) : (49 + age * 1.45);
-  if (age > 24) {
-    meanHeight = isMale ? (86 + (age - 24) * 0.6) : (85 + (age - 24) * 0.58);
-  }
-  let sdHeight = meanHeight * 0.045;
-
-  let zWeightForAge = null;
-  let weightStatus = "Não avaliado";
-  if (weight) {
-    zWeightForAge = Number(((weight - meanWeight) / sdWeight).toFixed(2));
-    if (zWeightForAge < -3) weightStatus = "Muito Baixo Peso para a Idade";
-    else if (zWeightForAge < -2) weightStatus = "Baixo Peso para a Idade";
-    else if (zWeightForAge <= 2) weightStatus = "Peso Adequado para a Idade";
-    else weightStatus = "Peso Elevado para a Idade";
-  }
-
-  let zHeightForAge = null;
-  let heightStatus = "Não avaliado";
-  if (height) {
-    zHeightForAge = Number(((height - meanHeight) / sdHeight).toFixed(2));
-    if (zHeightForAge < -3) heightStatus = "Muito Baixa Estatura para a Idade";
-    else if (zHeightForAge < -2) heightStatus = "Baixa Estatura para a Idade";
-    else heightStatus = "Estatura Adequada para a Idade";
-  }
-
-  let imc = null;
-  let zImcForAge = null;
-  let imcStatus = "Não avaliado";
-  if (weight && height) {
-    const heightMeters = height / 100;
-    imc = Number((weight / (heightMeters * heightMeters)).toFixed(2));
-    const meanImc = 16.0;
-    const sdImc = 1.4;
-    zImcForAge = Number(((imc - meanImc) / sdImc).toFixed(2));
-
-    if (zImcForAge < -3) imcStatus = "Magreza Acentuada";
-    else if (zImcForAge < -2) imcStatus = "Magreza";
-    else if (zImcForAge <= 1) imcStatus = "Eutrofia (Normal)";
-    else if (zImcForAge <= 2) imcStatus = "Risco de Sobrepeso";
-    else if (zImcForAge <= 3) imcStatus = "Sobrepeso";
-    else imcStatus = "Obesidade";
-  }
+  const { zWeightForAge, weightStatus } = getWeightZScore(weight, age, isMale);
+  const { zHeightForAge, heightStatus } = getHeightZScore(height, age, isMale);
+  const { imc, zImcForAge, imcStatus } = getImcZScore(weight, height);
 
   return {
     ageMonths: age,

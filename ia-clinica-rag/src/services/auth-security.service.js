@@ -44,102 +44,52 @@ for (const acc of defaultAccounts) {
   memoryUsers.set(acc.email, acc);
 }
 
-export class AuthSecurityService {
-  /**
-   * 1. CADASTRO DE NOVO USUÁRIO (COM HASH SEGURO, PLANO FREE OBRIGATÓRIO E ENVIO DE EMAIL)
-   */
-  static async registerUser({ name, email, password, crm = null, specialty = null, plan = "free", role = null, app_mode = null, baseUrl = null }) {
-    await ensureUsersSchema();
-    const cleanEmail = (email || "").trim().toLowerCase();
-    const cleanName = (name || "Colega").trim();
-    const userProfile = (role || app_mode || plan || "estudante") === "medico" ? "medico" : "estudante";
-    const userPlan = "free"; // Todo novo cadastro inicia estritamente no plano FREE
-    console.log(`[AUTH][REGISTER] email normalizado: ${cleanEmail}`);
-    console.log(`[AUTH][REGISTER] plano atribuído: ${userPlan} | perfil: ${userProfile}`);
+async function checkExistingUser(cleanEmail) {
+  let existingUser = null;
+  try {
+    const dbCheck = await pool.query("SELECT id, email, email_verificado, plan FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
+    if (dbCheck.rows.length > 0) existingUser = dbCheck.rows[0];
+  } catch {
+    existingUser = memoryUsers.get(cleanEmail);
+  }
+  if (!existingUser && memoryUsers.has(cleanEmail)) {
+    existingUser = memoryUsers.get(cleanEmail);
+  }
+  return existingUser;
+}
 
-    // 1. Verificar se usuário já existe
-    let existingUser = null;
+async function saveUserRecord({ cleanName, cleanEmail, passwordHash, verificationToken, userPlan, crm, specialty, userProfile, existingUser }) {
+  if (existingUser) {
     try {
-      const dbCheck = await pool.query("SELECT id, email, email_verificado, plan FROM users WHERE LOWER(email) = $1 LIMIT 1", [cleanEmail]);
-      if (dbCheck.rows.length > 0) existingUser = dbCheck.rows[0];
-    } catch (e) {
-      existingUser = memoryUsers.get(cleanEmail);
-    }
-    if (!existingUser && memoryUsers.has(cleanEmail)) {
-      existingUser = memoryUsers.get(cleanEmail);
-    }
-
-    if (existingUser) {
-      if (existingUser.email_verificado) {
-        console.warn(`[AUTH][ERROR] Tentativa de cadastro com email já existente e verificado: ${cleanEmail}`);
-        throw new Error("Este endereço de email já está cadastrado. Faça login para continuar.");
-      } else {
-        console.log(`[AUTH][REGISTER] Usuário já registrado mas não verificado. Atualizando token de ativação para: ${cleanEmail}`);
+      await pool.query(
+        "UPDATE users SET name = $1, password_hash = $2, token_verificacao = $3, plan = $4, crm = $5, specialty = $6, app_mode = $7, updated_at = NOW() WHERE LOWER(email) = $8",
+        [cleanName, passwordHash, verificationToken, userPlan, crm, specialty, userProfile, cleanEmail]
+      );
+    } catch {
+      const mem = memoryUsers.get(cleanEmail);
+      if (mem) {
+        mem.name = cleanName;
+        mem.password_hash = passwordHash;
+        mem.token_verificacao = verificationToken;
+        mem.plan = userPlan;
+        mem.app_mode = userProfile;
       }
     }
+    return existingUser.id;
+  }
 
-    // 2. Hash seguro da senha com bcrypt
-    const passwordHash = await bcrypt.hash(password, 10);
-    const verificationToken = jwt.sign({ email: cleanEmail, purpose: "email_verification" }, JWT_SECRET, { expiresIn: "24h" });
-
-    let userId = existingUser?.id || null;
-
-    if (existingUser) {
-      // Atualizar hash e token de ativação para conta pendente
-      try {
-        await pool.query(
-          "UPDATE users SET name = $1, password_hash = $2, token_verificacao = $3, plan = $4, crm = $5, specialty = $6, app_mode = $7, updated_at = NOW() WHERE LOWER(email) = $8",
-          [cleanName, passwordHash, verificationToken, userPlan, crm, specialty, userProfile, cleanEmail]
-        );
-      } catch (e) {
-        const mem = memoryUsers.get(cleanEmail);
-        if (mem) {
-          mem.name = cleanName;
-          mem.password_hash = passwordHash;
-          mem.token_verificacao = verificationToken;
-          mem.plan = userPlan;
-          mem.app_mode = userProfile;
-        }
-      }
-    } else {
-      // Inserir novo usuário com plano FREE
-      try {
-        const query = `
-          INSERT INTO users (name, email, password_hash, plan, crm, specialty, email_verificado, token_verificacao, app_mode)
-          VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
-          RETURNING id, name, email, plan, app_mode, email_verificado;
-        `;
-        const values = [
-          cleanName,
-          cleanEmail,
-          passwordHash,
-          userPlan,
-          crm,
-          specialty,
-          verificationToken,
-          userProfile
-        ];
-        const res = await pool.query(query, values);
-        userId = res.rows[0].id;
-      } catch (dbErr) {
-        console.warn("[AUTH][REGISTER] Fallback para storage em memória:", dbErr.message);
-        userId = `mem_${Date.now()}`;
-        memoryUsers.set(cleanEmail, {
-          id: userId,
-          name: cleanName,
-          email: cleanEmail,
-          password_hash: passwordHash,
-          plan: userPlan,
-          crm,
-          specialty,
-          email_verificado: false,
-          token_verificacao: verificationToken,
-          app_mode: userProfile
-        });
-      }
-    }
-
-    // Sincronizar store em memória
+  try {
+    const queryStr = `
+      INSERT INTO users (name, email, password_hash, plan, crm, specialty, email_verificado, token_verificacao, app_mode)
+      VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8)
+      RETURNING id, name, email, plan, app_mode, email_verificado;
+    `;
+    const values = [cleanName, cleanEmail, passwordHash, userPlan, crm, specialty, verificationToken, userProfile];
+    const res = await pool.query(queryStr, values);
+    return res.rows[0].id;
+  } catch (dbErr) {
+    console.warn("[AUTH][REGISTER] Fallback para storage em memória:", dbErr.message);
+    const userId = `mem_${Date.now()}`;
     memoryUsers.set(cleanEmail, {
       id: userId,
       name: cleanName,
@@ -151,6 +101,111 @@ export class AuthSecurityService {
       email_verificado: false,
       token_verificacao: verificationToken,
       app_mode: userProfile
+    });
+    return userId;
+  }
+}
+
+function decodeAndValidateVerificationToken(token) {
+  if (!token) throw new Error("Token de verificação inválido.");
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.purpose && decoded.purpose !== "email_verification") {
+      throw new Error("Finalidade do token inválida.");
+    }
+    return (decoded.email || "").trim().toLowerCase();
+  } catch (err) {
+    console.warn("[AUTH][ERROR] Token de verificação inválido ou expirado:", err.message);
+    throw new Error("Link de verificação expirado ou inválido.");
+  }
+}
+
+async function updateUserAsVerified(email) {
+  let user = null;
+  try {
+    const res = await pool.query(
+      "UPDATE users SET email_verificado = TRUE, token_verificacao = NULL, updated_at = NOW() WHERE LOWER(email) = $1 RETURNING id, name, email, plan, app_mode, crm, specialty, email_verificado",
+      [email]
+    );
+    if (res.rows.length > 0) user = res.rows[0];
+  } catch (err) {
+    console.warn("[AUTH][VERIFY] Aviso ao atualizar banco de dados:", err.message);
+  }
+
+  const memUser = memoryUsers.get(email);
+  if (memUser) {
+    memUser.email_verificado = true;
+    memUser.token_verificacao = null;
+    if (!user) user = memUser;
+  }
+
+  if (!user) {
+    try {
+      const selectRes = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [email]);
+      if (selectRes.rows.length > 0) user = selectRes.rows[0];
+    } catch { }
+  }
+
+  if (!user) {
+    console.warn(`[AUTH][ERROR] Usuário não encontrado para o email: ${email}`);
+    throw new Error("Usuário associado ao token não foi encontrado.");
+  }
+
+  return user;
+}
+
+function createAuthSessionPayload(user) {
+  const emailClean = user.email || "";
+  const emailHash = crypto.createHash("sha256").update(emailClean.trim().toLowerCase()).digest("hex");
+  const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
+
+  return {
+    id: user.id,
+    userId: user.id,
+    email: user.email,
+    name: user.name || "Colega",
+    avatar: avatarUrl,
+    photo_url: avatarUrl,
+    plan: user.plan || "free",
+    app_mode: user.app_mode || "estudante",
+    crm: user.crm || null,
+    specialty: user.specialty || null,
+    email_verificado: true
+  };
+}
+
+export class AuthSecurityService {
+  /**
+   * 1. CADASTRO DE NOVO USUÁRIO (COM HASH SEGURO, PLANO FREE OBRIGATÓRIO E ENVIO DE EMAIL)
+   */
+  static async registerUser({ name, email, password, crm = null, specialty = null, plan = "free", role = null, app_mode = null, baseUrl = null }) {
+    await ensureUsersSchema();
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanName = (name || "Colega").trim();
+    const userProfile = (role || app_mode || plan || "estudante") === "medico" ? "medico" : "estudante";
+    const userPlan = "free";
+    console.log(`[AUTH][REGISTER] email normalizado: ${cleanEmail}`);
+    console.log(`[AUTH][REGISTER] plano atribuído: ${userPlan} | perfil: ${userProfile}`);
+
+    const existingUser = await checkExistingUser(cleanEmail);
+    if (existingUser?.email_verificado) {
+      console.warn(`[AUTH][ERROR] Tentativa de cadastro com email já existente e verificado: ${cleanEmail}`);
+      throw new Error("Este endereço de email já está cadastrado. Faça login para continuar.");
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const verificationToken = jwt.sign({ email: cleanEmail, purpose: "email_verification" }, JWT_SECRET, { expiresIn: "24h" });
+
+    const userId = await saveUserRecord({
+      cleanName,
+      cleanEmail,
+      passwordHash,
+      verificationToken,
+      userPlan,
+      crm,
+      specialty,
+      userProfile,
+      existingUser
     });
 
     console.log(`[AUTH][REGISTER] usuário criado: ${userId} (Plano: ${userPlan})`);
@@ -176,80 +231,14 @@ export class AuthSecurityService {
    * Valida o token, marca email_verificado = true e GERA A SESSÃO IMEDIATAMENTE
    */
   static async verifyEmailToken(token) {
-    if (!token) throw new Error("Token de verificação inválido.");
-    console.log("[AUTH][VERIFY] token recebido");
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-      if (decoded.purpose && decoded.purpose !== "email_verification") {
-        throw new Error("Finalidade do token inválida.");
-      }
-    } catch (err) {
-      console.warn("[AUTH][ERROR] Token de verificação inválido ou expirado:", err.message);
-      throw new Error("Link de verificação expirado ou inválido.");
-    }
-
-    const email = (decoded.email || "").trim().toLowerCase();
+    const email = decodeAndValidateVerificationToken(token);
     await ensureUsersSchema();
-
-    // Atualizar no banco de dados e obter usuário completo
-    let user = null;
-    try {
-      const res = await pool.query(
-        "UPDATE users SET email_verificado = TRUE, token_verificacao = NULL, updated_at = NOW() WHERE LOWER(email) = $1 RETURNING id, name, email, plan, app_mode, crm, specialty, email_verificado",
-        [email]
-      );
-      if (res.rows.length > 0) {
-        user = res.rows[0];
-      }
-    } catch (err) {
-      console.warn("[AUTH][VERIFY] Aviso ao atualizar banco de dados:", err.message);
-    }
-
-    // Atualizar também no storage em memória
-    const memUser = memoryUsers.get(email);
-    if (memUser) {
-      memUser.email_verificado = true;
-      memUser.token_verificacao = null;
-      if (!user) user = memUser;
-    }
-
-    if (!user) {
-      // Tentar buscar por select se o update não retornou linhas
-      try {
-        const selectRes = await pool.query("SELECT * FROM users WHERE LOWER(email) = $1 LIMIT 1", [email]);
-        if (selectRes.rows.length > 0) user = selectRes.rows[0];
-      } catch (e) {}
-    }
-
-    if (!user) {
-      console.warn(`[AUTH][ERROR] Usuário não encontrado para o email: ${email}`);
-      throw new Error("Usuário associado ao token não foi encontrado.");
-    }
+    const user = await updateUserAsVerified(email);
 
     console.log(`[AUTH][VERIFY] usuário encontrado: ${user.id}`);
     console.log("[AUTH][VERIFY] email confirmado");
 
-    // Gerar Sessão Autenticada Imediata (Login Automático com Avatar)
-    const emailClean = user.email || cleanEmail;
-    const emailHash = crypto.createHash("sha256").update((emailClean || "").trim().toLowerCase()).digest("hex");
-    const avatarUrl = user.photo_url || `https://www.gravatar.com/avatar/${emailHash}?d=mp&s=200`;
-
-    const payload = {
-      id: user.id,
-      userId: user.id,
-      email: user.email,
-      name: user.name || "Colega",
-      avatar: avatarUrl,
-      photo_url: avatarUrl,
-      plan: user.plan || "free",
-      app_mode: user.app_mode || "estudante",
-      crm: user.crm || null,
-      specialty: user.specialty || null,
-      email_verificado: true
-    };
-
+    const payload = createAuthSessionPayload(user);
     const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     const refreshToken = jwt.sign({ id: user.id, email: user.email }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -259,7 +248,7 @@ export class AuthSecurityService {
         "INSERT INTO sessions (user_id, refresh_token, expires_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
         [user.id, refreshToken, expiresAt]
       );
-    } catch (e) {
+    } catch {
       memorySessions.set(refreshToken, { userId: user.id, expiresAt });
     }
 

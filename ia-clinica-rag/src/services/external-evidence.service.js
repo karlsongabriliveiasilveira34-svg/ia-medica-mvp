@@ -169,40 +169,87 @@ const ptToEnMap = {
   "endometriose": "endometriosis"
 };
 
+function matchPriorityTerms(combinedText, matchedTokens) {
+  const priorityKeywords = ["dengue", "chikungunya", "zika", "arbovirose", "arboviroses", "febre", "sepse", "infarto", "diabetes", "hipertensao", "hipertensão", "pneumonia", "avc", "itu", "infeccao"];
+  for (const pk of priorityKeywords) {
+    if (combinedText.includes(pk) && ptToEnMap[pk]) {
+      ptToEnMap[pk].split(/\s+/).forEach((w) => {
+        if (w.length > 2) matchedTokens.add(w);
+      });
+      if (matchedTokens.size >= 3) break;
+    }
+  }
+}
+
+function matchSecondaryTerms(combinedText, matchedTokens) {
+  if (matchedTokens.size >= 4) return;
+  const sortedEntries = Object.entries(ptToEnMap).sort((a, b) => b[0].length - a[0].length);
+  for (const [pt, en] of sortedEntries) {
+    if (combinedText.includes(pt)) {
+      en.split(/\s+/).forEach((w) => {
+        if (w.length > 2) matchedTokens.add(w);
+      });
+      if (matchedTokens.size >= 4) break;
+    }
+  }
+}
+
+function isRelevantSciELOArticle(title, journal, queryWords) {
+  const titleLower = title.toLowerCase();
+  const matchCount = queryWords.reduce((acc, word) => acc + (titleLower.includes(word) ? 1 : 0), 0);
+  if (queryWords.length > 0 && matchCount === 0) return { relevant: false, matchCount: 0 };
+
+  const journalLower = journal.toLowerCase();
+  const nonMedicalNoise = ["filme", "cinema", "poesia", "romance", "teatro", "sociologia", "filosofia", "antropologia", "educação física", "esporte", "turismo"];
+  if (nonMedicalNoise.some((n) => journalLower.includes(n) || titleLower.includes(n))) {
+    return { relevant: false, matchCount: 0 };
+  }
+  return { relevant: true, matchCount };
+}
+
+function formatSciELOResult(item, title, journal, matchCount) {
+  const pubYear = item.issued?.["date-parts"]?.[0]?.[0] || item.created?.["date-parts"]?.[0]?.[0] || new Date().getFullYear();
+  const authors = (item.author || []).slice(0, 3).map((a) => `${a.given || ""} ${a.family || ""}`.trim()).filter(Boolean);
+  const doi = item.DOI;
+  const scieloUrlFinal = doi ? `https://doi.org/${doi}` : (item.URL || "https://www.scielo.br");
+  const safeSuffix = crypto.randomUUID().slice(0, 8);
+
+  return {
+    id: `scielo-${doi || safeSuffix}`,
+    document_id: `scielo-${doi || safeSuffix}`,
+    title: `[SciELO] ${title}`,
+    document_title: `[SciELO] ${title}`,
+    document_filename: `SciELO DOI: ${doi || "N/A"}`,
+    document_category: "SCIELO_ARTICLES",
+    source_type: "SYSTEMATIC_REVIEW",
+    gradeLevel: "Nível 2 (Artigo Indexado SciELO Brasil)",
+    organization: `${journal} (${pubYear})`,
+    originType: "WEB_SEARCH",
+    doi: doi || null,
+    url: scieloUrlFinal,
+    page_number: 1,
+    section_title: "Artigo Científico Indexado SciELO",
+    content: `Título: ${title}\nAutores: ${authors.join(", ") || "Corpo Clínico / Pesquisadores SciELO"}\nPeriódico: ${journal} (${pubYear})\nDOI: ${doi || "N/A"}\nLink de Acesso: ${scieloUrlFinal}\nTrecho / Resumo da Evidência: Estudo clínico e epidemiológico indexado na SciELO abordando aspectos diagnósticos, terapêuticos e condutas recomendadas na literatura médica brasileira e internacional sobre o tema.`,
+    rrfScore: 0.04,
+    evidenceScore: 0.90 + Math.min(0.08, matchCount * 0.03),
+    evidenceLevel: "Alta (SciELO Brasil)",
+    status: "ACTIVE"
+  };
+}
+
 export class ExternalEvidenceService {
   /**
    * Traduz termos em Português para Inglês para otimizar busca na API pública do NCBI PubMed e Cochrane
    */
   static translateQueryForPubMed(queryText, extraKeywords = []) {
-    let combinedText = `${queryText} ${(extraKeywords || []).join(" ")}`.toLowerCase();
+    const combinedText = `${queryText} ${(extraKeywords || []).join(" ")}`.toLowerCase();
     const matchedTokens = new Set();
 
-    // Priorizar termos infecciosos / diagnósticos sistêmicos específicos se presentes
-    const priorityKeywords = ["dengue", "chikungunya", "zika", "arbovirose", "arboviroses", "febre", "sepse", "infarto", "diabetes", "hipertensao", "hipertensão", "pneumonia", "avc", "itu", "infeccao"];
-    for (const pk of priorityKeywords) {
-      if (combinedText.includes(pk) && ptToEnMap[pk]) {
-        ptToEnMap[pk].split(/\s+/).forEach(w => {
-          if (w.length > 2) matchedTokens.add(w);
-        });
-        if (matchedTokens.size >= 3) break;
-      }
-    }
-
-    // Se ainda houver espaço para tokens, casar termos secundários (sintomas/sinais)
-    if (matchedTokens.size < 4) {
-      const sortedEntries = Object.entries(ptToEnMap).sort((a, b) => b[0].length - a[0].length);
-      for (const [pt, en] of sortedEntries) {
-        if (combinedText.includes(pt)) {
-          en.split(/\s+/).forEach(w => {
-            if (w.length > 2) matchedTokens.add(w);
-          });
-          if (matchedTokens.size >= 4) break;
-        }
-      }
-    }
+    matchPriorityTerms(combinedText, matchedTokens);
+    matchSecondaryTerms(combinedText, matchedTokens);
 
     if (matchedTokens.size === 0) {
-      const words = combinedText.replace(/[^\w\s]/gi, "").split(/\s+/).filter(w => w.length > 4);
+      const words = combinedText.replace(/[^\w\s]/gi, "").split(/\s+/).filter((w) => w.length > 4);
       return words.slice(0, 3).join(" ") || "clinical medicine";
     }
 
@@ -218,7 +265,7 @@ export class ExternalEvidenceService {
       "paciente", "pacientes", "sexo", "masculino", "feminino", "homem", "mulher",
       "idade", "anos", "meses", "dias", "faixa", "etaria", "etária", "esta", "está",
       "com", "relata", "refere", "apresenta", "quadro", "caso", "ha", "há",
-      "dor", "dores", // Genérico demais em busca textual ampla, atrai odontologia e fisioterapia
+      "dor", "dores",
       "qual", "quais", "como", "onde", "quando", "quem", "por", "que", "sao", "são",
       "os", "as", "um", "uma", "uns", "umas", "de", "da", "do", "das", "dos",
       "em", "na", "no", "nas", "nos", "para", "sobre", "pelo", "pela",
@@ -231,11 +278,11 @@ export class ExternalEvidenceService {
     const words = queryText
       .replace(/[^\w\s\u00C0-\u00FF]/gi, " ")
       .split(/\s+/)
-      .filter(w => w.length > 2 && !demographicAndStopWords.has(w.toLowerCase()));
+      .filter((w) => w.length > 2 && !demographicAndStopWords.has(w.toLowerCase()));
 
     const cleanKeywords = (extraKeywords || [])
-      .flatMap(k => (typeof k === "string" ? k.split(/\s+/) : []))
-      .filter(k => k.length > 2 && !demographicAndStopWords.has(k.toLowerCase()));
+      .flatMap((k) => (typeof k === "string" ? k.split(/\s+/) : []))
+      .filter((k) => k.length > 2 && !demographicAndStopWords.has(k.toLowerCase()));
 
     const combinedSet = new Set([...words, ...cleanKeywords]);
     const terms = Array.from(combinedSet);
@@ -257,11 +304,8 @@ export class ExternalEvidenceService {
 
     try {
       const scieloUrl = `https://api.crossref.org/works?query=${encodeURIComponent(cleanQuery)}&filter=prefix:10.1590&rows=${Math.max(limit * 3, 30)}&sort=relevance`;
-      
       const response = await fetch(scieloUrl, {
-        headers: {
-          "User-Agent": "MedIa-Clinical-RAG/2.4 (mailto:contato@media.med.br)"
-        },
+        headers: { "User-Agent": "MedIa-Clinical-RAG/2.4 (mailto:contato@media.med.br)" },
         signal: AbortSignal.timeout(6000)
       });
 
@@ -273,55 +317,16 @@ export class ExternalEvidenceService {
       const data = await response.json();
       const items = data?.message?.items || [];
       const results = [];
-      const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
 
       for (const item of items) {
         const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]+>/g, "") : "Artigo Científico SciELO";
-        const titleLower = title.toLowerCase();
-        
-        // Validação Semântica Estrita: o título deve conter ao menos um dos termos clínicos pesquisados
-        const matchCount = queryWords.reduce((acc, word) => acc + (titleLower.includes(word) ? 1 : 0), 0);
-        if (queryWords.length > 0 && matchCount === 0) {
-          // Descartar artigos fora de contexto (ex: retocele, trauma esportivo, dor de dente para febre)
-          continue;
-        }
-
-        // Filtro anti-ruído: descartar periódicos ou artigos de artes, cinema, literatura e filosofia
-        const journalLower = (item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "").toLowerCase();
-        const nonMedicalNoise = ["filme", "cinema", "poesia", "romance", "teatro", "sociologia", "filosofia", "antropologia", "educação física", "esporte", "turismo"];
-        if (nonMedicalNoise.some(n => journalLower.includes(n) || titleLower.includes(n))) {
-          continue;
-        }
-
-        const pubYear = item.issued?.["date-parts"]?.[0]?.[0] || item.created?.["date-parts"]?.[0]?.[0] || new Date().getFullYear();
-        const authors = (item.author || []).slice(0, 3).map(a => `${a.given || ""} ${a.family || ""}`.trim()).filter(Boolean);
         const journal = item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "SciELO Brasil / América Latina";
-        const doi = item.DOI;
-        const scieloUrlFinal = doi ? `https://doi.org/${doi}` : (item.URL || "https://www.scielo.br");
-        const safeSuffix = crypto.randomUUID().slice(0, 8);
 
-        results.push({
-          id: `scielo-${doi || safeSuffix}`,
-          document_id: `scielo-${doi || safeSuffix}`,
-          title: `[SciELO] ${title}`,
-          document_title: `[SciELO] ${title}`,
-          document_filename: `SciELO DOI: ${doi || "N/A"}`,
-          document_category: "SCIELO_ARTICLES",
-          source_type: "SYSTEMATIC_REVIEW",
-          gradeLevel: "Nível 2 (Artigo Indexado SciELO Brasil)",
-          organization: `${journal} (${pubYear})`,
-          originType: "WEB_SEARCH",
-          doi: doi || null,
-          url: scieloUrlFinal,
-          page_number: 1,
-          section_title: "Artigo Científico Indexado SciELO",
-          content: `Título: ${title}\nAutores: ${authors.join(", ") || "Corpo Clínico / Pesquisadores SciELO"}\nPeriódico: ${journal} (${pubYear})\nDOI: ${doi || "N/A"}\nLink de Acesso: ${scieloUrlFinal}\nTrecho / Resumo da Evidência: Estudo clínico e epidemiológico indexado na SciELO abordando aspectos diagnósticos, terapêuticos e condutas recomendadas na literatura médica brasileira e internacional sobre o tema.`,
-          rrfScore: 0.04,
-          evidenceScore: 0.90 + Math.min(0.08, matchCount * 0.03),
-          evidenceLevel: "Alta (SciELO Brasil)",
-          status: "ACTIVE"
-        });
+        const { relevant, matchCount } = isRelevantSciELOArticle(title, journal, queryWords);
+        if (!relevant) continue;
 
+        results.push(formatSciELOResult(item, title, journal, matchCount));
         if (results.length >= limit) break;
       }
 

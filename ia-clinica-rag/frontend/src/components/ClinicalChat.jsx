@@ -8,6 +8,60 @@ import { AudioConsultationRecorder } from './AudioConsultationRecorder';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { MedIaIcon } from './MedIaLogo';
 
+function createBotMessageFromData(data, defaultUserMode) {
+  return {
+    id: (Date.now() + 1).toString(),
+    sender: 'bot',
+    text: data.answer,
+    agent: data.agent,
+    userMode: data.userMode || defaultUserMode,
+    auditTraceId: data.auditTraceId,
+    consensusMatrix: data.consensusMatrix,
+    citations: data.citations || [],
+    differentialDiagnoses: data.differentialDiagnoses || [],
+    warnings: data.warnings || [],
+    missingInformation: data.missingInformation || [],
+    followUpQuestions: data.followUpQuestions || [],
+    confidenceScore: data.confidence?.score,
+    isVerified: data.status === 'success',
+    latencyMs: data.metadata?.latencyMs,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+}
+
+function createErrorMessage(text) {
+  return {
+    id: (Date.now() + 1).toString(),
+    sender: 'bot',
+    text,
+    citations: [],
+    isError: true,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+}
+
+async function fetchClinicalQuery(payload, signal) {
+  const res = await fetch('/api/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify(payload)
+  });
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return { ok: res.ok, data: await res.json() };
+  }
+  return {
+    ok: false,
+    data: {
+      status: 'error',
+      message: res.status === 429
+        ? 'O serviço de inteligência médica está com alta demanda momentânea. Por favor, aguarde 10 segundos.'
+        : 'O serviço de consulta médica está inicializando no servidor. Por favor, tente novamente em instantes.'
+    }
+  };
+}
+
 export function ClinicalChat({
   onSelectCitation,
   onSelectDiagnosis,
@@ -309,15 +363,13 @@ export function ClinicalChat({
     const activeImage = selectedImage;
     const userMessageText = questionText.trim() || 'Análise médica integrativa dos achados da imagem clínica.';
 
-    const userMessage = {
+    setMessages((prev) => [...prev, {
       id: Date.now().toString(),
       sender: 'user',
       text: userMessageText,
       imagePreview: activeImage ? activeImage.dataUrl : null,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    }]);
     if (!textToSend) setInput('');
     setSelectedImage(null);
     setLoading(true);
@@ -326,83 +378,31 @@ export function ClinicalChat({
     const timeoutId = setTimeout(() => controller.abort(), 90000);
 
     try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          question: userMessageText,
-          specialty: selectedSpecialty,
-          sessionId: currentSessionId,
-          userMode,
-          deepResearch,
-          imageDataUrl: activeImage ? activeImage.dataUrl : null
-        })
-      });
-      const contentType = res.headers.get("content-type") || "";
-      let data = {};
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        data = {
-          status: 'error',
-          message: res.status === 429
-            ? 'O serviço de inteligência médica está com alta demanda momentânea. Por favor, aguarde 10 segundos.'
-            : 'O serviço de consulta médica está inicializando no servidor. Por favor, tente novamente em instantes.'
-        };
-      }
+      const { ok, data } = await fetchClinicalQuery({
+        question: userMessageText,
+        specialty: selectedSpecialty,
+        sessionId: currentSessionId,
+        userMode,
+        deepResearch,
+        imageDataUrl: activeImage ? activeImage.dataUrl : null
+      }, controller.signal);
 
-      if (data.sessionId) {
-        setCurrentSessionId(data.sessionId);
-      }
+      if (data.sessionId) setCurrentSessionId(data.sessionId);
 
-      if (res.ok && data.status === 'success') {
-        const botMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: data.answer,
-          agent: data.agent,
-          userMode: data.userMode || userMode,
-          auditTraceId: data.auditTraceId,
-          consensusMatrix: data.consensusMatrix,
-          citations: data.citations || [],
-          differentialDiagnoses: data.differentialDiagnoses || [],
-          warnings: data.warnings || [],
-          missingInformation: data.missingInformation || [],
-          followUpQuestions: data.followUpQuestions || [],
-          confidenceScore: data.confidence?.score,
-          isVerified: data.status === 'success',
-          latencyMs: data.metadata?.latencyMs,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-
-        setMessages((prev) => [...prev, botMessage]);
+      if (ok && data.status === 'success') {
+        setMessages((prev) => [...prev, createBotMessageFromData(data, userMode)]);
         if (onQueryProcessed) onQueryProcessed();
       } else {
-        const errorMessage = {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: `Aviso do Sistema: ${data.message || 'Falha ao processar requisição médica.'}`,
-          citations: [],
-          isError: true,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        };
-        setMessages((prev) => [...prev, errorMessage]);
+        setMessages((prev) => [...prev, createErrorMessage(`Aviso do Sistema: ${data.message || 'Falha ao processar requisição médica.'}`)]);
       }
     } catch (error) {
       clearTimeout(timeoutId);
       const isTimeout = error.name === 'AbortError';
-      const errorMessage = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: isTimeout
+      setMessages((prev) => [...prev, createErrorMessage(
+        isTimeout
           ? 'Tempo de Resposta Excedido: O processamento demorou mais de 90 segundos. Por favor, tente novamente em alguns instantes.'
-          : 'Erro de Conexão: Não foi possível comunicar com o servidor da plataforma.',
-        citations: [],
-        isError: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+          : 'Erro de Conexão: Não foi possível comunicar com o servidor da plataforma.'
+      )]);
     } finally {
       setLoading(false);
     }

@@ -104,6 +104,137 @@ function safeStorageSet(key, value) {
   }
 }
 
+function handleHashAuth(setVerificationBanner, setCurrentUser, setIsAuthenticated, setShowLogin, refreshUsageData) {
+  if (!window.location.hash || !window.location.hash.includes('access_token=')) return false;
+  try {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const safeAccessToken = sanitizeToken(hashParams.get('access_token'));
+    const safeRefreshToken = sanitizeToken(hashParams.get('refresh_token'));
+    const hashUserRaw = hashParams.get('user');
+
+    if (!safeAccessToken) return false;
+
+    safeStorageSet('access_token', safeAccessToken);
+    if (safeRefreshToken) safeStorageSet('refresh_token', safeRefreshToken);
+    
+    let userObj = null;
+    if (hashUserRaw) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(hashUserRaw));
+        userObj = sanitizeUserObject(parsed);
+        if (userObj) safeStorageSet('media_user', JSON.stringify(userObj));
+      } catch (e) { }
+    }
+
+    setCurrentUser(userObj);
+    setIsAuthenticated(true);
+    setShowLogin(false);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+    setVerificationBanner({
+      type: 'success',
+      message: `🎉 Bem-vindo ao MedIA, ${userObj?.name || 'Colega'}! Seu email foi confirmado com sucesso e você já está autenticado.`
+    });
+    refreshUsageData();
+    return true;
+  } catch (e) {
+    console.warn('Erro ao processar hash de autenticação:', e);
+    return false;
+  }
+}
+
+async function handleUrlVerification(setVerificationBanner, setCurrentUser, setIsAuthenticated, setShowLogin, refreshUsageData) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlError = urlParams.get('error');
+  if (urlError) {
+    setVerificationBanner({ type: 'error', message: decodeURIComponent(urlError) });
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  const verifyToken = urlParams.get('verify_token') || urlParams.get('token');
+  const safeVerifyToken = sanitizeToken(verifyToken);
+  if (!safeVerifyToken) return false;
+
+  try {
+    const verifyRes = await fetch('/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: safeVerifyToken })
+    });
+    const verifyData = await verifyRes.json();
+    if (verifyRes.ok && verifyData.accessToken && verifyData.user) {
+      const safeAcc = sanitizeToken(verifyData.accessToken);
+      const safeRef = sanitizeToken(verifyData.refreshToken);
+      const safeUser = sanitizeUserObject(verifyData.user);
+
+      if (safeAcc) safeStorageSet('access_token', safeAcc);
+      if (safeRef) safeStorageSet('refresh_token', safeRef);
+      if (safeUser) safeStorageSet('media_user', JSON.stringify(safeUser));
+
+      setCurrentUser(safeUser);
+      setIsAuthenticated(true);
+      setShowLogin(false);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setVerificationBanner({
+        type: 'success',
+        message: `🎉 Bem-vindo ao MedIA, ${verifyData.user.name || 'Colega'}! Seu email foi verificado e você já está autenticado.`
+      });
+      refreshUsageData();
+      return true;
+    }
+
+    setVerificationBanner({
+      type: 'error',
+      message: verifyData.message || 'Link de verificação inválido ou expirado.'
+    });
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return false;
+  } catch (e) {
+    setVerificationBanner({ type: 'error', message: 'Erro ao verificar email.' });
+    return false;
+  }
+}
+
+function handleStorageSession(setCurrentUser, setIsAuthenticated, refreshUsageData) {
+  const token = localStorage.getItem('access_token');
+  const savedUser = localStorage.getItem('media_user');
+  if (!token || !savedUser) return false;
+
+  try {
+    const parsed = JSON.parse(savedUser);
+    setCurrentUser(parsed);
+    setIsAuthenticated(true);
+    refreshUsageData();
+    return true;
+  } catch (e) {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('media_user');
+    return false;
+  }
+}
+
+async function handleCookieSession(setCurrentUser, setIsAuthenticated, refreshUsageData) {
+  const token = localStorage.getItem('access_token');
+  try {
+    const meRes = await fetch('/api/user', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    if (!meRes.ok) return false;
+    const meData = await meRes.json();
+    if (!meData?.user) return false;
+    const safeMeUser = sanitizeUserObject(meData.user);
+    if (!safeMeUser) return false;
+
+    setCurrentUser(safeMeUser);
+    setIsAuthenticated(true);
+    safeStorageSet('media_user', JSON.stringify(safeMeUser));
+    refreshUsageData();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -160,152 +291,11 @@ export default function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      // 1. Limpar tokens demo obsoletos
       localStorage.removeItem('demo_token');
-
-      // 2. Verificar se há parâmetros de autenticação no HASH da URL (#access_token=...&verified=true)
-      if (window.location.hash && window.location.hash.includes('access_token=')) {
-        try {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const hashAccessToken = hashParams.get('access_token');
-          const hashRefreshToken = hashParams.get('refresh_token');
-          const hashUserRaw = hashParams.get('user');
-
-          const safeAccessToken = sanitizeToken(hashAccessToken);
-          const safeRefreshToken = sanitizeToken(hashRefreshToken);
-
-          if (safeAccessToken) {
-            safeStorageSet('access_token', safeAccessToken);
-            if (safeRefreshToken) safeStorageSet('refresh_token', safeRefreshToken);
-            let userObj = null;
-            if (hashUserRaw) {
-              try {
-                const parsed = JSON.parse(decodeURIComponent(hashUserRaw));
-                userObj = sanitizeUserObject(parsed);
-                if (userObj) {
-                  safeStorageSet('media_user', JSON.stringify(userObj));
-                }
-              } catch (e) { }
-            }
-
-            setCurrentUser(userObj);
-            setIsAuthenticated(true);
-            setShowLogin(false);
-
-            // Limpar o hash da URL
-            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-
-            setVerificationBanner({
-              type: 'success',
-              message: `🎉 Bem-vindo ao MedIA, ${userObj?.name || 'Colega'}! Seu email foi confirmado com sucesso e você já está autenticado.`
-            });
-
-            refreshUsageData();
-            return;
-          }
-        } catch (e) {
-          console.warn('Erro ao processar hash de autenticação:', e);
-        }
-      }
-
-      // 3. Verificar se há erro ou token de ativação na URL (?verify_token=... ou ?token=...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlError = urlParams.get('error');
-      if (urlError) {
-        setVerificationBanner({
-          type: 'error',
-          message: decodeURIComponent(urlError)
-        });
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      const verifyToken = urlParams.get('verify_token') || urlParams.get('token');
-      const safeVerifyToken = sanitizeToken(verifyToken);
-      if (safeVerifyToken) {
-        try {
-          const verifyRes = await fetch('/api/auth/verify-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: safeVerifyToken })
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyRes.ok && verifyData.accessToken && verifyData.user) {
-            const safeAcc = sanitizeToken(verifyData.accessToken);
-            const safeRef = sanitizeToken(verifyData.refreshToken);
-            const safeUser = sanitizeUserObject(verifyData.user);
-
-            // 1. Guardar tokens de autenticação sanitizados
-            if (safeAcc) safeStorageSet('access_token', safeAcc);
-            if (safeRef) safeStorageSet('refresh_token', safeRef);
-            if (safeUser) safeStorageSet('media_user', JSON.stringify(safeUser));
-
-            // 2. Definir estado de autenticação imediato
-            setCurrentUser(safeUser);
-            setIsAuthenticated(true);
-            setShowLogin(false);
-
-            // 3. Limpar a URL sem recarregar a página
-            window.history.replaceState({}, document.title, window.location.pathname);
-
-            // 4. Exibir banner de boas-vindas
-            setVerificationBanner({
-              type: 'success',
-              message: `🎉 Bem-vindo ao MedIA, ${verifyData.user.name || 'Colega'}! Seu email foi verificado e você já está autenticado.`
-            });
-
-            refreshUsageData();
-            return;
-          } else {
-            setVerificationBanner({
-              type: 'error',
-              message: verifyData.message || 'Link de verificação inválido ou expirado.'
-            });
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        } catch (e) {
-          setVerificationBanner({ type: 'error', message: 'Erro ao verificar email.' });
-        }
-      }
-
-      // 4. Verificar sessão existente no localStorage
-      const token = localStorage.getItem('access_token');
-      const savedUser = localStorage.getItem('media_user');
-
-      if (token && savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          setCurrentUser(parsed);
-          setIsAuthenticated(true);
-          refreshUsageData();
-          return;
-        } catch (e) {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          localStorage.removeItem('media_user');
-        }
-      }
-
-      // 5. Se não houver no localStorage, checar sessão por Cookie HTTP-only via /api/user
-      try {
-        const meRes = await fetch('/api/user', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        if (meRes.ok) {
-          const meData = await meRes.json();
-          if (meData && meData.user) {
-            const safeMeUser = sanitizeUserObject(meData.user);
-            if (safeMeUser) {
-              setCurrentUser(safeMeUser);
-              setIsAuthenticated(true);
-              safeStorageSet('media_user', JSON.stringify(safeMeUser));
-              refreshUsageData();
-              return;
-            }
-          }
-        }
-      } catch (e) { }
-
-      // 6. Visitante deslogado
+      if (handleHashAuth(setVerificationBanner, setCurrentUser, setIsAuthenticated, setShowLogin, refreshUsageData)) return;
+      if (await handleUrlVerification(setVerificationBanner, setCurrentUser, setIsAuthenticated, setShowLogin, refreshUsageData)) return;
+      if (handleStorageSession(setCurrentUser, setIsAuthenticated, refreshUsageData)) return;
+      if (await handleCookieSession(setCurrentUser, setIsAuthenticated, refreshUsageData)) return;
       setIsAuthenticated(false);
       setCurrentUser(null);
     };

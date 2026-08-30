@@ -1,6 +1,44 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, X, RefreshCw, Check, AlertCircle, Sparkles, SwitchCamera, Eye, Image as ImageIcon } from 'lucide-react';
 
+function getCameraErrorMessage(err) {
+  if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+    return 'Permissão de câmera negada. Autorize o acesso à câmera nas configurações do navegador.';
+  }
+  if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+    return 'Nenhuma câmera encontrada conectada ao dispositivo.';
+  }
+  if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+    return 'A câmera já está em uso por outro aplicativo ou aba do navegador.';
+  }
+  return 'Não foi possível acessar a câmera do dispositivo.';
+}
+
+async function detectMultipleCameras() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+    return videoDevices.length > 1;
+  } catch {
+    return false;
+  }
+}
+
+function drawVideoFrameToCanvas(video, canvas, facingMode) {
+  const width = video.videoWidth || 1280;
+  const height = video.videoHeight || 720;
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (facingMode === 'user') {
+    ctx.translate(width, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
 /**
  * Modal de Captura de Foto com a Câmera do Dispositivo (Webcam / Câmera Traseira ou Frontal)
  * Desenvolvido especificamente para captura de achados clínicos, lesões, exames, ECG e dermatologia.
@@ -21,9 +59,7 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
   // Parar todas as tracks ativas da câmera
   const stopCameraStream = useCallback(() => {
     if (stream) {
-      stream.getTracks().forEach((track) => {
-        track.stop();
-      });
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
   }, [stream]);
@@ -34,21 +70,12 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
     stopCameraStream();
 
     try {
-      // Verificar suporte do navegador
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Acesso à câmera não suportado neste navegador. Use o envio de arquivo.');
       }
 
-      // Detectar se há múltiplas câmeras disponíveis
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((d) => d.kind === 'videoinput');
-        setHasMultipleCameras(videoDevices.length > 1);
-      } catch (devErr) {
-        console.warn('Não foi possível enumerar dispositivos:', devErr);
-      }
+      setHasMultipleCameras(await detectMultipleCameras());
 
-      // Solicitar stream de vídeo em alta resolução com preferência de foco macro/ambiente
       const constraints = {
         audio: false,
         video: {
@@ -67,15 +94,7 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
       }
     } catch (err) {
       console.error('Erro ao acessar câmera:', err);
-      let errorMsg = 'Não foi possível acessar a câmera do dispositivo.';
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMsg = 'Permissão de câmera negada. Autorize o acesso à câmera nas configurações do navegador.';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMsg = 'Nenhuma câmera encontrada conectada ao dispositivo.';
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMsg = 'A câmera já está em uso por outro aplicativo ou aba do navegador.';
-      }
-      setCameraError(errorMsg);
+      setCameraError(getCameraErrorMessage(err));
     }
   }, [facingMode, stopCameraStream]);
 
@@ -105,31 +124,10 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
   const handleTakePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
-    // Efeito de Flash visual
     setIsFlashActive(true);
     setTimeout(() => setIsFlashActive(false), 200);
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext('2d');
-    
-    // Se for câmera frontal, espelhar horizontalmente para ficar natural
-    if (facingMode === 'user') {
-      ctx.translate(width, 0);
-      ctx.scale(-1, 1);
-    }
-
-    ctx.drawImage(video, 0, 0, width, height);
-
-    // Gerar Data URL JPEG em alta qualidade (0.92)
-    const photoDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const photoDataUrl = drawVideoFrameToCanvas(videoRef.current, canvasRef.current, facingMode);
     setCapturedPhoto(photoDataUrl);
     stopCameraStream();
   };

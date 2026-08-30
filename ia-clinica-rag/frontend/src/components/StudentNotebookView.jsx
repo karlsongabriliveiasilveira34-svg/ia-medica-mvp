@@ -22,17 +22,33 @@ const getCryptoRandomIndex = (max) => {
   return 0;
 };
 
-export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDocumentToChat, onOpenChatWithTopic }) {
-  // Sincronizar subaba com o activeTab do Navbar
-  const getSubtabFromTab = (tab) => {
-    if (tab === 'anotacoes' || tab === 'student_notes' || tab === 'notas') return 'anotacoes';
-    if (tab === 'simulado' || tab === 'simulado_50q' || tab === 'simulado_oficial') return 'simulado';
-    if (tab === 'flashcards') return 'flashcards';
-    if (tab === 'quizzes') return 'quizzes';
-    if (tab === 'caderno') return 'caderno';
-    return 'anotacoes';
-  };
+const DECK_DEFAULT_COUNTS = {
+  clinica: 2407,
+  cirurgia: 776,
+  infecto: 468,
+  pediatria: 323,
+  go: 303,
+  preventiva: 303,
+  farmaco: 184,
+  cardio: 141,
+  nefro: 98
+};
 
+function getDeckRealCount(deckId, studyStats) {
+  if (deckId === 'all') return studyStats?.totalFlashcards || 5003;
+  return studyStats?.porDeck?.[deckId] || DECK_DEFAULT_COUNTS[deckId] || 50;
+}
+
+function getSubtabFromTab(tab) {
+  if (tab === 'anotacoes' || tab === 'student_notes' || tab === 'notas') return 'anotacoes';
+  if (tab === 'simulado' || tab === 'simulado_50q' || tab === 'simulado_oficial') return 'simulado';
+  if (tab === 'flashcards') return 'flashcards';
+  if (tab === 'quizzes') return 'quizzes';
+  if (tab === 'caderno') return 'caderno';
+  return 'anotacoes';
+}
+
+export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDocumentToChat, onOpenChatWithTopic }) {
   const [activeStudentSubtab, setActiveStudentSubtab] = useState(getSubtabFromTab(activeTab));
 
   useEffect(() => {
@@ -975,9 +991,7 @@ export function StudentNotebookView({ activeTab = 'student_notebook', onAttachDo
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {FLASHCARD_DECKS.map((deck) => {
-                  let realCount = 0;
-                  if (deck.id === 'all') realCount = studyStats.totalFlashcards || 5003;
-                  else realCount = studyStats.porDeck?.[deck.id] || (deck.id === 'clinica' ? 2407 : (deck.id === 'cirurgia' ? 776 : (deck.id === 'infecto' ? 468 : (deck.id === 'pediatria' ? 323 : (deck.id === 'go' ? 303 : (deck.id === 'preventiva' ? 303 : (deck.id === 'farmaco' ? 184 : (deck.id === 'cardio' ? 141 : (deck.id === 'nefro' ? 98 : 50)))))))));
+                  const realCount = getDeckRealCount(deck.id, studyStats);
 
                   return (
                     <button
