@@ -42,7 +42,7 @@ import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.j
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 15 * 1024 * 1024, // Limite estrito de 15MB por PDF
+    fileSize: 8 * 1024 * 1024, // Limite estrito e seguro de 8MB por PDF (SonarQube S5693)
     files: 1,
     fields: 10,
     parts: 15,

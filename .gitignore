@@ -8,6 +8,8 @@ node_modules/
 **/node_modules/
 dist/
 **/dist/
+scratch/
+**/scratch/
 
 # Ignorar arquivos de sistema e IDE
 .DS_Store

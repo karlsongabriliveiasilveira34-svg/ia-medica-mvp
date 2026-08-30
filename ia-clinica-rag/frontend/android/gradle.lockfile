@@ -1,0 +1,4 @@
+# This is a Gradle dependency lockfile for Android builds
+# Dependency versions are deterministic and reproducible
+com.android.tools.build:gradle=8.13.0
+com.google.gms:google-services=4.4.4
