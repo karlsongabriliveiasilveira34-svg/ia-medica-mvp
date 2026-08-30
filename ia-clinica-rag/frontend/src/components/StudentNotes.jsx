@@ -248,13 +248,18 @@ export function StudentNotes({ user, activeTab, onOpenTutorChat }) {
       return;
     }
 
+    const safeTargetId = encodeURIComponent(String(targetId).replaceAll(/[^a-zA-Z0-9_-]/g, ''));
+    if (!safeTargetId) return;
+
     const token = localStorage.getItem('access_token');
     try {
-      await fetch(`/api/student/notes/${targetId}`, {
+      await fetch(`/api/student/notes/${safeTargetId}`, {
         method: 'DELETE',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Erro ao excluir anotação:', e.message);
+    }
 
     const remaining = notes.filter(n => n.id !== targetId);
     setNotes(remaining);

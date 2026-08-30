@@ -24,7 +24,10 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
     if (!token) return;
     setError('');
 
-    fetch(`/api/public/pre-anamnese/${token}`)
+    const safeToken = encodeURIComponent(String(token).replaceAll(/[^a-zA-Z0-9_-]/g, ''));
+    if (!safeToken) return;
+
+    fetch(`/api/public/pre-anamnese/${safeToken}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.status === 'success') {
@@ -53,11 +56,14 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
       return;
     }
 
+    const safeToken = encodeURIComponent(String(token).replaceAll(/[^a-zA-Z0-9_-]/g, ''));
+    if (!safeToken) return;
+
     setSubmitting(true);
     setError('');
 
     try {
-      const res = await fetch(`/api/public/pre-anamnese/${token}/submit`, {
+      const res = await fetch(`/api/public/pre-anamnese/${safeToken}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
