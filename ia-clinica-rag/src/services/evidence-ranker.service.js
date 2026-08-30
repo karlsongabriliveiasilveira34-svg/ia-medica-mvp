@@ -26,30 +26,40 @@ export const EVIDENCE_HIERARCHY = {
   GENERAL: { weight: 0.65, grade: "Nível 3 (Literatura Médica Geral Indexada)", gradeCode: 3 }
 };
 
+function resolveAuthorityLevel(item) {
+  if (item.authority_level || item.authorityLevel) {
+    return item.authority_level || item.authorityLevel;
+  }
+  const org = (item.organization || item.document_organization || "").toLowerCase();
+  const title = (item.title || item.document_title || "").toLowerCase();
+  if (org.includes("cochrane") || title.includes("cochrane")) return 1;
+  if (org.includes("pubmed") || org.includes("ncbi") || title.includes("pubmed")) return 2;
+  if (org.includes("scielo") || title.includes("scielo")) return 3;
+  if (org.includes("ministério da saúde") || org.includes("conitec") || org.includes("oms") || org.includes("who") || org.includes("opas") || org.includes("paho")) return 4;
+  if (org.includes("msf") || org.includes("médecins sans frontières") || title.includes("msf")) return 5;
+  return 4;
+}
+
+function computeSemanticScore(item) {
+  if (item.vectorSimilarity !== null && item.vectorSimilarity !== undefined) {
+    return Math.max(0, Math.min(1.0, (item.vectorSimilarity - 0.45) / 0.45)) * 0.60;
+  }
+  return Math.min((item.rrfScore || 0.01) * 15, 0.60);
+}
+
+function resolveEvidenceLevelLabel(score) {
+  if (score >= 0.75) return "Altíssima (Oficial / Nível 1)";
+  if (score >= 0.55) return "Alta (Diretriz / Nível 2)";
+  if (score >= 0.35) return "Moderada (Nível 3/4)";
+  return "Moderada";
+}
+
 export function computeEvidenceScore(item) {
   // 1. Similaridade Semântica / RRF (0.0 a 0.60 - PESO DOMINANTE)
-  let semanticScore = 0;
-  if (item.vectorSimilarity !== null && item.vectorSimilarity !== undefined) {
-    // Cosseno pgvector (faixa típica de alta relevância: 0.65 a 1.0)
-    semanticScore = Math.max(0, Math.min(1.0, (item.vectorSimilarity - 0.45) / 0.45)) * 0.60;
-  } else {
-    // Fallback RRF
-    semanticScore = Math.min((item.rrfScore || 0.01) * 15, 0.60);
-  }
+  const semanticScore = computeSemanticScore(item);
 
   // 2. Nível de Autoridade da Instituição (0.0 a 0.20)
-  let authLevel = item.authority_level || item.authorityLevel;
-  if (!authLevel) {
-    const org = (item.organization || item.document_organization || "").toLowerCase();
-    const title = (item.title || item.document_title || "").toLowerCase();
-    if (org.includes("cochrane") || title.includes("cochrane")) authLevel = 1;
-    else if (org.includes("pubmed") || org.includes("ncbi") || title.includes("pubmed")) authLevel = 2;
-    else if (org.includes("scielo") || title.includes("scielo")) authLevel = 3;
-    else if (org.includes("ministério da saúde") || org.includes("conitec") || org.includes("oms") || org.includes("who") || org.includes("opas") || org.includes("paho")) authLevel = 4;
-    else if (org.includes("msf") || org.includes("médecins sans frontières") || title.includes("msf")) authLevel = 5;
-    else authLevel = 4;
-  }
-
+  const authLevel = resolveAuthorityLevel(item);
   const authConfig = AUTHORITY_WEIGHTS[authLevel] || AUTHORITY_WEIGHTS[4];
   const authorityScore = authConfig.weight * 0.20;
 
@@ -72,13 +82,8 @@ export function computeEvidenceScore(item) {
   }
 
   const normalizedScore = Math.min(1.0, Math.max(0.0, Number(rawScore.toFixed(4))));
-
-  let evidenceLevel = "Moderada";
-  if (normalizedScore >= 0.75) evidenceLevel = "Altíssima (Oficial / Nível 1)";
-  else if (normalizedScore >= 0.55) evidenceLevel = "Alta (Diretriz / Nível 2)";
-  else if (normalizedScore >= 0.35) evidenceLevel = "Moderada (Nível 3/4)";
-
-  let rankingRationale = `Fonte ${authConfig.label} com relevância semântica calculada de ${(semanticScore * 100 / 0.60).toFixed(0)}%.`;
+  const evidenceLevel = resolveEvidenceLevelLabel(normalizedScore);
+  const rankingRationale = `Fonte ${authConfig.label} com relevância semântica calculada de ${(semanticScore * 100 / 0.60).toFixed(0)}%.`;
 
   return {
     compositeEvidenceScore: normalizedScore,

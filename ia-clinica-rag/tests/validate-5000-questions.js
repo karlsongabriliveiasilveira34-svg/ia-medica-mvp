@@ -13,9 +13,9 @@
  * 7. Paginação e filtros no endpoint /api/questoes
  */
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { QuestoesGeneratorService } from "../src/services/questoes-generator.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,15 +37,7 @@ function assert(condition, testId, message) {
   }
 }
 
-async function runValidation() {
-  console.log("=".repeat(80));
-  console.log("🩺 AUDITORIA DE INTEGRIDADE: ACERVO MASSIVO DE 5.000+ QUESTÕES (MedMCQA)");
-  console.log("=".repeat(80) + "\n");
-
-  // 1. CARREGAR DATASET LOCAL PERSISTIDO
-  const rawData = fs.readFileSync(MEDMCQA_DATASET_FILE, "utf8");
-  const dataset = JSON.parse(rawData);
-
+function validateDatasetIntegrity(dataset) {
   console.log("--------------------------------------------------------------------------------");
   console.log("📌 BATERIA 1: CONTAGEM E DEDUPLICAÇÃO NO DATASET MedMCQA");
   console.log("--------------------------------------------------------------------------------");
@@ -83,41 +75,32 @@ async function runValidation() {
   assert(dupSourceIds === 0, "MEDMCQA-1.2", `Zero duplicatas por sourceId no dataset (Duplicatas: ${dupSourceIds})`);
   assert(invalidOptions === 0, "MEDMCQA-1.3", `Zero questões sem 4 alternativas completas (Inválidas: ${invalidOptions})`);
   assert(invalidAnswers === 0, "MEDMCQA-1.4", `Zero questões sem resposta correta válida (0-3) (Inválidas: ${invalidAnswers})`);
-  assert(missingExplanations === 0, "MEDMCQA-1.5", `100% das questões possuem explicação / fundamentação clínica`);
+  assert(missingExplanations === 0, "MEDMCQA-1.5", "100% das questões possuem explicação / fundamentação clínica");
+}
 
-  console.log("\n--------------------------------------------------------------------------------");
-  console.log("📌 BATERIA 2: ESTATÍSTICAS GLOBAIS DO ENGINE MedIA");
-  console.log("--------------------------------------------------------------------------------");
-
-  const stats = await QuestoesGeneratorService.getStudyStats();
-  assert(stats.totalQuestions >= 5000, "STATS-2.1", `Total global de questões no MedIA >= 5.000 (Total Real: ${stats.totalQuestions})`);
-  assert(stats.totalFlashcards >= 4700, "STATS-2.2", `Total de flashcards mantido >= 4.700 (Total Real: ${stats.totalFlashcards})`);
-  assert(Object.keys(stats.porEspecialidade).length >= 10, "STATS-2.3", `Cobertura de especialidades médicas ampla (Total áreas: ${Object.keys(stats.porEspecialidade).length})`);
-
+async function validatePaginationAndFilters() {
   console.log("\n--------------------------------------------------------------------------------");
   console.log("📌 BATERIA 3: PAGINAÇÃO E FILTROS NA API");
   console.log("--------------------------------------------------------------------------------");
 
-  // Teste Página 1 com limit 20
   const page1 = await QuestoesGeneratorService.listQuestions({ page: 1, limit: 20 });
   assert(page1.questoes.length === 20, "PAGINATE-3.1", `Página 1 respeita limit=20 (Retornados: ${page1.questoes.length})`);
   assert(page1.total >= 5000, "PAGINATE-3.2", `Total de questões reflete o acervo completo (Total: ${page1.total})`);
   assert(page1.totalPages >= 250, "PAGINATE-3.3", `Total de páginas calculado com precisão (TotalPages: ${page1.totalPages})`);
-  assert(page1.hasNext === true, "PAGINATE-3.4", `Indicador hasNext=true na página 1`);
+  assert(page1.hasNext === true, "PAGINATE-3.4", "Indicador hasNext=true na página 1");
 
-  // Teste Página 2 com limit 20
   const page2 = await QuestoesGeneratorService.listQuestions({ page: 2, limit: 20 });
   assert(page2.questoes.length === 20, "PAGINATE-3.5", `Página 2 respeita limit=20 (Retornados: ${page2.questoes.length})`);
-  assert(page2.questoes[0].id !== page1.questoes[0].id, "PAGINATE-3.6", `Itens da Página 2 diferem da Página 1`);
+  assert(page2.questoes[0].id !== page1.questoes[0].id, "PAGINATE-3.6", "Itens da Página 2 diferem da Página 1");
 
-  // Teste Página com limit 50
   const pageLimit50 = await QuestoesGeneratorService.listQuestions({ page: 1, limit: 50 });
-  assert(pageLimit50.questoes.length === 50, "PAGINATE-3.7", `Página com limit=50 retorna 50 questões`);
+  assert(pageLimit50.questoes.length === 50, "PAGINATE-3.7", "Página com limit=50 retorna 50 questões");
 
-  // Teste Filtro por Especialidade
   const clinicaFiltered = await QuestoesGeneratorService.listQuestions({ especialidade: "Clínica Médica", limit: 10 });
   assert(clinicaFiltered.total > 0, "FILTER-3.8", `Filtro por Clínica Médica retorna acervo dedicado (Total: ${clinicaFiltered.total})`);
+}
 
+function validateDatasetSamples(dataset) {
   console.log("\n--------------------------------------------------------------------------------");
   console.log("📌 BATERIA 4: INSPEÇÃO DE AMOSTRAS REAIS DO MedMCQA");
   console.log("--------------------------------------------------------------------------------");
@@ -135,6 +118,29 @@ async function runValidation() {
   assert(Boolean(sample1.question && sample1.options.length === 4), "SAMPLE-4.1", "Amostra 1 íntegra");
   assert(Boolean(sample2.question && sample2.options.length === 4), "SAMPLE-4.2", "Amostra 2 íntegra");
   assert(Boolean(sample3.question && sample3.options.length === 4), "SAMPLE-4.3", "Amostra 3 íntegra");
+}
+
+async function runValidation() {
+  console.log("=".repeat(80));
+  console.log("🩺 AUDITORIA DE INTEGRIDADE: ACERVO MASSIVO DE 5.000+ QUESTÕES (MedMCQA)");
+  console.log("=".repeat(80) + "\n");
+
+  const rawData = fs.readFileSync(MEDMCQA_DATASET_FILE, "utf8");
+  const dataset = JSON.parse(rawData);
+
+  validateDatasetIntegrity(dataset);
+
+  console.log("\n--------------------------------------------------------------------------------");
+  console.log("📌 BATERIA 2: ESTATÍSTICAS GLOBAIS DO ENGINE MedIA");
+  console.log("--------------------------------------------------------------------------------");
+
+  const stats = await QuestoesGeneratorService.getStudyStats();
+  assert(stats.totalQuestions >= 5000, "STATS-2.1", `Total global de questões no MedIA >= 5.000 (Total Real: ${stats.totalQuestions})`);
+  assert(stats.totalFlashcards >= 4700, "STATS-2.2", `Total de flashcards mantido >= 4.700 (Total Real: ${stats.totalFlashcards})`);
+  assert(Object.keys(stats.porEspecialidade).length >= 10, "STATS-2.3", `Cobertura de especialidades médicas ampla (Total áreas: ${Object.keys(stats.porEspecialidade).length})`);
+
+  await validatePaginationAndFilters();
+  validateDatasetSamples(dataset);
 
   console.log("\n" + "=".repeat(80));
   console.log("📊 RESULTADO DA AUDITORIA DO ACERVO DE 5.000+ QUESTÕES");
@@ -151,4 +157,4 @@ async function runValidation() {
   return { testCount, passCount, failCount };
 }
 
-runValidation().catch(console.error);
+await runValidation();

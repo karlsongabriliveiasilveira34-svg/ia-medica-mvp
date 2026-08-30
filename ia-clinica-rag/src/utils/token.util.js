@@ -67,6 +67,7 @@ export function verifyToken(token) {
 
     return payload;
   } catch (err) {
+    console.warn("[TOKEN] Falha ao decodificar token inválido:", err.message);
     return null;
   }
 }

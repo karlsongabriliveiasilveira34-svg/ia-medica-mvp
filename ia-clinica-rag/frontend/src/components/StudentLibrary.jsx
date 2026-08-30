@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, GraduationCap, Sparkles, Paperclip, Check, ArrowRight, HelpCircle, RefreshCw, Layers, Award, CheckCircle2, XCircle, AlertCircle, FileText } from 'lucide-react';
+import { GraduationCap, Sparkles, Paperclip, Check, ArrowRight, RefreshCw, Award, CheckCircle2, XCircle } from 'lucide-react';
 
 export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) {
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -46,9 +46,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
       .then((data) => {
         if (data.status === 'success') {
           setAttachedDocId(item.id);
-          if (onAttachDocumentToChat) {
-            onAttachDocumentToChat(data.data);
-          }
+          onAttachDocumentToChat?.(data.data);
         }
       });
   };
@@ -102,6 +100,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
         </div>
 
         <button
+          type="button"
           onClick={() => {
             const quizSection = document.getElementById('quiz-section');
             quizSection?.scrollIntoView({ behavior: 'smooth' });
@@ -118,6 +117,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         {categories.map((cat) => (
           <button
+            type="button"
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition ${
@@ -176,6 +176,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
 
                 <div className="flex gap-2 pt-2 border-t border-[#17231f]/10">
                   <button
+                    type="button"
                     onClick={() => handleAttach(item)}
                     className={`flex-1 py-2.5 rounded-full text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                       isAttached
@@ -197,10 +198,9 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => {
-                      if (onOpenChatWithTopic) {
-                        onOpenChatWithTopic(`Explique os principais conceitos e diretrizes de ${item.title}`);
-                      }
+                      onOpenChatWithTopic?.(`Explique os principais conceitos e diretrizes de ${item.title}`);
                     }}
                     className="p-2.5 rounded-full bg-[#f4f1ea] text-[#17231f] hover:bg-[#e8e2d7] transition"
                     title="Discutir este livro no chat"
@@ -240,6 +240,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
               className="flex-1 sm:w-64 px-4 py-2 rounded-2xl border border-[#17231f]/20 bg-[#faf8f5] text-xs outline-none focus:border-[#213f34]"
             />
             <button
+              type="button"
               onClick={() => handleGenerateQuiz()}
               disabled={generatingQuiz}
               className="px-5 py-2 rounded-full bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition flex items-center gap-1.5 shrink-0 disabled:opacity-50"
@@ -265,7 +266,6 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
             <div className="space-y-5">
               {quizData.questions.map((q, qIdx) => {
                 const selectedOpt = userAnswers[qIdx];
-                const isCorrect = selectedOpt === q.correctOptionIndex;
 
                 return (
                   <div
@@ -300,6 +300,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
 
                         return (
                           <button
+                            type="button"
                             key={`q-${qIdx}-opt-${optIdx}`}
                             onClick={() => handleSelectOption(qIdx, optIdx)}
                             className={`p-3 rounded-xl border text-left text-xs transition flex items-center justify-between ${optClass}`}
@@ -328,6 +329,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
             <div className="flex justify-end gap-3 pt-2">
               {!quizSubmitted ? (
                 <button
+                  type="button"
                   onClick={() => setQuizSubmitted(true)}
                   disabled={Object.keys(userAnswers).length === 0}
                   className="px-6 py-2.5 rounded-full bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition shadow-md disabled:opacity-50"
@@ -336,6 +338,7 @@ export function StudentLibrary({ onAttachDocumentToChat, onOpenChatWithTopic }) 
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={() => handleGenerateQuiz()}
                   className="px-6 py-2.5 rounded-full bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition shadow-md flex items-center gap-1.5"
                 >

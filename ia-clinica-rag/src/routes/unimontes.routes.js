@@ -62,7 +62,7 @@ const studentProgressStore = new Map();
 // 4. Registrar progresso do aluno em um período
 unimontesRouter.post("/progresso", (req, res) => {
   try {
-    const { periodoId, videoId, casoId, checkpointIdx, concluido } = req.body;
+    const { periodoId, videoId, casoId, checkpointIdx } = req.body || {};
     const userId = req.user?.id || req.body.userId || "anonymous_student";
 
     if (!studentProgressStore.has(userId)) {

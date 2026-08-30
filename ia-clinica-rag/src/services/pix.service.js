@@ -1,5 +1,3 @@
-import crypto from "crypto";
-
 /**
  * Serviço de Integração PIX para Contribuições Voluntárias & Assinaturas (MedIa v2.0)
  * Gera QR Codes dinâmicos e payloads padrão EMV (BR Code / Banco Central do Brasil).

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Send, ShieldCheck, CheckCircle2, AlertCircle, Baby, User, Calendar, Clock, Lock, FileText, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Clock, Loader2 } from 'lucide-react';
 import { MedIaIcon } from './MedIaLogo';
 
 export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
   const [token, setToken] = useState(initialToken || 'demo-paciente-lucas');
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successData, setSuccessData] = useState(null);
@@ -16,16 +15,13 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
   const [medicationsInUse, setMedicationsInUse] = useState('');
   const [allergies, setAllergies] = useState('');
   const [weightKg, setWeightKg] = useState('');
-  const [heightCm, setHeightCm] = useState('');
   const [ageMonths, setAgeMonths] = useState('');
-  const [gender, setGender] = useState('M');
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
   const [showLgpdTerms, setShowLgpdTerms] = useState(false);
 
   // Carregar dados da sessão pelo token
   useEffect(() => {
     if (!token) return;
-    setLoading(true);
     setError('');
 
     fetch(`/api/public/pre-anamnese/${token}`)
@@ -40,8 +36,10 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
           setError(data.message || 'Sessão não encontrada.');
         }
       })
-      .catch(() => setError('Erro ao conectar ao servidor de agendamento.'))
-      .finally(() => setLoading(false));
+      .catch((fetchErr) => {
+        console.warn("[PreAnamnese] Erro ao buscar sessão:", fetchErr.message);
+        setError('Erro ao conectar ao servidor de agendamento.');
+      });
   }, [token]);
 
   const handleSubmit = async (e) => {
@@ -68,9 +66,7 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
           medicationsInUse,
           allergies,
           weightKg: weightKg ? Number(weightKg) : null,
-          heightCm: heightCm ? Number(heightCm) : null,
           ageMonths: ageMonths ? Number(ageMonths) : null,
-          gender,
           lgpdConsentAccepted: true
         })
       });
@@ -78,11 +74,12 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setSuccessData(data.data);
-        if (onSubmitSuccess) onSubmitSuccess(data.data);
+        onSubmitSuccess?.(data.data);
       } else {
         setError(data.message || 'Falha ao enviar anamnese prévia.');
       }
     } catch (err) {
+      console.warn("[PreAnamnese] Erro ao enviar:", err.message);
       setError('Erro de comunicação ao enviar suas informações.');
     } finally {
       setSubmitting(false);
@@ -117,6 +114,7 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
           <span className="text-[#5e6c65] font-medium">Exemplos de pacientes agendados:</span>
           <div className="flex items-center gap-1.5">
             <button
+              type="button"
               onClick={() => {
                 setToken('demo-paciente-lucas');
                 setSuccessData(null);
@@ -128,6 +126,7 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
               Lucas (4 anos - Pediatria)
             </button>
             <button
+              type="button"
               onClick={() => {
                 setToken('demo-paciente-renata');
                 setSuccessData(null);
@@ -171,6 +170,7 @@ export function PreAnamnesePortal({ initialToken, onSubmitSuccess }) {
 
             <div className="pt-3">
               <button
+                type="button"
                 onClick={() => setSuccessData(null)}
                 className="px-6 py-3 rounded-full bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition"
               >

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Activity, Heart, Brain, AlertCircle, CheckCircle2, ChevronRight, Scale, Stethoscope } from 'lucide-react';
+import { Calculator, Activity, Heart, ChevronRight, Stethoscope } from 'lucide-react';
 
 export function MedicalCalculatorsView({ onSendToChat }) {
   const [selectedCalc, setSelectedCalc] = useState('curb65');
@@ -78,18 +78,21 @@ export function MedicalCalculatorsView({ onSendToChat }) {
         {/* Seletor de Calculadoras */}
         <div className="flex flex-wrap gap-2 bg-black/20 p-1.5 rounded-2xl border border-white/10">
           <button
+            type="button"
             onClick={() => setSelectedCalc('curb65')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedCalc === 'curb65' ? 'bg-white text-[#17231f] shadow' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Activity className="w-4 h-4 text-emerald-600" /> CURB-65 (Pneumonia)
           </button>
           <button
+            type="button"
             onClick={() => setSelectedCalc('chads')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedCalc === 'chads' ? 'bg-white text-[#17231f] shadow' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Heart className="w-4 h-4 text-rose-500" /> CHA₂DS₂-VASc (FA)
           </button>
           <button
+            type="button"
             onClick={() => setSelectedCalc('crcl')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${selectedCalc === 'crcl' ? 'bg-white text-[#17231f] shadow' : 'text-white/80 hover:bg-white/10'}`}
           >
@@ -145,7 +148,8 @@ export function MedicalCalculatorsView({ onSendToChat }) {
             </div>
 
             <button
-              onClick={() => onSendToChat && onSendToChat(`[CALCULADORA CLÍNICA - CURB-65]\nPontuação: ${curbScore}/5\nEstratificação: ${getCurbRecommendation(curbScore).risk}\nConduta: ${getCurbRecommendation(curbScore).conduct}\n\nPor favor, sugira o esquema antimicrobiano empírico recomendado conforme as diretrizes brasileiras.`)}
+              type="button"
+              onClick={() => onSendToChat?.(`[CALCULADORA CLÍNICA - CURB-65]\nPontuação: ${curbScore}/5\nEstratificação: ${getCurbRecommendation(curbScore).risk}\nConduta: ${getCurbRecommendation(curbScore).conduct}\n\nPor favor, sugira o esquema antimicrobiano empírico recomendado conforme as diretrizes brasileiras.`)}
               className="w-full py-3 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition flex items-center justify-center gap-1.5 shadow"
             >
               Levar para o Assistente Clínico <ChevronRight className="w-4 h-4" />
@@ -204,7 +208,8 @@ export function MedicalCalculatorsView({ onSendToChat }) {
             </div>
 
             <button
-              onClick={() => onSendToChat && onSendToChat(`[CALCULADORA CLÍNICA - CHA2DS2-VASc]\nPontuação: ${chadsScore} pontos\nEstratificação: ${getChadsRecommendation(chadsScore, chads.female).risk}\nConduta: ${getChadsRecommendation(chadsScore, chads.female).conduct}\n\nPor favor, apresente as opções de DOACs (Apixabana, Rivaroxabana, Dabigatrana) com doses e ajustes para este paciente.`)}
+              type="button"
+              onClick={() => onSendToChat?.(`[CALCULADORA CLÍNICA - CHA2DS2-VASc]\nPontuação: ${chadsScore} pontos\nEstratificação: ${getChadsRecommendation(chadsScore, chads.female).risk}\nConduta: ${getChadsRecommendation(chadsScore, chads.female).conduct}\n\nPor favor, apresente as opções de DOACs (Apixabana, Rivaroxabana, Dabigatrana) com doses e ajustes para este paciente.`)}
               className="w-full py-3 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition flex items-center justify-center gap-1.5 shadow"
             >
               Discutir Anticoagulação no Chat <ChevronRight className="w-4 h-4" />
@@ -289,7 +294,8 @@ export function MedicalCalculatorsView({ onSendToChat }) {
             </div>
 
             <button
-              onClick={() => onSendToChat && onSendToChat(`[AJUSTE DE DOSE - CLEARANCE DE CREATININA]\nClearance calculado: ${currentCrCl} mL/min (${getCrClStage(currentCrCl).stage})\nPeso: ${crCl.weight}kg, Idade: ${crCl.age} anos, Creatinina: ${crCl.scr} mg/dL.\n\nPor favor, informe a posologia correta e ajustes de dose para os medicamentos prescritos.`)}
+              type="button"
+              onClick={() => onSendToChat?.(`[AJUSTE DE DOSE - CLEARANCE DE CREATININA]\nClearance calculado: ${currentCrCl} mL/min (${getCrClStage(currentCrCl).stage})\nPeso: ${crCl.weight}kg, Idade: ${crCl.age} anos, Creatinina: ${crCl.scr} mg/dL.\n\nPor favor, informe a posologia correta e ajustes de dose para os medicamentos prescritos.`)}
               className="w-full py-3 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition flex items-center justify-center gap-1.5 shadow"
             >
               Ajustar Medicamentos no Chat <ChevronRight className="w-4 h-4" />

@@ -20,6 +20,7 @@ function getPoolConfig(rawUrl) {
       ssl
     };
   } catch (err) {
+    console.warn("[DATABASE] Usando connectionString direta após erro de parse de URL:", err.message);
     return {
       connectionString: rawUrl,
       ssl

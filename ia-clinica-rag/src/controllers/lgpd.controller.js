@@ -62,8 +62,8 @@ export class LgpdController {
           ]
         );
       } catch (dbErr) {
-        // Fallback em memória
-        inMemoryConsents.set(userId, consentRecord);
+        console.warn("[LGPD] Fallback em memória para consentimento:", dbErr.message);
+        inMemoryConsents.set(cleanUserId, consentRecord);
         if (sessionId) inMemoryConsents.set(sessionId, consentRecord);
       }
 
@@ -101,6 +101,7 @@ export class LgpdController {
           consent = result.rows[0];
         }
       } catch (dbErr) {
+        console.warn("[LGPD] Consulta em fallback para memória:", dbErr.message);
         consent = inMemoryConsents.get(identifier);
       }
 
@@ -179,6 +180,7 @@ export class LgpdController {
         );
         exportBundle.auditTrace = auditResult.rows;
       } catch (dbErr) {
+        console.warn("[LGPD] Exportação em fallback:", dbErr.message);
         exportBundle.note = "Dados recuperados do armazenamento seguro da sessão.";
       }
 
@@ -238,7 +240,7 @@ export class LgpdController {
         );
         affectedRecords += delMsg.rowCount || 0;
       } catch (dbErr) {
-        // Fallback em memória
+        console.warn("[LGPD] Expurgo em memória:", dbErr.message);
         inMemoryConsents.delete(sessionId);
       }
 
@@ -308,6 +310,7 @@ export class LgpdController {
           data: decryptedResults
         });
       } catch (dbErr) {
+        console.warn("[LGPD] Consulta blind index em fallback:", dbErr.message);
         return res.status(200).json({
           status: "success",
           count: 0,

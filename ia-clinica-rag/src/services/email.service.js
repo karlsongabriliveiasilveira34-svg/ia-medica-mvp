@@ -7,8 +7,9 @@ import nodemailer from 'nodemailer';
  */
 
 class EmailService {
+  transporter = null;
+
   constructor() {
-    this.transporter = null;
     this.initTransporter();
   }
 
@@ -16,7 +17,7 @@ class EmailService {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = Number.parseInt(process.env.SMTP_PORT || '465', 10);
     const user = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
-    const pass = (process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '').trim().replace(/\s+/g, '');
+    const pass = (process.env.SMTP_PASSWORD || process.env.EMAIL_PASSWORD || '').trim().replaceAll(/\s+/g, '');
 
     if (!user || !pass) {
       console.log('[EMAIL] ℹ️ SMTP não configurado (SMTP_USER/SMTP_PASSWORD ausentes). Modo Simulação.');

@@ -39,10 +39,15 @@ server.listen(0, async () => {
       headers["Content-Type"] = "application/json";
     }
 
+    let formattedBody;
+    if (options.body) {
+      formattedBody = typeof options.body === "string" ? options.body : JSON.stringify(options.body);
+    }
+
     const fetchOpts = {
       method: options.method || "GET",
       headers,
-      body: options.body ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body)) : undefined
+      body: formattedBody
     };
 
     const res = await fetch(url, fetchOpts);
@@ -189,7 +194,7 @@ server.listen(0, async () => {
     console.log("\n📌 BATERIA 6: PROTEÇÃO CONTRA PROTOTYPE POLLUTION & JSON CORROMPIDO");
     totalTests++;
 
-    const resProto = await makeRequest("/api/feedback", {
+    await makeRequest("/api/feedback", {
       method: "POST",
       body: JSON.stringify({
         __proto__: { isAdmin: true, polluted: "YES" },

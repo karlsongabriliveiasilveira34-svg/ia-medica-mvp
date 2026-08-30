@@ -9,8 +9,6 @@ import { ProbabilisticModal } from './components/ProbabilisticModal';
 import { MedicalReportEditor } from './components/MedicalReportEditor';
 import { LoginModal } from './components/LoginModal';
 import { DoctorWorklist } from './components/DoctorWorklist';
-import { PediatricModule } from './components/PediatricModule';
-import { PreAnamnesePortal } from './components/PreAnamnesePortal';
 import { StudentLibrary } from './components/StudentLibrary';
 import { StudentNotebookView } from './components/StudentNotebookView';
 import { PatientBookingPortal } from './components/PatientBookingPortal';

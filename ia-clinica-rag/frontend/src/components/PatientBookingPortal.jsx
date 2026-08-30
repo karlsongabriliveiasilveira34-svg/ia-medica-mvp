@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, User, Phone, FileText, CheckCircle2, ShieldCheck, ArrowRight, Upload, Sparkles } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle2, ShieldCheck, ArrowRight, Upload } from 'lucide-react';
 
 export function PatientBookingPortal({ onSubmitSuccess }) {
   const [step, setStep] = useState('booking'); // 'booking', 'anamnese', 'confirmation'
@@ -215,7 +215,8 @@ export function PatientBookingPortal({ onSubmitSuccess }) {
           </div>
 
           <button
-            onClick={() => onSubmitSuccess && onSubmitSuccess()}
+            type="button"
+            onClick={() => onSubmitSuccess?.()}
             className="px-6 py-3 rounded-2xl bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition"
           >
             Ver Fila de Atendimento do Médico

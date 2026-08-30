@@ -10,8 +10,7 @@
  * - Fase 4: Consolidação & Provas de Residência (Meses 16-24)
  */
 
-import crypto from "crypto";
-import { pool, ensureUsersSchema } from "../config/database.js";
+import crypto from "node:crypto";
 
 export const ESPECIALIDADES_DATABASE = [
   {
