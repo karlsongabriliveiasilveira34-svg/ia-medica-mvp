@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ia-clinica-rag
-        run: npm ci --ignore-scripts || npm install --ignore-scripts
+        run: npm ci --ignore-scripts
 
       - name: Run Native npm audit (Backend)
         working-directory: ia-clinica-rag
@@ -82,8 +82,8 @@ jobs:
 
       - name: Install Backend & Frontend Dependencies
         run: |
-          cd ia-clinica-rag && (npm ci --ignore-scripts || npm install --ignore-scripts)
-          cd frontend && (npm ci --ignore-scripts || npm install --ignore-scripts)
+          cd ia-clinica-rag && npm ci --ignore-scripts
+          cd frontend && npm ci --ignore-scripts
 
       - name: Run Medical Residency & Roadmap Tests
         working-directory: ia-clinica-rag

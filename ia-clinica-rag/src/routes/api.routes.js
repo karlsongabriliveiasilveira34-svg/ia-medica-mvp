@@ -42,10 +42,12 @@ import { logSanitizerMiddleware } from "../middleware/log-sanitizer.middleware.j
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 25 * 1024 * 1024, // Limite de 25MB por PDF
+    fileSize: 15 * 1024 * 1024, // Limite estrito de 15MB por PDF
     files: 1,
     fields: 10,
-    fieldSize: 1024 * 1024 // 1MB para campos de texto do formulário
+    parts: 15,
+    headerPairs: 100,
+    fieldSize: 512 * 1024 // 512KB para campos de texto do formulário
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === "application/pdf" || file.originalname.toLowerCase().endsWith(".pdf")) {
@@ -59,10 +61,12 @@ const upload = multer({
 const queryImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // Limite de 10MB para imagem clínica
+    fileSize: 5 * 1024 * 1024, // Limite estrito de 5MB para imagem clínica
     files: 1,
     fields: 10,
-    fieldSize: 1024 * 1024
+    parts: 15,
+    headerPairs: 100,
+    fieldSize: 512 * 1024
   }
 });
 

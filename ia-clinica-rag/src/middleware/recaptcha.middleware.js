@@ -7,7 +7,7 @@ export async function verifyRecaptchaMiddleware(req, res, next) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   const recaptchaToken = req.body?.recaptchaToken || req.headers['x-recaptcha-token'];
 
-  console.log(`[RECAPTCHA] 🔍 Verificando token reCAPTCHA para ${req.method} ${req.originalUrl}`);
+  console.log("[RECAPTCHA] 🔍 Verificando token reCAPTCHA para requisição.");
 
   // Se a chave secreta não estiver configurada no .env (modo dev/local)
   if (!secretKey || secretKey.trim() === '' || secretKey === 'sua-chave-secreta-recaptcha') {
@@ -51,7 +51,7 @@ export async function verifyRecaptchaMiddleware(req, res, next) {
     const data = await response.json();
 
     if (!data.success) {
-      console.warn('[RECAPTCHA][ERROR] ❌ Resposta negativa do Google:', data['error-codes'] || 'Desconhecido');
+      console.warn('[RECAPTCHA][ERROR] ❌ Resposta negativa do serviço de validação.');
       const errorCodes = data['error-codes'] || [];
 
       let userMsg = 'Verificação reCAPTCHA falhou. Por favor, marque a caixa novamente.';

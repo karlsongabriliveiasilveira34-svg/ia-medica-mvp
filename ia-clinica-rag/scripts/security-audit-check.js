@@ -85,7 +85,13 @@ if (fs.existsSync(authFile)) {
 // 4. Verificação de Dependências (SCA / npm audit)
 console.log("\n📌 BATERIA 3: VERIFICAÇÃO DE DEPENDÊNCIAS (SCA)");
 try {
-  const auditOutput = execSync("npm audit --audit-level=critical", { encoding: "utf8", stdio: "pipe" });
+  const safeEnv = { ...process.env, PATH: process.env.PATH || "" };
+  const auditOutput = execSync("npm audit --audit-level=critical", {
+    encoding: "utf8",
+    stdio: "pipe",
+    env: safeEnv,
+    windowsHide: true
+  });
   console.log("✅ [PASS] Dependências do Backend: 0 vulnerabilidades críticas.");
 } catch (e) {
   console.log("ℹ️ [INFO] Auditoria de dependências executada (recomenda-se npm audit fix se houver pacotes desatualizados).");

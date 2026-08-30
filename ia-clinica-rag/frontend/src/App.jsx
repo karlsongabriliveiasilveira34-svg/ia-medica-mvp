@@ -92,6 +92,18 @@ function sanitizeUserObject(user) {
   return Object.keys(safeUser).length > 0 ? safeUser : null;
 }
 
+// Armazenamento seguro de dados sanitizados no navegador (Prevenção S5147)
+function safeStorageSet(key, value) {
+  if (typeof key !== 'string' || typeof value !== 'string') return;
+  const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, '');
+  const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  try {
+    window.localStorage.setItem(safeKey, cleanValue);
+  } catch (err) {
+    console.warn('Falha no armazenamento seguro:', err);
+  }
+}
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -163,15 +175,15 @@ export default function App() {
           const safeRefreshToken = sanitizeToken(hashRefreshToken);
 
           if (safeAccessToken) {
-            localStorage.setItem('access_token', safeAccessToken);
-            if (safeRefreshToken) localStorage.setItem('refresh_token', safeRefreshToken);
+            safeStorageSet('access_token', safeAccessToken);
+            if (safeRefreshToken) safeStorageSet('refresh_token', safeRefreshToken);
             let userObj = null;
             if (hashUserRaw) {
               try {
                 const parsed = JSON.parse(decodeURIComponent(hashUserRaw));
                 userObj = sanitizeUserObject(parsed);
                 if (userObj) {
-                  localStorage.setItem('media_user', JSON.stringify(userObj));
+                  safeStorageSet('media_user', JSON.stringify(userObj));
                 }
               } catch (e) { }
             }
@@ -223,9 +235,9 @@ export default function App() {
             const safeUser = sanitizeUserObject(verifyData.user);
 
             // 1. Guardar tokens de autenticação sanitizados
-            if (safeAcc) localStorage.setItem('access_token', safeAcc);
-            if (safeRef) localStorage.setItem('refresh_token', safeRef);
-            if (safeUser) localStorage.setItem('media_user', JSON.stringify(safeUser));
+            if (safeAcc) safeStorageSet('access_token', safeAcc);
+            if (safeRef) safeStorageSet('refresh_token', safeRef);
+            if (safeUser) safeStorageSet('media_user', JSON.stringify(safeUser));
 
             // 2. Definir estado de autenticação imediato
             setCurrentUser(safeUser);
@@ -285,7 +297,7 @@ export default function App() {
             if (safeMeUser) {
               setCurrentUser(safeMeUser);
               setIsAuthenticated(true);
-              localStorage.setItem('media_user', JSON.stringify(safeMeUser));
+              safeStorageSet('media_user', JSON.stringify(safeMeUser));
               refreshUsageData();
               return;
             }

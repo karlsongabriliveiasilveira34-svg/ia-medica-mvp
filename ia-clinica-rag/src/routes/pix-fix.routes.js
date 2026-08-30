@@ -210,7 +210,7 @@ pixFixRouter.post(["/api/pix/confirmar", "/api/pix/confirm", "/pix/confirmar"], 
           "UPDATE users SET plan = $1, updated_at = NOW() WHERE id::text = $2 OR LOWER(email) = $3",
           [targetPlan, String(userId), (userEmail || "").toLowerCase()]
         );
-        console.log(`[PAYMENT] ✅ Plano ${targetPlan} ativado para usuário ${userEmail || userId}`);
+        console.log("[PAYMENT] ✅ Plano ativado com sucesso para usuário autenticado.");
       } catch (err) {
         console.warn("[PAYMENT] Aviso ao atualizar plano no PostgreSQL:", err.message);
       }

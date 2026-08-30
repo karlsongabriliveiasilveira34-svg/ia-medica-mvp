@@ -98,7 +98,7 @@ export async function ingestDocument({
   const inputForChunker = pagesData && pagesData.length > 0 ? pagesData : text;
   const chunks = chunkMedicalDocument(inputForChunker);
 
-  console.log(`📄 Documento: ${title}`);
+  console.log("[DOC] Ingestão de documento iniciada.");
   console.log(`🧩 Chunks médicos semânticos a vetorizar: ${chunks.length}`);
 
   for (let i = 0; i < chunks.length; i++) {
@@ -156,7 +156,7 @@ export async function ingestDocument({
     );
   }
 
-  console.log(`✅ Ingestão estruturada concluída para '${title}' (${chunks.length} chunks com seções e páginas).`);
+  console.log(`✅ Ingestão estruturada concluída com sucesso (${chunks.length} chunks com seções e páginas).`);
 
   return {
     documentId,

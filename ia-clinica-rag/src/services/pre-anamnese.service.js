@@ -42,7 +42,7 @@ class PreAnamneseService {
         lgpdConsent: {
           accepted: true,
           timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
-          ipAddress: "187.54.12.98",
+          ipAddress: "127.0.0.1",
           policyHash: "sha256-lgpd-art11-consent-v1.0"
         },
         aiSummary: {
@@ -87,7 +87,7 @@ class PreAnamneseService {
         lgpdConsent: {
           accepted: true,
           timestamp: new Date(Date.now() - 20 * 60000).toISOString(),
-          ipAddress: "177.34.88.102",
+          ipAddress: "127.0.0.1",
           policyHash: "sha256-lgpd-art11-consent-v1.0"
         },
         aiSummary: {

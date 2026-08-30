@@ -90,7 +90,7 @@ async function runAuthLifecycleTest() {
   const loginResultA = await AuthSecurityService.loginUser({
     email: testUserA.email,
     password: testUserA.password,
-    ip: "189.40.12.33",
+    ip: "127.0.0.1",
     userAgent: "Chrome Windows"
   });
 

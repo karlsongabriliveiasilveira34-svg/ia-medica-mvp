@@ -47,7 +47,7 @@ export async function fhirEncounterHandler(req, res) {
       id: session.id,
       status: "planned",
       class: {
-        system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+        system: "https://terminology.hl7.org/CodeSystem/v3-ActCode",
         code: "AMB",
         display: "Ambulatório / Consulta Eletiva"
       },

@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || env.jwtSecret;
  * Inclui logging estruturado seguro e proteção de sessão.
  */
 export async function getUserUsageHandler(req, res) {
-  console.log(`[USER_USAGE] request: ${req.method} ${req.originalUrl}`);
+  console.log("[USER_USAGE] Consulta de consumo iniciada.");
   try {
     let user = req.user;
 
@@ -40,7 +40,6 @@ export async function getUserUsageHandler(req, res) {
 
     console.log("[USER_USAGE] authenticated");
     const userId = user.userId || user.id || user.email;
-    console.log(`[USER_USAGE] userId: ${userId}`);
 
     console.log("[USER_USAGE] database query");
     // Obter plano do usuário
@@ -51,7 +50,7 @@ export async function getUserUsageHandler(req, res) {
     }
 
     const usageSummary = usageMeterService.getUsageSummary(userId, planId);
-    console.log(`[USER_USAGE] query result (Plan: ${planId}, Requests: ${usageSummary.usage.requestsUsed}/${usageSummary.usage.requestsLimit})`);
+    console.log("[USER_USAGE] Consulta de consumo processada com sucesso.");
     console.log("[USER_USAGE] response: 200 OK");
 
     return res.json({
@@ -66,7 +65,7 @@ export async function getUserUsageHandler(req, res) {
 }
 
 export async function upgradePlanHandler(req, res) {
-  console.log(`[USER_USAGE] upgrade request: ${req.method} ${req.originalUrl}`);
+  console.log("[USER_USAGE] Solicitação de upgrade de plano recebida.");
   try {
     const { planType } = req.body || {};
     const authHeader = req.headers.authorization;
@@ -99,7 +98,7 @@ export async function upgradePlanHandler(req, res) {
     }
 
     const updatedSummary = usageMeterService.getUsageSummary(userId, planType);
-    console.log(`[USER_USAGE] Plano atualizado para ${planType} (User: ${userId})`);
+    console.log("[USER_USAGE] Plano atualizado com sucesso.");
 
     return res.json({
       status: "success",
