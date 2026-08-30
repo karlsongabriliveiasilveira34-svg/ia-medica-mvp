@@ -47,8 +47,8 @@ export async function handleUploadDocument(req, res) {
     const { category = "geral", title } = req.body || {};
     
     // Sanitização rigorosa contra Path Traversal
-    const safeCategory = path.basename(String(category)).replace(/[^a-zA-Z0-9_-]/g, "") || "geral";
-    const safeFilename = path.basename(String(req.file.originalname)).replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeCategory = path.basename(String(category)).replaceAll(/[^a-zA-Z0-9_-]/g, "") || "geral";
+    const safeFilename = path.basename(String(req.file.originalname)).replaceAll(/[^a-zA-Z0-9._-]/g, "_");
 
     const targetFolder = path.resolve(knowledgePath, safeCategory);
     

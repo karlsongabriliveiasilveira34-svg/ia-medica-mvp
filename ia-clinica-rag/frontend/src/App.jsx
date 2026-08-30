@@ -93,17 +93,17 @@ function sanitizeUserObject(user) {
 // Armazenamento seguro de dados sanitizados no navegador (Prevenção S5147)
 function safeStorageSet(key, value) {
   if (typeof key !== 'string' || typeof value !== 'string') return;
-  const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, '');
-  const cleanValue = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+  const safeKey = key.replaceAll(/[^a-zA-Z0-9_-]/g, '');
+  const cleanValue = value.replaceAll(/[\u0000-\u001F\u007F-\u009F]/g, '');
   try {
     window.localStorage.setItem(safeKey, cleanValue);
   } catch (err) {
-    console.warn('Falha no armazenamento seguro:', err);
+    console.warn('Falha no armazenamento seguro:', err.message);
   }
 }
 
 function handleHashAuth(setVerificationBanner, setCurrentUser, setIsAuthenticated, setShowLogin, refreshUsageData) {
-  if (!window.location.hash || !window.location.hash.includes('access_token=')) return false;
+  if (!window.location.hash?.includes('access_token=')) return false;
   try {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const safeAccessToken = sanitizeToken(hashParams.get('access_token'));
@@ -121,7 +121,9 @@ function handleHashAuth(setVerificationBanner, setCurrentUser, setIsAuthenticate
         const parsed = JSON.parse(decodeURIComponent(hashUserRaw));
         userObj = sanitizeUserObject(parsed);
         if (userObj) safeStorageSet('media_user', JSON.stringify(userObj));
-      } catch (e) { }
+      } catch (e) {
+        console.warn('Falha no parse do usuário do hash:', e.message);
+      }
     }
 
     setCurrentUser(userObj);
@@ -135,7 +137,7 @@ function handleHashAuth(setVerificationBanner, setCurrentUser, setIsAuthenticate
     refreshUsageData();
     return true;
   } catch (e) {
-    console.warn('Erro ao processar hash de autenticação:', e);
+    console.warn('Erro ao processar hash de autenticação:', e.message);
     return false;
   }
 }
@@ -229,6 +231,7 @@ async function handleCookieSession(setCurrentUser, setIsAuthenticated, refreshUs
     refreshUsageData();
     return true;
   } catch (e) {
+    console.warn('Falha na validação de sessão por cookie:', e.message);
     return false;
   }
 }
@@ -282,7 +285,7 @@ export default function App() {
       .then((data) => {
         if (data && data.status === 'success') setUsageData(data.data);
       })
-      .catch((e) => console.warn('Erro ao carregar uso:', e));
+      .catch((e) => console.warn('Erro ao carregar uso:', e.message));
   };
 
   const [verificationBanner, setVerificationBanner] = useState(null);
@@ -305,11 +308,9 @@ export default function App() {
   useEffect(() => {
     if (!isNativeMobile()) return;
 
-    try {
-      StatusBar.setBackgroundColor({ color: '#213f34' }).catch(() => {});
-      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
-      SplashScreen.hide().catch(() => {});
-    } catch (e) { }
+    StatusBar.setBackgroundColor({ color: '#213f34' }).catch((err) => console.warn('StatusBar color:', err.message));
+    StatusBar.setStyle({ style: Style.Dark }).catch((err) => console.warn('StatusBar style:', err.message));
+    SplashScreen.hide().catch((err) => console.warn('SplashScreen hide:', err.message));
 
     const backListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
       if (showMobileDrawer) {
@@ -336,7 +337,7 @@ export default function App() {
     });
 
     return () => {
-      backListener.then(l => l.remove()).catch(() => {});
+      backListener.then(l => l.remove()).catch((err) => console.warn('BackListener remove:', err.message));
     };
   }, [
     showMobileDrawer,
@@ -405,25 +406,23 @@ export default function App() {
         alert('Erro ao gerar laudo médico: ' + (data.message || 'Falha no processamento.'));
       }
     } catch (err) {
+      console.warn('Erro de conexão ao iniciar laudo:', err.message);
       alert('Erro de conexão ao iniciar laudo médico.');
     }
   };
-
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-[#f4f1ea] flex flex-col items-center justify-center text-[#5e6c65]">
-        <div className="w-9 h-9 border-2 border-[#213f34] border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-medium">Iniciando MedIa...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f4f1ea] text-[#17231f] flex flex-col font-sans">
       {verificationBanner && (
         <div className={`px-4 py-3 text-center text-xs font-bold flex items-center justify-center gap-2 ${verificationBanner.type === 'success' ? 'bg-emerald-700 text-white' : 'bg-rose-700 text-white'}`}>
           <span>{verificationBanner.message}</span>
-          <button onClick={() => setVerificationBanner(null)} className="ml-2 text-sm font-black underline cursor-pointer">Fechar [x]</button>
+          <button
+            type="button"
+            onClick={() => setVerificationBanner(null)}
+            className="ml-2 text-sm font-black underline cursor-pointer"
+          >
+            Fechar [x]
+          </button>
         </div>
       )}
 
@@ -483,8 +482,9 @@ export default function App() {
         {(activeTab === 'fila' || activeTab === 'worklist') && (
           <DoctorWorklist
             onStartConsultationWithPatient={(patientCase) => {
+              const weightStr = patientCase.weightKg ? `\nPeso: ${patientCase.weightKg}kg` : '';
               setAttachedDocPrompt(
-                `[CASO CLÍNICO DA FILA DO DIA]\nPaciente: ${patientCase.patientName} (${patientCase.patientAge})\nSintomas relatados na pré-anamnese: "${patientCase.symptomsText || 'Queixas clínicas gerais'}"\nMedicamentos em uso: ${patientCase.medicationsInUse || 'Nenhum'}\nAlergias: ${patientCase.allergies || 'Nega'}${patientCase.weightKg ? `\nPeso: ${patientCase.weightKg}kg` : ''}\n\nPor favor, apresente a avaliação diagnóstica estruturada e o plano de conduta recomendado.`
+                `[CASO CLÍNICO DA FILA DO DIA]\nPaciente: ${patientCase.patientName} (${patientCase.patientAge})\nSintomas relatados na pré-anamnese: "${patientCase.symptomsText || 'Queixas clínicas gerais'}"\nMedicamentos em uso: ${patientCase.medicationsInUse || 'Nenhum'}\nAlergias: ${patientCase.allergies || 'Nega'}${weightStr}\n\nPor favor, apresente a avaliação diagnóstica estruturada e o plano de conduta recomendado.`
               );
               setActiveTab('roteamento');
             }}
