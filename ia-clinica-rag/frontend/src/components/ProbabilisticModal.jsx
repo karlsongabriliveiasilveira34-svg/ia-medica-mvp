@@ -30,14 +30,15 @@ export function ProbabilisticModal({ diagnosis, contextMessage, onClose, onStart
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn text-slate-100"
       onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
-      onKeyDown={(e) => e.key === 'Escape' && onClose?.()}
     >
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden glass-panel flex flex-col max-h-[85vh]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden glass-panel flex flex-col max-h-[85vh]"
+      >
         
         {/* Header com Porcentagem e Hipótese */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/90">

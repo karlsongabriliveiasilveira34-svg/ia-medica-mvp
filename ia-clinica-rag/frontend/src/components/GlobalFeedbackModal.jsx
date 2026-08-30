@@ -155,14 +155,15 @@ export function GlobalFeedbackModal({ isOpen, onClose, user, activeTab }) {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/75 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
-      <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-5">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-5"
+      >
         <button
           onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full text-[#5e6c65] hover:bg-[#faf8f5] hover:text-[#17231f] transition"

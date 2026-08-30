@@ -137,7 +137,7 @@ async function runImageAcceptanceSuite() {
 
     if (res.status === "success" && res.answer) {
       console.log(`   ✅ Sucesso! Sistema respondeu coerentemente a partir da imagem isolada.`);
-      console.log(`   Snippet da Resposta: "${res.answer.substring(0, 150).replace(/\n/g, ' ')}..."`);
+      console.log(`   Snippet da Resposta: "${res.answer.substring(0, 150).replaceAll('\n', ' ')}..."`);
       passedTests++;
     } else {
       console.error("   ❌ Falha ao processar imagem isolada!");

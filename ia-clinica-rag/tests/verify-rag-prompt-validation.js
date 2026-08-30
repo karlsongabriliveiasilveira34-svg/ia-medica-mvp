@@ -40,7 +40,7 @@ async function runRagPromptValidationTests() {
 
     const answerText = res.answer || "";
     const citedMatches = Array.from(answerText.matchAll(/\[Fonte\s+(\d+)\]/gi));
-    const citedIndices = new Set(citedMatches.map(m => parseInt(m[1], 10)));
+    const citedIndices = new Set(citedMatches.map(m => Number.parseInt(m[1], 10)));
     const citationsCount = (res.citations || []).length;
 
     console.log(`   Fontes Efetivamente Citadas no Texto: ${citedIndices.size}`);

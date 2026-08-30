@@ -163,7 +163,7 @@ export function LandingPage({ onStartChat }) {
         <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-5 py-12 sm:px-8 sm:py-16 lg:min-h-[760px] lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-14 lg:py-24">
           <div className="max-w-xl">
             <h1 className="font-editorial text-[2.85rem] font-medium leading-[0.98] tracking-[-0.045em] text-[#17231f] min-[380px]:text-[3.25rem] sm:text-6xl lg:text-[4.65rem]">
-              Menos tempo procurando.
+              Menos tempo procurando.{' '}
               <span className="mt-2 block italic text-[#9d4f3f]">Mais clareza para decidir.</span>
             </h1>
 
@@ -381,7 +381,11 @@ export function LandingPage({ onStartChat }) {
       </div>
 
       {selectedPlan && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#17231f]/55 p-4 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && setSelectedPlan(null)}>
+        <div
+          role="presentation"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#17231f]/55 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => event.target === event.currentTarget && setSelectedPlan(null)}
+        >
           <div className="relative w-full max-w-md rounded-2xl bg-[#fffdf8] p-7 shadow-2xl sm:p-8">
             <button onClick={() => setSelectedPlan(null)} aria-label="Fechar" className="absolute right-5 top-5 rounded-full p-2 text-[#69746f] hover:bg-[#f0ece3]"><X className="h-4 w-4" /></button>
             {submitted ? (

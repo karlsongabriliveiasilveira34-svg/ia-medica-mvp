@@ -92,34 +92,34 @@ export function sanitizePHIAndAnonymize(input) {
   let text = input;
 
   // 1. Redação de Documentos e Contatos Pessoais
-  text = text.replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "[CPF REDIGIDO LGPD]");
-  text = text.replace(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[0-9xX]\b/g, "[RG REDIGIDO LGPD]");
-  text = text.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[EMAIL REDIGIDO LGPD]");
-  text = text.replace(/\b(?:\(?\d{2}\)?\s)?9?\d{4}-?\d{4}\b/g, "[TELEFONE REDIGIDO LGPD]");
-  text = text.replace(/\b(?:prontu[áa]rio|registro|carteira|hc)\s*[:#]?\s*\d+/gi, "[PRONTUÁRIO REDIGIDO LGPD]");
+  text = text.replaceAll(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, "[CPF REDIGIDO LGPD]");
+  text = text.replaceAll(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[0-9xX]\b/g, "[RG REDIGIDO LGPD]");
+  text = text.replaceAll(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, "[EMAIL REDIGIDO LGPD]");
+  text = text.replaceAll(/\b(?:\(?\d{2}\)?\s)?9?\d{4}-?\d{4}\b/g, "[TELEFONE REDIGIDO LGPD]");
+  text = text.replaceAll(/\b(?:prontu[áa]rio|registro|carteira|hc)\s*[:#]?\d+/gi, "[PRONTUÁRIO REDIGIDO LGPD]");
 
   // 2. Anonimização de Idades em Meses (Crianças pequenas: 3 em 3 meses)
   // Ex: "7 meses", "7m", "bebê de 7 meses"
-  text = text.replace(/\b(\d{1,2})\s*(meses|mês)\b/gi, (match, p1) => {
+  text = text.replaceAll(/\b(\d{1,2})\s*(meses|mês)\b/gi, (match, p1) => {
     return anonymizeAgeInMonths(p1);
   });
 
   // 3. Anonimização de Idades em Anos (3 em 3 anos)
   // Ex: "52 anos", "52 anos de idade", "paciente de 52 anos"
-  text = text.replace(/\b(\d{1,3})\s*(anos|ano)\b/gi, (match, p1) => {
+  text = text.replaceAll(/\b(\d{1,3})\s*(anos|ano)\b/gi, (match, p1) => {
     return anonymizeAgeInYears(p1);
   });
 
   // 4. Anonimização e Conversão de Gênero para Nomes com Prefixos Formais
   // Ex: "paciente Renato", "o paciente Carlos Silva", "Dra. Maria", "Seu Joaquim", "Dona Francisca"
-  text = text.replace(/(?:(o|a)\s+)?(?:paciente|pac|sr|sra|dr|dra|seu|dona)\.?\s+([A-Za-zÀ-Úà-ú]+(?:\s[A-Za-zÀ-Úà-ú]+){0,5})/gi, (match, article, nameStr) => {
+  text = text.replaceAll(/(?:(o|a)\s+)?(?:paciente|pac|sr|sra|dr|dra|seu|dona)\.?\s+([A-Za-zÀ-Úà-ú]+(?:\s[A-Za-zÀ-Úà-ú]+){0,5})/gi, (match, article, nameStr) => {
     const gender = inferGenderFromName(nameStr) || (article === 'a' || /sra|dra|dona/i.test(match) ? 'feminino' : 'masculino');
     return gender === 'feminino' ? "paciente do sexo feminino" : "paciente do sexo masculino";
   });
 
   // 5. Anonimização e Conversão de Nomes Isolados no Início da Frase ou Antes de Idade / Sintoma
   // Ex: "Renato, 52 anos...", "Renato tem dor...", "Maria com febre...", "Carlos de 45 anos..."
-  text = text.replace(/^([A-Za-zÀ-Úà-ú]+(?:\s+[A-Za-zÀ-Úà-ú]+)?)(?=,\s*(?:faixa\s+et[áa]ria|\d+|com|apresenta|est[áa]|refere|inicia|queixa)|(?:\s+(?:tem|est[áa]|apresenta|refere|inicia|de\s+\d+|de\s+faixa)))/gi, (match, nameStr) => {
+  text = text.replaceAll(/^([A-Za-zÀ-Úà-ú]+(?:\s+[A-Za-zÀ-Úà-ú]+)?)(?=,\s*(?:faixa\s+et[áa]ria|\d+|com|apresenta|est[áa]|refere|inicia|queixa)|(?:\s+(?:tem|est[áa]|apresenta|refere|inicia|de\s+\d+|de\s+faixa)))/gi, (match, nameStr) => {
     // Não substituir palavras que já são termos clínicos comuns
     const lower = nameStr.toLowerCase();
     const reservedWords = ["paciente", "caso", "quadro", "crianca", "criança", "idoso", "idosa", "homem", "mulher", "bebe", "bebê", "recem", "recém"];

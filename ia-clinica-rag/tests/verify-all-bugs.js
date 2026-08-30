@@ -102,7 +102,7 @@ async function runAcceptanceSuite() {
         topSourceTitle: citations[0]?.title || "Nenhuma",
         matchedExpectedTheme: isMatched ? "✅ SIM (100% Correto)" : "❌ NÃO (Falha)",
         groundednessScore: res.confidence?.score || 0,
-        answerSnippet: res.answer ? res.answer.substring(0, 180).replace(/\n/g, " ") + "..." : "Sem resposta"
+        answerSnippet: res.answer ? res.answer.substring(0, 180).replaceAll("\n", " ") + "..." : "Sem resposta"
       });
 
       console.log(`   Resultado Teste ${item.id}: ${isMatched ? "✅ APROVADO" : "❌ REPROVADO"} | Trace: ${res.auditTraceId}`);

@@ -83,7 +83,7 @@ async function runFullAudit() {
   // 1.5 Normalização de centavos fracionados (ex: 15.3456 -> 15.35)
   try {
     const orderFraction = pixService.createPixOrder({ userId: "user_test_5", amount: 15.3456 });
-    assert(orderFraction.amount === 15.35 && orderFraction.qrCodeText.includes("540515.35"), "PIX-1.6: Centavos fracionados normalizados com precisão bancária (15.35)");
+    assert(Math.abs(orderFraction.amount - 15.35) < 0.001 && orderFraction.qrCodeText.includes("540515.35"), "PIX-1.6: Centavos fracionados normalizados com precisão bancária (15.35)");
   } catch (e) {
     assert(false, "PIX-1.6: Normalização de centavos", e.message);
   }

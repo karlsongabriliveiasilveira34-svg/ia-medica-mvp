@@ -320,7 +320,8 @@ export class ExternalEvidenceService {
       const queryWords = cleanQuery.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
 
       for (const item of items) {
-        const title = item.title && item.title.length > 0 ? item.title[0].replace(/<[^>]+>/g, "") : "Artigo Científico SciELO";
+        const rawTitle = item.title && item.title.length > 0 ? item.title[0] : "";
+        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Artigo Científico SciELO";
         const journal = item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "SciELO Brasil / América Latina";
 
         const { relevant, matchCount } = isRelevantSciELOArticle(title, journal, queryWords);
@@ -368,7 +369,8 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Cochrane Systematic Review";
+        const rawTitle = item.title || "";
+        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Cochrane Systematic Review";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const doiArticle = item.articleids?.find(a => a.idtype === "doi")?.value || null;
@@ -437,7 +439,8 @@ export class ExternalEvidenceService {
         const item = resultObj[id];
         if (!item) continue;
 
-        const title = item.title ? item.title.replace(/<[^>]+>/g, "") : "Artigo PubMed";
+        const rawTitle = item.title || "";
+        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Artigo PubMed";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const sourceName = item.source || "NCBI PubMed";

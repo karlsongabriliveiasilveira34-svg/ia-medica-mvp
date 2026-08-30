@@ -210,14 +210,15 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => closable && e.target === e.currentTarget && onClose?.()}
-      onKeyDown={(e) => closable && e.key === 'Escape' && onClose?.()}
     >
-      <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto"
+      >
         {closable && (
           <button
             onClick={onClose}

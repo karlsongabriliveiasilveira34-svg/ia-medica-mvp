@@ -129,11 +129,8 @@ export function MobileDrawer({
 
   return (
     <div 
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="fixed inset-0 z-50 flex md:hidden"
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
       <button 
         type="button"
@@ -143,6 +140,8 @@ export function MobileDrawer({
       />
 
       <aside 
+        role="dialog"
+        aria-modal="true"
         className="relative ml-auto flex h-full w-[85%] max-w-sm flex-col bg-[#f4f1ea] text-[#17231f] shadow-2xl transition-transform animate-slideLeft border-l border-[#17231f]/10"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >

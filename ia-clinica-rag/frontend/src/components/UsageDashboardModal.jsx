@@ -308,14 +308,15 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
     >
-      <div className="relative w-full max-w-4xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-4xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-[#17231f]/10 max-h-[90vh] overflow-y-auto space-y-6"
+      >
         <div className="flex items-start justify-between border-b border-[#17231f]/10 pb-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-[#213f34] text-[#f4f1ea] flex items-center justify-center shadow-md">

@@ -195,14 +195,15 @@ export function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured }) {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      tabIndex={-1}
+      role="presentation"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[#17231f]/85 p-3 sm:p-5 backdrop-blur-md animate-fadeIn"
       onMouseDown={(e) => e.target === e.currentTarget && handleCloseModal()}
-      onKeyDown={(e) => e.key === 'Escape' && handleCloseModal()}
     >
-      <div className="relative flex flex-col w-full max-w-xl max-h-[92vh] overflow-hidden rounded-[2rem] bg-slate-950 border border-slate-800 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)] text-white">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative flex flex-col w-full max-w-xl max-h-[92vh] overflow-hidden rounded-[2rem] bg-slate-950 border border-slate-800 shadow-[0_30px_90px_-20px_rgba(0,0,0,0.8)] text-white"
+      >
         
         {/* Header da Câmera */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800/80 bg-slate-900/60">
