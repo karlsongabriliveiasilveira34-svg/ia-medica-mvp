@@ -203,6 +203,147 @@ Foque de forma imediata na conduta terapêutica, posologia, fármacos de 1ª lin
   return { historyPromptSection, strictModeInstructions, intentInstruction, studentPersonaPrompt, imageInstruction };
 }
 
+function buildDeterministicSourcesSection(usedChunks) {
+  if (!usedChunks || usedChunks.length === 0) return "";
+  return "## Fontes e Referências\n" + usedChunks.map((c, i) => {
+    const title = c.document_title || c.title || "Metadado indisponível";
+    const org = c.document_organization || c.organization || "Metadado indisponível";
+    const year = c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || "Metadado indisponível";
+    const authors = c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0
+      ? c.document_authors.join(", ")
+      : (c.authors ? (Array.isArray(c.authors) ? c.authors.join(", ") : c.authors) : "Metadado indisponível");
+    const pageNum = c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1);
+    const url = c.canonical_url || c.url || null;
+    const doi = c.doi ? `DOI: ${c.doi}` : (c.pmid ? `PMID: ${c.pmid}` : null);
+
+    let refStr = `${i + 1}. **${title}** — *${org}* (${year}). Autores: ${authors}. Página: ${pageNum}.`;
+    if (doi) refStr += ` ${doi}.`;
+    if (url && url !== "Metadado indisponível") refStr += ` Disponível em: ${url}`;
+    return refStr;
+  }).join("\n");
+}
+
+function buildConsensusMatrix(usedChunks, intentType) {
+  const totalSources = usedChunks.length;
+  const isTreatmentQuery = ['NOVO_CASO', 'CONTINUACAO_CASO', 'PESQUISA_EVIDENCIA', 'CLINICAL_CASE', 'EVIDENCE_SEARCH'].includes(intentType);
+  let primarySupportPercent = 92;
+  let hasRealDivergence = false;
+
+  if (totalSources > 0) {
+    const highAuthorityCount = usedChunks.filter(c => (c.authorityLevel || c.authority_level || 4) <= 4).length;
+    const webSearchCount = usedChunks.filter(c => c.originType === 'WEB_SEARCH').length;
+
+    if (webSearchCount > 0 && highAuthorityCount > 0) {
+      const ratio = highAuthorityCount / totalSources;
+      primarySupportPercent = Math.min(95, Math.max(55, Math.round(ratio * 100)));
+      if (primarySupportPercent < 90) {
+        hasRealDivergence = true;
+      }
+    } else if (highAuthorityCount === totalSources) {
+      primarySupportPercent = 95;
+    } else {
+      primarySupportPercent = 85;
+    }
+  }
+
+  const showCard = isTreatmentQuery && usedChunks.length > 0;
+
+  return {
+    agreementPercentage: showCard ? primarySupportPercent : 0,
+    consensusLevel: showCard
+      ? (primarySupportPercent >= 90 ? "Alto Consenso (Diretrizes Oficiais Padronizadas)" : (primarySupportPercent >= 70 ? "Consenso Moderado com Alternativas" : "Divergência de Conduta na Literatura"))
+      : "N/A",
+    primaryPosition: showCard ? "Conduta Apoiada pelas Diretrizes de Referência" : "N/A",
+    primarySupportPercent: showCard ? primarySupportPercent : 0,
+    alternativeSupportPercent: showCard ? (100 - primarySupportPercent) : 0,
+    hasRealDivergence: showCard ? hasRealDivergence : false,
+    showCard,
+    summary: showCard ? `${primarySupportPercent}% das evidências e diretrizes recuperadas sustentam a conduta prioritária apresentada.` : ""
+  };
+}
+
+function buildCitationList(usedChunks) {
+  return usedChunks.map((c, i) => {
+    let parsedAuthors = null;
+    if (c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0) {
+      parsedAuthors = c.document_authors.join(", ");
+    } else if (c.authors) {
+      parsedAuthors = Array.isArray(c.authors) ? (c.authors.length > 0 ? c.authors.join(", ") : null) : c.authors;
+    }
+
+    const pageNum = c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1);
+    const pdfUrl = c.canonical_url || c.url || (c.document_filename ? `/knowledge/${encodeURIComponent(c.document_filename)}#page=${pageNum}` : null);
+    const originType = c.originType || (c.url && !c.url.startsWith('/knowledge') ? 'WEB_SEARCH' : 'LOCAL_VALIDATED');
+
+    return {
+      id: `citation-${i + 1}`,
+      sourceId: i + 1,
+      documentId: c.document_id || null,
+      title: c.document_title || c.title || "Metadado indisponível",
+      filename: c.document_filename || c.filename || "Metadado indisponível",
+      authors: parsedAuthors || "Metadado indisponível",
+      year: c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || null,
+      organization: c.document_organization || c.organization || "Metadado indisponível",
+      originType,
+      sourceType: c.source_type || c.document_category || "GUIDELINE",
+      gradeLevel: c.gradeLevel || "Nível 2 (Diretriz / Estudo Clínico)",
+      gradeCode: c.gradeCode || 2,
+      authorityLevel: c.authorityLevel || c.authority_level || 4,
+      rankingRationale: c.rankingRationale || "Evidência clínica de suporte com alta similaridade semântica para a tomada de decisão.",
+      page: pageNum,
+      section: c.section_title || "Geral",
+      doi: c.doi || null,
+      pmid: c.pmid || null,
+      url: pdfUrl,
+      excerpt: c.content,
+      supportScore: c.evidenceScore || 0.85
+    };
+  });
+}
+
+function extractUsedChunks(rawAnswerText, promptChunks, allChunks, isDeepResearchMode) {
+  const citedMatches = Array.from(rawAnswerText.matchAll(/\[Fonte\s+(\d+)\]/gi));
+  const citedIndices = new Set(citedMatches.map(m => Number.parseInt(m[1], 10) - 1));
+  const directlyCited = promptChunks.filter((_, idx) => citedIndices.has(idx));
+  const finalEvidenceList = [...directlyCited];
+
+  promptChunks.forEach((c) => {
+    const isAlreadyIn = finalEvidenceList.some(
+      existing => (existing.document_id && existing.document_id === c.document_id) ||
+                  (existing.id && existing.id === c.id) ||
+                  (existing.document_title && existing.document_title === c.document_title)
+    );
+    if (!isAlreadyIn && finalEvidenceList.length < (isDeepResearchMode ? 10 : 5)) {
+      finalEvidenceList.push(c);
+    }
+  });
+
+  return finalEvidenceList.length > 0 ? finalEvidenceList : (allChunks || []).slice(0, 4);
+}
+
+function assembleSanitizedAnswerWithSources(rawAnswerText, usedChunks, deterministicSourcesSection) {
+  let sanitizedAnswer = rawAnswerText
+    .replace(/##\s*(?:Fontes\s+e\s+Referências|Referências|Fontes)[\s\S]*?(?=(?:##\s*Próximas\s+Perguntas|##\s*Perguntas|$))/i, "")
+    .trim();
+
+  if (usedChunks.length === 0 && !sanitizedAnswer.includes("Não foram encontradas evidências")) {
+    const honestNotice = "\n\n> ⚠️ **Nota de Transparência Científica**: Não foram encontradas evidências certificadas na base de conhecimento específicas sobre este tópico. A resposta foi elaborada com base no conhecimento clínico consolidado.";
+    if (sanitizedAnswer.includes("## Próximas Perguntas Sugeridas")) {
+      return sanitizedAnswer.replace("## Próximas Perguntas Sugeridas", `${honestNotice}\n\n## Próximas Perguntas Sugeridas`);
+    }
+    return sanitizedAnswer + honestNotice;
+  }
+
+  if (deterministicSourcesSection) {
+    if (sanitizedAnswer.includes("## Próximas Perguntas Sugeridas")) {
+      return sanitizedAnswer.replace("## Próximas Perguntas Sugeridas", `${deterministicSourcesSection}\n\n## Próximas Perguntas Sugeridas`);
+    }
+    return `${sanitizedAnswer}\n\n${deterministicSourcesSection}`;
+  }
+
+  return sanitizedAnswer;
+}
+
 export class OrchestratorAgent {
   /**
    * Orquestrador Principal com Raciocínio Clínico Resolutivo e Matriz de Diagnósticos Diferenciais (Soma 100%)
@@ -233,7 +374,7 @@ export class OrchestratorAgent {
     logStep("AGENT_ROUTER", `Agente selecionado: ${agent.name} (${agent.id})`);
 
     // 3. Triagem de Segurança Pré-Geração e Red Flags
-    const safetyTriage = SafetyLayerAgent.evaluatePreGenerationSafety(analysis, question);
+    SafetyLayerAgent.evaluatePreGenerationSafety(analysis, question);
 
     // 4. Pré-Processamento & Expansão Médica com Histórico e LGPD
     const prepResult = await PreProcessorAgent.expandMedicalQuery(question, historyFormattedText);
@@ -257,22 +398,11 @@ export class OrchestratorAgent {
     const isFollowUp = prepResult.intentType === 'PERGUNTA_COMPLEMENTAR' || prepResult.intentType === 'DUVIDA_GERAL' || prepResult.intentType === 'GENERAL_STUDY' || prepResult.intentType === 'GREETING';
     const isFullDiagnosticTriggered = !isFollowUp && (prepResult.intentType === 'CLINICAL_CASE' || prepResult.intentType === 'NOVO_CASO' || prepResult.intentType === 'CONTINUACAO_CASO') && userMode === 'doctor';
 
-    console.log("📊 [OBSERVABILITY LOG]", JSON.stringify({
-      timestamp: new Date().toISOString(),
-      auditTraceId,
-      userMode,
-      input: question,
-      intent: prepResult.intentType,
-      route: "clinical_rag_pipeline",
-      ragCalled: true,
-      llmCalled: true,
-      diagnosisCalled: isFullDiagnosticTriggered
-    }));
     logStep("INTENT_EVALUATION", `Categoria: ${prepResult.intentType} | Histórico: ${conversationHistory.length} msgs | Full Diagnostic: ${isFullDiagnosticTriggered}`);
 
-    // 5. Recuperação Híbrida de Evidências com Score de Autoridade (Suporte a Pesquisa Profunda 1.500 Artigos)
+    // 5. Recuperação Híbrida de Evidências com Score de Autoridade
     logStep("RETRIEVAL_START", isDeepResearchMode 
-      ? "🚀 [PESQUISA PROFUNDA ATIVADA] Buscando 1.500 artigos, livros e laudos no PostgreSQL, PubMed, SciELO, Cochrane e NIH..." 
+      ? "🚀 [PESQUISA PROFUNDA ATIVADA] Buscando 1.500 artigos no PostgreSQL, PubMed, SciELO, Cochrane e NIH..." 
       : "🔍 [BUSCA PADRÃO 500 ARTIGOS] Buscando 500 artigos no PostgreSQL, PubMed, SciELO, Cochrane e NIH...");
     
     const chunks = await RetrievalAgent.retrieveHybrid({
@@ -285,39 +415,17 @@ export class OrchestratorAgent {
       filters: agent.retrievalFilters || {}
     });
 
-    console.log(`
-================================================================================
-📚 [LOG DE EVIDÊNCIAS - DOCUMENTOS UTILIZADOS PELA IA PARA A RESPOSTA]
-================================================================================
-Total de Fontes/Trechos Selecionados: ${chunks ? chunks.length : 0}
-`);
-    if (chunks && chunks.length > 0) {
-      chunks.forEach((c, idx) => {
-        console.log(`  📄 [Fonte ${idx + 1}] ${c.document_title || c.title} (${c.document_filename || c.filename}) - ${c.document_organization || c.organization || 'Metadado indisponível'}`);
-      });
-    }
-    console.log(`--------------------------------------------------------------------------------\n`);
     logStep("RETRIEVAL_RESULT", `Total de trechos recuperados: ${chunks ? chunks.length : 0}`);
 
-    // Tratamento estrito NotebookLM: se em modo estrito e sem trechos na base, declarar ausência de informação
+    // Tratamento estrito NotebookLM
     if (agent.strictEvidenceMode && (!chunks || chunks.length === 0)) {
       const latencyMs = Date.now() - startTime;
-      logStep("NOTEBOOKLM_STRICT_NO_EVIDENCE", "Nenhum trecho relevante encontrado na base no modo estrito NotebookLM.");
       return {
         status: "success",
-        answer: "**Informação não localizada no acervo institucional**\n\nOs documentos atualmente armazenados na base local não contêm evidências científicas suficientes para responder a esta consulta de forma estritamente ancorada.\n\nRecomenda-se a inclusão de diretrizes ou artigos em PDF referentes ao tema no catálogo de conhecimento.",
-        agent: {
-          id: agent.id,
-          name: agent.name,
-          description: agent.description
-        },
-        confidence: {
-          level: "low",
-          score: 0.0
-        },
-        evidence: {
-          level: "Ausente"
-        },
+        answer: "**Informação não localizada no acervo institucional**\n\nOs documentos atualmente armazenados na base local não contêm evidências científicas suficientes para responder a esta consulta de forma estritamente ancorada.",
+        agent: { id: agent.id, name: agent.name, description: agent.description },
+        confidence: { level: "low", score: 0.0 },
+        evidence: { level: "Ausente" },
         differentialDiagnoses: [],
         citations: [],
         warnings: [],
@@ -336,17 +444,9 @@ Total de Fontes/Trechos Selecionados: ${chunks ? chunks.length : 0}
       };
     }
 
-    // 6. Formatar contexto de evidências estruturado para o LLM (Top 8 no padrão / Top 14 na pesquisa profunda)
     // 6. Formatar contexto de evidências estruturado para o LLM
     const contextFormatted = formatEvidenceContext(chunks, isDeepResearchMode);
-
-    const {
-      historyPromptSection,
-      strictModeInstructions,
-      intentInstruction,
-      studentPersonaPrompt,
-      imageInstruction
-    } = buildPersonaAndIntentInstructions(
+    const { historyPromptSection, strictModeInstructions, intentInstruction, studentPersonaPrompt, imageInstruction } = buildPersonaAndIntentInstructions(
       isFollowUp,
       prepResult.intentType,
       userMode,
@@ -365,13 +465,11 @@ Você é uma plataforma avançada de Apoio à Decisão Clínica Baseado em Evid�
 Sua missão é fornecer respostas clínicas de alta profundidade técnica, práticas e estritamente ancoradas em evidências rastreáveis.
 
 DIRETRIZES DE ESTILO E COMUNICAÇÃO PROFISSIONAL:
-1. PROIBIDO O USO DE EMOJIS: Não utilize emojis em títulos, subtítulos, listas, início de parágrafos ou qualquer parte da resposta (exceto o aviso padrão de segurança de imagem se necessário). A comunicação deve ser formal, técnica e médica.
+1. PROIBIDO O USO DE EMOJIS: Não utilize emojis em títulos, subtítulos, listas, início de parágrafos ou qualquer parte da resposta.
 2. Priorize clareza, precisão terminológica, rigor científico e concisão.
 
 ${historyPromptSection}
 ESTRUTURA OBRIGATÓRIA DA RESPOSTA:
-Forneça a resposta estruturada em Markdown com as seguintes seções padronizadas (SEM EMOJIS):
-
 ## Resposta Direta
 - Síntese resolutiva e imediata da dúvida clínica em 2-3 frases objetivas.
 
@@ -382,29 +480,16 @@ Forneça a resposta estruturada em Markdown com as seguintes seções padronizad
 - Quando houver condutas divergentes, quantifique proporcionalmente os estudos e diretrizes que apoiam cada conduta de forma neutra.
 
 ## Exame Físico e Manobras Clínicas
-- Quando aplicável, descreva passo a passo a execução dos exames físicos e manobras clínicas relevantes, indicando o achado esperado e a citação [Fonte X].
+- Quando aplicável, descreva passo a passo a execução dos exames físicos e manobras clínicas relevantes.
 
 ## Conduta Terapêutica e Prescrição
-- Passos objetivos de conduta de consultório ou emergência, incluindo fármacos, vias de administração e posologia (com dose por peso corporal em kg quando aplicável).
+- Passos objetivos de conduta de consultório ou emergência, incluindo fármacos, vias de administração e posologia.
 
 ## Sinais de Alarme (Red Flags)
 - Sinais críticos de gravidade que exigem intervenção de urgência ou encaminhamento imediato.
 
 ## Próximas Perguntas Sugeridas
 - Forneça exatamente 3 perguntas de continuação clínica em formato de lista numerada (1., 2., 3.).
-
-REGRA OBRIGATÓRIA DE CITAÇÃO E MULTI-FONTES (RASTREABILIDADE MÉDICA):
-1. OBRIGATÓRIO: CITE MÚLTIPLAS FONTES DISTINTAS ([Fonte 1], [Fonte 2], [Fonte 3], etc.) distribuídas no corpo das diferentes seções da resposta.
-2. NUNCA restrinja a resposta a apenas uma fonte se houver mais de uma fonte disponível nos DOCUMENTOS DE REFERÊNCIA.
-3. Distribua as citações correlacionando cada recomendação clínica à sua respectiva fonte:
-   - Em '## Detalhamento Clínico e Fisiopatologia': cite os artigos e estudos de etiopatogenia/diagnóstico.
-   - Em '## Conduta Terapêutica e Prescrição': cite as diretrizes oficiais e ensaios clínicos com doses e tratamentos.
-   - Em '## Consenso e Divergência na Literatura': cite revisões sistemáticas, meta-análises e diretrizes de sociedades.
-   - Em '## Exame Físico e Manobras Clínicas': cite os manuais e diretrizes de propedêutica.
-4. Insira os marcadores [Fonte 1], [Fonte 2], etc. no corpo do texto para garantir a rastreabilidade médico-legal completa.
-5. É PROIBIDO escrever a seção de referências por extenso no texto (o sistema formatará e anexará automaticamente as fontes oficiais citadas).
-6. SE NENHUMA FONTE FOR FORNECIDA NO CONTEXTO: Apresente a resposta com base no consenso científico e inclua no final da '## Resposta Direta' a nota:
-   "⚠️ NOTA: Não foram encontradas evidências certificadas na base interna específicas sobre este tópico. Resposta baseada em conhecimento clínico consolidado."
 
 DOCUMENTOS DE REFERÊNCIA RECUPERADOS:
 ${contextFormatted}
@@ -418,17 +503,7 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
 
     try {
       const geminiContents = imagePayload
-        ? [
-            {
-              inlineData: {
-                mimeType: imagePayload.mimeType,
-                data: imagePayload.base64Data
-              }
-            },
-            {
-              text: systemPrompt
-            }
-          ]
+        ? [{ inlineData: { mimeType: imagePayload.mimeType, data: imagePayload.base64Data } }, { text: systemPrompt }]
         : systemPrompt;
 
       const geminiResponse = await generateWithRetry({
@@ -441,11 +516,11 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
       rawAnswerText = "Falha no processamento da resposta pelo modelo de linguagem.";
     }
 
-    // 7. Calcular Matriz de Diagnósticos Diferenciais Probabilísticos (Soma 100%) - Apenas se não for pergunta de acompanhamento
+    // 7. Calcular Matriz de Diagnósticos Diferenciais Probabilísticos
     let differentialDiagnoses = [];
     if (isFullDiagnosticTriggered) {
       try {
-        logStep("DIAGNOSIS_MATRIX", "Calculando diagnósticos diferenciais probabilísticos (Soma 100%)...");
+        logStep("DIAGNOSIS_MATRIX", "Calculando diagnósticos diferenciais probabilísticos...");
         differentialDiagnoses = await DifferentialDiagnosisAgent.calculateProbabilities({
           question: historyFormattedText ? `${historyFormattedText}\n${prepResult.sanitizedQuery}` : prepResult.sanitizedQuery,
           analysis,
@@ -454,73 +529,12 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
       } catch (diagErr) {
         console.warn("⚠️ Falha ao calcular diagnósticos diferenciais:", diagErr.message);
       }
-    } else {
-      logStep("DIAGNOSIS_MATRIX_SKIPPED", "Recálculo de diagnósticos diferenciais suprimido por se tratar de pergunta de acompanhamento/conduta.");
     }
 
-    // 8. Extrair quais marcadores [Fonte X] foram efetivamente citados no texto
-    const citedMatches = Array.from(rawAnswerText.matchAll(/\[Fonte\s+(\d+)\]/gi));
-    const citedIndices = new Set(citedMatches.map(m => Number.parseInt(m[1], 10) - 1));
-
-    // Mapear chunks diretamente citados
-    const directlyCitedChunks = promptChunks.filter((_, idx) => citedIndices.has(idx));
-
-    // Garantir retenção das principais evidências recuperadas de alta relevância
-    const finalEvidenceList = [...directlyCitedChunks];
-    promptChunks.forEach((c) => {
-      const isAlreadyIn = finalEvidenceList.some(
-        existing => (existing.document_id && existing.document_id === c.document_id) ||
-                    (existing.id && existing.id === c.id) ||
-                    (existing.document_title && existing.document_title === c.document_title)
-      );
-      if (!isAlreadyIn && finalEvidenceList.length < (isDeepResearchMode ? 10 : 5)) {
-        finalEvidenceList.push(c);
-      }
-    });
-
-    const usedChunks = finalEvidenceList.length > 0 ? finalEvidenceList : (chunks || []).slice(0, 4);
-
-    // Renderizar determinísticamente a seção ## Fontes e Referências apenas com as fontes validadas e citadas
-    const deterministicSourcesSection = (usedChunks.length > 0)
-      ? "## Fontes e Referências\n" + usedChunks.map((c, i) => {
-          const title = c.document_title || c.title || "Metadado indisponível";
-          const org = c.document_organization || c.organization || "Metadado indisponível";
-          const year = c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || "Metadado indisponível";
-          const authors = c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0
-            ? c.document_authors.join(", ")
-            : (c.authors ? (Array.isArray(c.authors) ? c.authors.join(", ") : c.authors) : "Metadado indisponível");
-          const pageNum = c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1);
-          const url = c.canonical_url || c.url || null;
-          const doi = c.doi ? `DOI: ${c.doi}` : (c.pmid ? `PMID: ${c.pmid}` : null);
-
-          let refStr = `${i + 1}. **${title}** — *${org}* (${year}). Autores: ${authors}. Página: ${pageNum}.`;
-          if (doi) refStr += ` ${doi}.`;
-          if (url && url !== "Metadado indisponível") refStr += ` Disponível em: ${url}`;
-          return refStr;
-        }).join("\n")
-      : "";
-
-    // Remover qualquer seção de referências redigida livremente pelo LLM para garantir 100% de integridade do banco
-    let sanitizedAnswer = rawAnswerText
-      .replace(/##\s*(?:Fontes\s+e\s+Referências|Referências|Fontes)[\s\S]*?(?=(?:##\s*Próximas\s+Perguntas|##\s*Perguntas|$))/i, "")
-      .trim();
-
-    // Se nenhuma fonte foi citada como relevante, anexar a nota transparente médica oficial
-    if (usedChunks.length === 0 && !sanitizedAnswer.includes("Não foram encontradas evidências")) {
-      const honestNotice = "\n\n> ⚠️ **Nota de Transparência Científica**: Não foram encontradas evidências certificadas na base de conhecimento específicas sobre este tópico. A resposta foi elaborada com base no conhecimento clínico consolidado.";
-      if (sanitizedAnswer.includes("## Próximas Perguntas Sugeridas")) {
-        sanitizedAnswer = sanitizedAnswer.replace("## Próximas Perguntas Sugeridas", `${honestNotice}\n\n## Próximas Perguntas Sugeridas`);
-      } else {
-        sanitizedAnswer += honestNotice;
-      }
-    } else if (deterministicSourcesSection) {
-      // Inserir a seção de fontes validadas imediatamente antes de Próximas Perguntas Sugeridas
-      if (sanitizedAnswer.includes("## Próximas Perguntas Sugeridas")) {
-        sanitizedAnswer = sanitizedAnswer.replace("## Próximas Perguntas Sugeridas", `${deterministicSourcesSection}\n\n## Próximas Perguntas Sugeridas`);
-      } else {
-        sanitizedAnswer += `\n\n${deterministicSourcesSection}`;
-      }
-    }
+    // 8. Identificar chunks utilizados e montar seção de fontes
+    const usedChunks = extractUsedChunks(rawAnswerText, (chunks || []).slice(0, isDeepResearchMode ? 14 : 8), chunks, isDeepResearchMode);
+    const deterministicSourcesSection = buildDeterministicSourcesSection(usedChunks);
+    const sanitizedAnswer = assembleSanitizedAnswerWithSources(rawAnswerText, usedChunks, deterministicSourcesSection);
 
     // 9. Validação de Citações e Groundedness Limpo
     const citationValidation = validateClaimsAndCitations({ answerText: sanitizedAnswer, chunks: usedChunks });
@@ -531,88 +545,10 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
     });
 
     const latencyMs = Date.now() - startTime;
-    logStep("COMPLETE", `Processamento concluído em ${latencyMs}ms com ${differentialDiagnoses.length} hipóteses prévias`);
+    const consensusMatrix = buildConsensusMatrix(usedChunks, prepResult.intentType);
+    const citations = buildCitationList(usedChunks);
 
-    // 10. Calcular Métrica Quantitativa de Consenso Científico Dinâmico
-    const totalSources = usedChunks.length;
-    const isTreatmentQuery = ['NOVO_CASO', 'CONTINUACAO_CASO', 'PESQUISA_EVIDENCIA', 'CLINICAL_CASE', 'EVIDENCE_SEARCH'].includes(prepResult.intentType);
-    
-    // Análise dinâmica de acordo com a concordância das fontes recuperadas
-    let primarySupportPercent = 92;
-    let hasRealDivergence = false;
-
-    if (totalSources > 0) {
-      const highAuthorityCount = usedChunks.filter(c => (c.authorityLevel || c.authority_level || 4) <= 4).length;
-      const webSearchCount = usedChunks.filter(c => c.originType === 'WEB_SEARCH').length;
-
-      if (webSearchCount > 0 && highAuthorityCount > 0) {
-        const ratio = highAuthorityCount / totalSources;
-        primarySupportPercent = Math.min(95, Math.max(55, Math.round(ratio * 100)));
-        if (primarySupportPercent < 90) {
-          hasRealDivergence = true;
-        }
-      } else if (highAuthorityCount === totalSources) {
-        primarySupportPercent = 95;
-      } else {
-        primarySupportPercent = 85;
-      }
-    }
-
-    // Regra Bug C: Exibir card APENAS em consultas de conduta/tratamento E quando relevante
-    const showCard = isTreatmentQuery && usedChunks.length > 0;
-
-    const consensusMatrix = {
-      agreementPercentage: showCard ? primarySupportPercent : 0,
-      consensusLevel: showCard
-        ? (primarySupportPercent >= 90 ? "Alto Consenso (Diretrizes Oficiais Padronizadas)" : (primarySupportPercent >= 70 ? "Consenso Moderado com Alternativas" : "Divergência de Conduta na Literatura"))
-        : "N/A",
-      primaryPosition: showCard ? "Conduta Apoiada pelas Diretrizes de Referência" : "N/A",
-      primarySupportPercent: showCard ? primarySupportPercent : 0,
-      alternativeSupportPercent: showCard ? (100 - primarySupportPercent) : 0,
-      hasRealDivergence: showCard ? hasRealDivergence : false,
-      showCard,
-      summary: showCard ? `${primarySupportPercent}% das evidências e diretrizes recuperadas sustentam a conduta prioritária apresentada.` : ""
-    };
-
-    // Formatar citações estritamente a partir das fontes efetivamente citadas e validadas
-    const citations = usedChunks.map((c, i) => {
-      let parsedAuthors = null;
-      if (c.document_authors && Array.isArray(c.document_authors) && c.document_authors.length > 0) {
-        parsedAuthors = c.document_authors.join(", ");
-      } else if (c.authors) {
-        parsedAuthors = Array.isArray(c.authors) ? (c.authors.length > 0 ? c.authors.join(", ") : null) : c.authors;
-      }
-
-      const pageNum = c.page_number || (c.chunk_index !== undefined ? c.chunk_index + 1 : 1);
-      const pdfUrl = c.canonical_url || c.url || (c.document_filename ? `/knowledge/${encodeURIComponent(c.document_filename)}#page=${pageNum}` : null);
-      const originType = c.originType || (c.url && !c.url.startsWith('/knowledge') ? 'WEB_SEARCH' : 'LOCAL_VALIDATED');
-
-      return {
-        id: `citation-${i + 1}`,
-        sourceId: i + 1,
-        documentId: c.document_id || null,
-        title: c.document_title || c.title || "Metadado indisponível",
-        filename: c.document_filename || c.filename || "Metadado indisponível",
-        authors: parsedAuthors || "Metadado indisponível",
-        year: c.document_publication_year || c.publicationYear || c.metadata?.publicationYear || null,
-        organization: c.document_organization || c.organization || "Metadado indisponível",
-        originType,
-        sourceType: c.source_type || c.document_category || "GUIDELINE",
-        gradeLevel: c.gradeLevel || "Nível 2 (Diretriz / Estudo Clínico)",
-        gradeCode: c.gradeCode || 2,
-        authorityLevel: c.authorityLevel || c.authority_level || 4,
-        rankingRationale: c.rankingRationale || "Evidência clínica de suporte com alta similaridade semântica para a tomada de decisão.",
-        page: pageNum,
-        section: c.section_title || "Geral",
-        doi: c.doi || null,
-        pmid: c.pmid || null,
-        url: pdfUrl,
-        excerpt: c.content,
-        supportScore: c.evidenceScore || 0.85
-      };
-    });
-
-    // Gravar Trilha de Auditoria no Banco se tabela audit_logs existir
+    // Gravar Trilha de Auditoria
     try {
       await query(
         `INSERT INTO audit_logs (trace_id, session_id, user_mode, question, response_text, model_used, metadata)
@@ -624,17 +560,10 @@ MENSAGEM / DÚVIDA ATUAL DO USUÁRIO:
           prepResult.sanitizedQuery,
           safetyVerification.safeAnswer,
           env.geminiModel,
-          JSON.stringify({
-            consensusMatrix,
-            citationCount: citations.length,
-            latencyMs,
-            timestamp: new Date().toISOString()
-          })
+          JSON.stringify({ consensusMatrix, citationCount: citations.length, latencyMs, timestamp: new Date().toISOString() })
         ]
       );
-    } catch (auditErr) {
-      // Falha suave de auditoria se tabela ainda não tiver coluna específica
-    }
+    } catch (auditErr) {}
 
     return {
       status: "success",

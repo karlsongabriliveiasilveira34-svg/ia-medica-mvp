@@ -18,23 +18,36 @@ export const gemini = {
   }
 };
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function isTransientGeminiError(error) {
+  if (!error) return false;
+  if (error.status === 429 || error.status === 503) return true;
+  const msg = typeof error.message === "string" ? error.message : "";
+  return msg.includes("429") || msg.includes("503") || msg.includes("high demand") || msg.includes("UNAVAILABLE") || msg.includes("RESOURCE_EXHAUSTED");
+}
+
+function calculateRetryWaitMs(error, defaultDelayMs) {
+  let waitMs = defaultDelayMs;
+  const retryMatch = typeof error.message === "string" && error.message.match(/retry in (\d+(\.\d+)?)s/i);
+  if (retryMatch && retryMatch[1]) {
+    waitMs = Math.max(waitMs, (Number.parseFloat(retryMatch[1]) + 2) * 1000);
+  }
+  return waitMs;
+}
 
 /**
  * Wrapper com retry automático e LOG ABSOLUTO / TOTAL (Prompt enviado + Pensamento / Resposta bruta)
  */
-export async function generateWithRetry(params, retries = 5, delayMs = 8000) {
+export async function generateWithRetry(params, retries = 5, initialDelayMs = 8000) {
   const modelName = params.model || env.geminiModel;
   const promptText = typeof params.contents === "string" ? params.contents : JSON.stringify(params.contents);
 
   console.log(`\n======================================================`);
-  console.log(`🤖 [LOG TOTAL GEMINI - ENVIO] Chamando API do Gemini`);
-  console.log(`⏱️ Data/Hora: ${new Date().toISOString()}`);
-  console.log(`📌 Modelo Utilizado: ${modelName}`);
-  console.log(`📄 MimeType Solicitado: ${params.config?.responseMimeType || "text/plain"}`);
+  console.log(`🤖 [LOG TOTAL GEMINI - ENVIO] Chamando API do Gemini (${modelName})`);
   console.log(`📝 --- PROMPT COMPLETO ENVIADO AO GEMINI ---`);
   console.log(promptText);
   console.log(`------------------------------------------------------`);
+
+  let delayMs = initialDelayMs;
 
   for (let i = 0; i < retries; i++) {
     try {
@@ -44,26 +57,16 @@ export async function generateWithRetry(params, retries = 5, delayMs = 8000) {
 
       console.log(`\n✅ [LOG TOTAL GEMINI - RESPOSTA] Sucesso em ${durationMs}ms`);
       console.log(`📊 Tamanho da Resposta: ${res.text?.length || 0} caracteres`);
-      console.log(`💬 --- RESPOSTA BRUTA / PENSAMENTO DO GEMINI ---`);
       console.log(res.text);
       console.log(`======================================================\n`);
 
       return res;
     } catch (error) {
-      console.error(`\n❌ [LOG TOTAL GEMINI - ERRO] Falha na Chamada (Tentativa ${i + 1}/${retries}):`);
-      console.error(`   - Status HTTP: ${error.status || "DESCONHECIDO"}`);
-      console.error(`   - Código: ${error.code || "N/A"}`);
-      console.error(`   - Mensagem de Erro: ${error.message}`);
-      console.error(`======================================================\n`);
-
-      const isTransient = error.status === 429 || error.status === 503 || (error.message && (error.message.includes("429") || error.message.includes("503") || error.message.includes("high demand") || error.message.includes("UNAVAILABLE") || error.message.includes("RESOURCE_EXHAUSTED")));
+      console.error(`\n❌ [LOG TOTAL GEMINI - ERRO] Falha na Chamada (Tentativa ${i + 1}/${retries}): ${error.message}`);
+      const isTransient = isTransientGeminiError(error);
       if (isTransient && i < retries - 1) {
-        let waitMs = delayMs;
-        const retryMatch = typeof error.message === "string" && error.message.match(/retry in (\d+(\.\d+)?)s/i);
-        if (retryMatch && retryMatch[1]) {
-          waitMs = Math.max(waitMs, (Number.parseFloat(retryMatch[1]) + 2) * 1000);
-        }
-        console.warn(`⚠️ [LOG COTA GEMINI] Erro temporário / alta demanda (${error.status || "503/429"}). Aguardando ${Math.round(waitMs / 1000)}s para tentar novamente...`);
+        const waitMs = calculateRetryWaitMs(error, delayMs);
+        console.warn(`⚠️ [LOG COTA GEMINI] Erro temporário. Aguardando ${Math.round(waitMs / 1000)}s...`);
         await sleep(waitMs);
         delayMs *= 1.5;
       } else {

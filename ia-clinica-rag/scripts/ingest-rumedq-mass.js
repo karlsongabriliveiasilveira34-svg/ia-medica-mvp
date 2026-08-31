@@ -216,9 +216,20 @@ function parseSymptomDetails(ruSymptom) {
   };
 }
 
+function stripQuotes(str) {
+  let s = String(str || "").trim();
+  while (s.startsWith('"') || s.startsWith("'")) {
+    s = s.slice(1);
+  }
+  while (s.endsWith('"') || s.endsWith("'")) {
+    s = s.slice(0, -1);
+  }
+  return s.trim();
+}
+
 // Construtor semiológico rico para cada pergunta investigativa única
 function buildClinicalInvestigationCard(rawQuestion, symptomPt, index) {
-  let cleanQ = String(rawQuestion || "").trim().replace(/^["']+/, "").replace(/["']+$/, "").trim();
+  const cleanQ = stripQuotes(rawQuestion);
 
   // Categorização da pergunta para gerar verso clinicamente aprofundado
   let investigationType = "Caracterização Geral do Sintoma";

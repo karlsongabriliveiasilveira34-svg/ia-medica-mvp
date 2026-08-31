@@ -94,12 +94,6 @@
   box-shadow: 0 rem(8px) rem(24px) rgba(23, 35, 31, 0.05);
   transition: transform 250ms cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
-
-  &:hover {
-    @media (hover: hover) {
-      box-shadow: 0 rem(12px) rem(32px) rgba(23, 35, 31, 0.09);
-    }
-  }
 }
 
 /// Ajuste para Safe Area em dispositivos móveis (Notch do iPhone, etc.)

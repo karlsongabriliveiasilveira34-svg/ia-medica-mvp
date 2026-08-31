@@ -207,6 +207,25 @@ function isRelevantSciELOArticle(title, journal, queryWords) {
   return { relevant: true, matchCount };
 }
 
+function stripHtmlTags(str) {
+  if (!str) return "";
+  let result = "";
+  let insideTag = false;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === "<") {
+      insideTag = true;
+    } else if (char === ">") {
+      insideTag = false;
+    } else if (!insideTag) {
+      result += char;
+    }
+  }
+  return result;
+}
+
+function normalizeTitleForDeduplication(title) {}
+
 function formatSciELOResult(item, title, journal, matchCount) {
   const pubYear = item.issued?.["date-parts"]?.[0]?.[0] || item.created?.["date-parts"]?.[0]?.[0] || new Date().getFullYear();
   const authors = (item.author || []).slice(0, 3).map((a) => `${a.given || ""} ${a.family || ""}`.trim()).filter(Boolean);
@@ -321,7 +340,7 @@ export class ExternalEvidenceService {
 
       for (const item of items) {
         const rawTitle = item.title && item.title.length > 0 ? item.title[0] : "";
-        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Artigo Científico SciELO";
+        const title = rawTitle ? stripHtmlTags(rawTitle) : "Artigo Científico SciELO";
         const journal = item["container-title"] && item["container-title"].length > 0 ? item["container-title"][0] : "SciELO Brasil / América Latina";
 
         const { relevant, matchCount } = isRelevantSciELOArticle(title, journal, queryWords);
@@ -370,7 +389,7 @@ export class ExternalEvidenceService {
         if (!item) continue;
 
         const rawTitle = item.title || "";
-        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Cochrane Systematic Review";
+        const title = rawTitle ? stripHtmlTags(rawTitle) : "Cochrane Systematic Review";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const doiArticle = item.articleids?.find(a => a.idtype === "doi")?.value || null;
@@ -440,7 +459,7 @@ export class ExternalEvidenceService {
         if (!item) continue;
 
         const rawTitle = item.title || "";
-        const title = rawTitle ? rawTitle.replaceAll(/<[^>]*>/g, "") : "Artigo PubMed";
+        const title = rawTitle ? stripHtmlTags(rawTitle) : "Artigo PubMed";
         const pubYear = item.pubdate ? item.pubdate.split(" ")[0] : new Date().getFullYear().toString();
         const authors = item.authors ? item.authors.slice(0, 3).map(a => a.name) : [];
         const sourceName = item.source || "NCBI PubMed";

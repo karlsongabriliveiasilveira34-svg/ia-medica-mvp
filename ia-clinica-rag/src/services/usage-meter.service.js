@@ -218,71 +218,38 @@ class UsageMeterService {
 
     if (resource === "ai") {
       const limit = plan.requestsLimit || 10;
-      const used = meter.aiRequestsMonth || 0;
-      if (limit !== Infinity && used >= limit) {
-        return {
-          allowed: false,
-          resource: "ai",
-          limit,
-          used,
-          remaining: 0,
-          resetAt: "no início do próximo mês",
-          message: `Você atingiu o limite de ${limit} requisições de IA por mês do ${plan.name}. Seu saldo será renovado no próximo mês. Faça upgrade de plano para continuar utilizando sem interrupções.`
-        };
-      }
-      return {
-        allowed: true,
+      return checkSpecificLimit({
         resource: "ai",
         limit,
-        used,
-        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
-      };
+        used: meter.aiRequestsMonth || 0,
+        resetAt: "no início do próximo mês",
+        planName: plan.name,
+        customMessage: `Você atingiu o limite de ${limit} requisições de IA por mês do ${plan.name}. Seu saldo será renovado no próximo mês. Faça upgrade de plano para continuar utilizando sem interrupções.`
+      });
     }
 
     if (resource === "flashcards") {
       const limit = plan.flashcardsDailyLimit !== undefined ? plan.flashcardsDailyLimit : 10;
-      const used = meter.flashcardsDay || 0;
-      if (limit !== Infinity && used >= limit) {
-        return {
-          allowed: false,
-          resource: "flashcards",
-          limit,
-          used,
-          remaining: 0,
-          resetAt: "amanhã às 00:00",
-          message: `Você atingiu o limite diário de ${limit} flashcards do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
-        };
-      }
-      return {
-        allowed: true,
+      return checkSpecificLimit({
         resource: "flashcards",
         limit,
-        used,
-        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
-      };
+        used: meter.flashcardsDay || 0,
+        resetAt: "amanhã às 00:00",
+        planName: plan.name,
+        customMessage: `Você atingiu o limite diário de ${limit} flashcards do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
+      });
     }
 
     if (resource === "questions") {
       const limit = plan.questionsDailyLimit !== undefined ? plan.questionsDailyLimit : 5;
-      const used = meter.questionsDay || 0;
-      if (limit !== Infinity && used >= limit) {
-        return {
-          allowed: false,
-          resource: "questions",
-          limit,
-          used,
-          remaining: 0,
-          resetAt: "amanhã às 00:00",
-          message: `Você atingiu o limite diário de ${limit} questões no simulado do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
-        };
-      }
-      return {
-        allowed: true,
+      return checkSpecificLimit({
         resource: "questions",
         limit,
-        used,
-        remaining: limit === Infinity ? Infinity : Math.max(0, limit - used)
-      };
+        used: meter.questionsDay || 0,
+        resetAt: "amanhã às 00:00",
+        planName: plan.name,
+        customMessage: `Você atingiu o limite diário de ${limit} questões no simulado do ${plan.name}. Seu saldo será renovado amanhã às 00:00.`
+      });
     }
 
     return { allowed: true, limit: Infinity, used: 0, remaining: Infinity };

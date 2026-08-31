@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Database, FileText, MessageSquareText, Users, Baby, Smartphone, GraduationCap, Zap, DollarSign, LogOut, User, Sparkles, Stethoscope, BookOpen, Layers, HelpCircle, Cpu, Calculator, MessageSquarePlus, Gift, Bug, Menu } from 'lucide-react';
+import { ArrowRight, FileText, Users, GraduationCap, Zap, DollarSign, LogOut, User, Stethoscope, BookOpen, Layers, HelpCircle, Cpu, Calculator, Gift, Bug, Menu, Award } from 'lucide-react';
 import { MedIaIcon } from './MedIaLogo';
 
 function isStudentTab(tab) {
@@ -56,6 +56,142 @@ function LandingNavActions({ scrollToSection, onOpenUsageModal, onOpenFeedbackMo
   );
 }
 
+function RoleSwitchControl({ isStudent, onSwitchToDoctor, onSwitchToStudent }) {
+  return (
+    <div className="inline-flex rounded-xl bg-[#e5dfd5] p-1 border border-[#17231f]/10 shrink-0">
+      <button
+        type="button"
+        onClick={onSwitchToDoctor}
+        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+          !isStudent
+            ? 'bg-[#213f34] text-white shadow-sm'
+            : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
+        }`}
+      >
+        <Stethoscope className="w-3.5 h-3.5" />
+        <span>Médico</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={onSwitchToStudent}
+        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+          isStudent
+            ? 'bg-[#213f34] text-white shadow-sm'
+            : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
+        }`}
+      >
+        <GraduationCap className="w-3.5 h-3.5" />
+        <span>Estudante</span>
+      </button>
+    </div>
+  );
+}
+
+function StudentNavTabs({ activeTab, setActiveTab }) {
+  return (
+    <nav className="flex items-center gap-1 rounded-full border border-[#17231f]/10 bg-[#e8e2d7] p-1 overflow-x-auto max-w-full">
+      <TabButton active={activeTab === 'anotacoes' || activeTab === 'student_notes'} onClick={() => setActiveTab('anotacoes')} icon={FileText}>Anotações (IA)</TabButton>
+      <TabButton active={activeTab === 'simulado'} onClick={() => setActiveTab('simulado')} icon={Award}>Simulado 50Q</TabButton>
+      <TabButton active={activeTab === 'quizzes'} onClick={() => setActiveTab('quizzes')} icon={HelpCircle}>Banco de Questões</TabButton>
+      <TabButton active={activeTab === 'flashcards'} onClick={() => setActiveTab('flashcards')} icon={Layers}>Flashcards</TabButton>
+      <TabButton active={activeTab === 'student_notebook' || activeTab === 'caderno'} onClick={() => setActiveTab('student_notebook')} icon={BookOpen}>NotebookLM</TabButton>
+    </nav>
+  );
+}
+
+function DoctorNavTabs({ activeTab, setActiveTab, hasActiveReport }) {
+  return (
+    <nav className="flex items-center gap-1 rounded-full border border-[#17231f]/10 bg-[#e8e2d7] p-1 overflow-x-auto max-w-full">
+      <TabButton active={activeTab === 'especialidades'} onClick={() => setActiveTab('especialidades')} icon={Stethoscope}>Especialidades</TabButton>
+      <TabButton active={activeTab === 'roteamento' || activeTab === 'chat'} onClick={() => setActiveTab('roteamento')} icon={Cpu}>Roteamento (IA)</TabButton>
+      <TabButton active={activeTab === 'calculators'} onClick={() => setActiveTab('calculators')} icon={Calculator}>Calculadoras</TabButton>
+      <TabButton active={activeTab === 'fila' || activeTab === 'worklist'} onClick={() => setActiveTab('fila')} icon={Users}>Fila do Dia</TabButton>
+      <TabButton active={activeTab === 'pacientes' || activeTab === 'portal'} onClick={() => setActiveTab('pacientes')} icon={User}>Pacientes</TabButton>
+      {(hasActiveReport || activeTab === 'report') && <TabButton active={activeTab === 'report'} onClick={() => setActiveTab('report')} icon={FileText}>Laudo</TabButton>}
+    </nav>
+  );
+}
+
+function UserProfileMenu({ user, onOpenUsageModal, onOpenPixModal, onLogout }) {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const avatarUrl = user?.avatar || user?.photo_url || user?.photo;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setShowProfileMenu(!showProfileMenu)}
+        className="flex items-center gap-1.5 p-0.5 rounded-full hover:ring-2 hover:ring-[#213f34]/30 transition"
+        title={user.name || 'Perfil'}
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={user.name || 'Avatar'}
+            className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-[#213f34] text-[#f4f1ea] flex items-center justify-center font-bold text-xs shadow-sm border border-[#213f34]/20">
+            {user.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
+          </div>
+        )}
+      </button>
+
+      {showProfileMenu && (
+        <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white p-3 shadow-xl border border-[#17231f]/10 text-xs space-y-2 z-50 animate-fadeIn">
+          <div className="border-b border-[#17231f]/10 pb-2 px-1">
+            <strong className="block text-[#17231f] truncate">{user.name || 'Usuário'}</strong>
+            <span className="text-[#5e6c65] text-[11px] block truncate">{user.email}</span>
+            <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-[#213f34] text-white px-2 py-0.5 rounded-full">
+              Plano {user.plan ? user.plan.toUpperCase() : 'CONTA'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowProfileMenu(false);
+              if (onOpenUsageModal) onOpenUsageModal();
+            }}
+            className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-600" />
+            <span>Gerenciar Plano & Cotas</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowProfileMenu(false);
+              if (onOpenPixModal) onOpenPixModal();
+            }}
+            className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
+          >
+            <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Apoiar via PIX</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowProfileMenu(false);
+              if (onLogout) onLogout();
+            }}
+            className="w-full text-left p-2 rounded-xl hover:bg-rose-50 font-semibold text-rose-700 flex items-center gap-2 border-t border-[#17231f]/10 pt-2"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sair da Conta</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Navbar({
   activeTab,
   setActiveTab,
@@ -69,7 +205,6 @@ export function Navbar({
   onOpenDrawer,
   onLogout
 }) {
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const isLanding = activeTab === 'landing';
   const isStudent = isStudentTab(activeTab);
 
@@ -83,14 +218,6 @@ export function Navbar({
   };
 
   const highestPct = usageData?.usage?.highestPercentage || 0;
-  const colorStatus = usageData?.ui?.colorStatus || 'green';
-
-  const getStatusBg = () => {
-    if (colorStatus === 'blocked' || colorStatus === 'red') return 'bg-rose-500 text-white';
-    if (colorStatus === 'orange') return 'bg-orange-500 text-white';
-    if (colorStatus === 'yellow') return 'bg-amber-500 text-amber-950 font-bold';
-    return 'bg-emerald-600 text-white';
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#17231f]/10 bg-[#f4f1ea]/95 text-[#17231f] backdrop-blur-xl">
@@ -115,61 +242,21 @@ export function Navbar({
           />
         ) : (
           <div className="flex items-center gap-4 flex-1 justify-between max-w-6xl">
-            <div className="inline-flex rounded-xl bg-[#e5dfd5] p-1 border border-[#17231f]/10 shrink-0">
-              <button
-                onClick={() => {
-                  if (isStudent) setActiveTab('roteamento');
-                }}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  !isStudent
-                    ? 'bg-[#213f34] text-white shadow-sm'
-                    : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
-                }`}
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                <span>Médico</span>
-              </button>
+            <RoleSwitchControl
+              isStudent={isStudent}
+              onSwitchToDoctor={() => { if (isStudent) setActiveTab('roteamento'); }}
+              onSwitchToStudent={() => { if (!isStudent) setActiveTab('anotacoes'); }}
+            />
 
-              <button
-                onClick={() => {
-                  if (!isStudent) setActiveTab('anotacoes');
-                }}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  isStudent
-                    ? 'bg-[#213f34] text-white shadow-sm'
-                    : 'text-[#5e6c65] hover:text-[#17231f] hover:bg-white/40'
-                }`}
-              >
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>Estudante</span>
-              </button>
-            </div>
+            {isStudent ? (
+              <StudentNavTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            ) : (
+              <DoctorNavTabs activeTab={activeTab} setActiveTab={setActiveTab} hasActiveReport={hasActiveReport} />
+            )}
 
-            <nav className="flex items-center gap-1 rounded-full border border-[#17231f]/10 bg-[#e8e2d7] p-1 overflow-x-auto max-w-full">
-              {isStudent ? (
-                <>
-                  <TabButton active={activeTab === 'anotacoes' || activeTab === 'student_notes'} onClick={() => setActiveTab('anotacoes')} icon={FileText}>Anotações (IA)</TabButton>
-                  <TabButton active={activeTab === 'simulado'} onClick={() => setActiveTab('simulado')} icon={Award}>Simulado 50Q</TabButton>
-                  <TabButton active={activeTab === 'quizzes'} onClick={() => setActiveTab('quizzes')} icon={HelpCircle}>Banco de Questões</TabButton>
-                  <TabButton active={activeTab === 'flashcards'} onClick={() => setActiveTab('flashcards')} icon={Layers}>Flashcards</TabButton>
-                  <TabButton active={activeTab === 'student_notebook' || activeTab === 'caderno'} onClick={() => setActiveTab('student_notebook')} icon={BookOpen}>NotebookLM</TabButton>
-                </>
-              ) : (
-                <>
-                  <TabButton active={activeTab === 'especialidades'} onClick={() => setActiveTab('especialidades')} icon={Stethoscope}>Especialidades</TabButton>
-                  <TabButton active={activeTab === 'roteamento' || activeTab === 'chat'} onClick={() => setActiveTab('roteamento')} icon={Cpu}>Roteamento (IA)</TabButton>
-                  <TabButton active={activeTab === 'calculators'} onClick={() => setActiveTab('calculators')} icon={Calculator}>Calculadoras</TabButton>
-                  <TabButton active={activeTab === 'fila' || activeTab === 'worklist'} onClick={() => setActiveTab('fila')} icon={Users}>Fila do Dia</TabButton>
-                  <TabButton active={activeTab === 'pacientes' || activeTab === 'portal'} onClick={() => setActiveTab('pacientes')} icon={User}>Pacientes</TabButton>
-                  {(hasActiveReport || activeTab === 'report') && <TabButton active={activeTab === 'report'} onClick={() => setActiveTab('report')} icon={FileText}>Laudo</TabButton>}
-                </>
-              )}
-            </nav>
-
-            {/* Ações do Usuário Limpas */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              {/* Botão de Feedback / Reportar Bug */}
               <button
+                type="button"
                 onClick={onOpenFeedbackModal}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100/80 hover:bg-amber-100 border border-amber-300 text-xs font-bold text-amber-950 transition"
                 title="Reportar Bug ou Sugestão"
@@ -178,8 +265,8 @@ export function Navbar({
                 <span className="hidden sm:inline">Feedback</span>
               </button>
 
-              {/* Botão de Resgate de Cupom */}
               <button
+                type="button"
                 onClick={onOpenUsageModal}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100/80 hover:bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-950 transition"
                 title="Resgatar Cupom de 7 Dias Grátis"
@@ -188,8 +275,8 @@ export function Navbar({
                 <span className="hidden md:inline">Cupom 7D</span>
               </button>
 
-              {/* Informação de Uso Discreta */}
               <button
+                type="button"
                 onClick={onOpenUsageModal}
                 className="px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white border border-[#17231f]/10 text-xs font-semibold text-[#5e6c65] transition"
                 title="Plano e cota"
@@ -197,8 +284,8 @@ export function Navbar({
                 Uso: <span className="text-[#17231f] font-bold">{highestPct}%</span>
               </button>
 
-              {/* Botão PIX Discreto */}
               <button
+                type="button"
                 onClick={() => onOpenPixModal && onOpenPixModal()}
                 className="px-2.5 py-1 rounded-lg bg-[#213f34] text-white text-xs font-bold hover:bg-[#172f27] transition"
                 title="Apoiar projeto"
@@ -206,77 +293,16 @@ export function Navbar({
                 PIX
               </button>
 
-              {/* Usuário Logado vs Botão de Login */}
               {isAuthenticated && user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-1.5 p-0.5 rounded-full hover:ring-2 hover:ring-[#213f34]/30 transition"
-                    title={user.name || 'Perfil'}
-                  >
-                    {user.avatar || user.photo_url || user.photo ? (
-                      <img
-                        src={user.avatar || user.photo_url || user.photo}
-                        alt={user.name || 'Avatar'}
-                        className="w-8 h-8 rounded-full object-cover border border-[#213f34]/20 shadow-sm"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#213f34] text-[#f4f1ea] flex items-center justify-center font-bold text-xs shadow-sm border border-[#213f34]/20">
-                        {user.name ? user.name.slice(0, 2).toUpperCase() : 'ME'}
-                      </div>
-                    )}
-                  </button>
-
-                  {showProfileMenu && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white p-3 shadow-xl border border-[#17231f]/10 text-xs space-y-2 z-50 animate-fadeIn">
-                      <div className="border-b border-[#17231f]/10 pb-2 px-1">
-                        <strong className="block text-[#17231f] truncate">{user.name || 'Usuário'}</strong>
-                        <span className="text-[#5e6c65] text-[11px] block truncate">{user.email}</span>
-                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-[#213f34] text-white px-2 py-0.5 rounded-full">
-                          Plano {user.plan ? user.plan.toUpperCase() : 'CONTA'}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          onOpenUsageModal && onOpenUsageModal();
-                        }}
-                        className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
-                      >
-                        <Zap className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Gerenciar Plano & Cotas</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          onOpenPixModal && onOpenPixModal();
-                        }}
-                        className="w-full text-left p-2 rounded-xl hover:bg-[#faf8f5] font-semibold text-[#17231f] flex items-center gap-2"
-                      >
-                        <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Apoiar via PIX</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setShowProfileMenu(false);
-                          onLogout && onLogout();
-                        }}
-                        className="w-full text-left p-2 rounded-xl hover:bg-rose-50 font-semibold text-rose-700 flex items-center gap-2 border-t border-[#17231f]/10 pt-2"
-                      >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span>Sair da Conta</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <UserProfileMenu
+                  user={user}
+                  onOpenUsageModal={onOpenUsageModal}
+                  onOpenPixModal={onOpenPixModal}
+                  onLogout={onLogout}
+                />
               ) : (
                 <button
+                  type="button"
                   onClick={() => setActiveTab('login')}
                   className="px-3.5 py-1.5 rounded-xl bg-[#213f34] hover:bg-[#172b22] text-[#f4f1ea] font-bold text-xs shadow-sm transition"
                 >
@@ -286,6 +312,7 @@ export function Navbar({
 
               {onOpenDrawer && (
                 <button
+                  type="button"
                   onClick={onOpenDrawer}
                   className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg bg-[#e5dfd5] text-[#17231f] active:scale-95 transition"
                   aria-label="Abrir Menu de Navegação"
@@ -303,7 +330,13 @@ export function Navbar({
 
 function TabButton({ active, onClick, icon: Icon, children }) {
   return (
-    <button onClick={onClick} className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${active ? 'bg-[#213f34] text-white shadow-sm font-bold' : 'text-[#5e6c65] hover:bg-white/60 hover:text-[#17231f]'}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+        active ? 'bg-[#213f34] text-white shadow-sm font-bold' : 'text-[#5e6c65] hover:bg-white/60 hover:text-[#17231f]'
+      }`}
+    >
       {Icon && <Icon className="h-3.5 w-3.5" />}
       <span>{children}</span>
     </button>

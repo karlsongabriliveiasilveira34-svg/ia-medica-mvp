@@ -94,6 +94,34 @@ const DRUG_INTERACTIONS_DATABASE = [
   }
 ];
 
+function matchInteractionRule(medA, medB) {
+  return DRUG_INTERACTIONS_DATABASE.find(rule => {
+    const [d0, d1] = rule.drugs;
+    const matchA = medA.includes(d0) || medA.includes(d1);
+    const matchB = medB.includes(d0) || medB.includes(d1);
+    return matchA && matchB && (d0 !== d1);
+  });
+}
+
+function findInteractions(medications, normalizedMeds) {
+  const detected = [];
+  for (let i = 0; i < normalizedMeds.length; i++) {
+    for (let j = i + 1; j < normalizedMeds.length; j++) {
+      const match = matchInteractionRule(normalizedMeds[i], normalizedMeds[j]);
+      if (match) {
+        detected.push({
+          pair: [medications[i], medications[j]],
+          severity: match.severity,
+          title: match.title,
+          mechanism: match.mechanism,
+          recommendation: match.recommendation
+        });
+      }
+    }
+  }
+  return detected;
+}
+
 export class DrugInteractionService {
   /**
    * Analisa um array de nomes de medicamentos e detecta interações
@@ -116,31 +144,7 @@ export class DrugInteractionService {
         .trim()
     );
 
-    const detected = [];
-
-    for (let i = 0; i < normalizedMeds.length; i++) {
-      for (let j = i + 1; j < normalizedMeds.length; j++) {
-        const medA = normalizedMeds[i];
-        const medB = normalizedMeds[j];
-
-        const match = DRUG_INTERACTIONS_DATABASE.find(rule => {
-          const matchA = medA.includes(rule.drugs[0]) || medA.includes(rule.drugs[1]);
-          const matchB = medB.includes(rule.drugs[0]) || medB.includes(rule.drugs[1]);
-          return matchA && matchB && (rule.drugs[0] !== rule.drugs[1]);
-        });
-
-        if (match) {
-          detected.push({
-            pair: [medications[i], medications[j]],
-            severity: match.severity,
-            title: match.title,
-            mechanism: match.mechanism,
-            recommendation: match.recommendation
-          });
-        }
-      }
-    }
-
+    const detected = findInteractions(medications, normalizedMeds);
     const hasGrave = detected.some(d => d.severity === "grave");
 
     return {

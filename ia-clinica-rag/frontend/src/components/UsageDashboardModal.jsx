@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Zap, Sparkles, Check, X, ArrowRight, RefreshCw, AlertCircle, Lock, Crown, Coins, Flame } from 'lucide-react';
+import { Zap, Sparkles, Check, X, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 
 const getProgressColorClass = (percentage) => {
   if (percentage >= 95) return 'bg-rose-600 text-rose-600';
@@ -7,6 +7,48 @@ const getProgressColorClass = (percentage) => {
   if (percentage >= 50) return 'bg-amber-500 text-amber-500';
   return 'bg-emerald-500 text-emerald-500';
 };
+
+function getUsageStatusBannerClass(colorStatus) {
+  if (colorStatus === 'blocked') return 'bg-rose-50 border-rose-300 text-rose-900';
+  if (colorStatus === 'red') return 'bg-rose-50 border-rose-200 text-rose-800';
+  if (colorStatus === 'orange') return 'bg-orange-50 border-orange-200 text-orange-900';
+  if (colorStatus === 'yellow') return 'bg-amber-50 border-amber-200 text-amber-900';
+  return 'bg-emerald-50 border-emerald-200 text-emerald-900';
+}
+
+function getUsageStatusEmoji(colorStatus) {
+  if (colorStatus === 'blocked') return '🚫';
+  if (colorStatus === 'red') return '🔴';
+  if (colorStatus === 'orange') return '🟠';
+  if (colorStatus === 'yellow') return '⚠️';
+  return '✅';
+}
+
+function createFreeVipPlanData() {
+  return {
+    plan: {
+      id: 'medico',
+      name: 'Plano Médico VIP (7 Dias Grátis)',
+      badgeColor: '#059669',
+      features: ['Acesso Clínico Ilimitado', 'Roteamento Multiagente', 'Calculadoras & Escalas', 'Prescrição & Fila do Dia']
+    },
+    usage: {
+      requestsUsed: 0,
+      requestsLimit: 9999,
+      requestsPercentage: 0,
+      tokensUsed: 0,
+      tokensLimit: 1000000,
+      tokensPercentage: 0,
+      highestPercentage: 0,
+      daysUntilReset: 7,
+      resetDate: 'Em 7 dias'
+    },
+    ui: {
+      colorStatus: 'green',
+      statusMessage: 'Plano Médico VIP Ativo (Cortesia Beta de 7 Dias)'
+    }
+  };
+}
 
 function UsageMetricsGrid({ usageData }) {
   if (!usageData) {
@@ -65,6 +107,28 @@ function UsageMetricsGrid({ usageData }) {
   );
 }
 
+function UsageStatusBanner({ usageData }) {
+  if (!usageData) return null;
+
+  return (
+    <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${getUsageStatusBannerClass(usageData.ui.colorStatus)}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-base">{getUsageStatusEmoji(usageData.ui.colorStatus)}</span>
+        <span className="font-semibold">{usageData.ui.statusMessage}</span>
+      </div>
+      {usageData.plan.id !== 'medico' && (
+        <button
+          type="button"
+          className="font-bold text-[11px] uppercase tracking-wider underline cursor-pointer bg-transparent border-none p-0 text-inherit"
+          onClick={() => document.getElementById('plans-grid')?.scrollIntoView({ behavior: 'smooth' })}
+        >
+          Fazer Upgrade
+        </button>
+      )}
+    </div>
+  );
+}
+
 function UsageCouponBox({ couponCode, setCouponCode, setCouponError, handleApplyCoupon, couponSuccess, couponError }) {
   return (
     <div className="p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 border-2 border-dashed border-amber-500/30 space-y-3">
@@ -92,6 +156,7 @@ function UsageCouponBox({ couponCode, setCouponCode, setCouponError, handleApply
           className="flex-1 px-4 py-2.5 rounded-2xl bg-white border border-[#17231f]/15 text-xs font-bold text-[#17231f] uppercase tracking-wider outline-none focus:border-[#213f34]"
         />
         <button
+          type="button"
           onClick={handleApplyCoupon}
           className="px-6 py-2.5 rounded-2xl bg-[#213f34] text-white font-bold text-xs hover:bg-[#172f27] transition shadow-md shrink-0 flex items-center justify-center gap-1.5"
         >
@@ -161,7 +226,7 @@ function UsagePlansGrid({ plans, usageData, upgrading, handleSelectUpgrade }) {
 
                 <ul className="space-y-1.5 text-xs text-[#5e6c65] border-t border-[#17231f]/10 pt-3">
                   {p.features.slice(0, 4).map((feat, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
+                    <li key={`${p.id}-feat-${idx}`} className="flex items-start gap-1.5">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </li>
@@ -170,6 +235,7 @@ function UsagePlansGrid({ plans, usageData, upgrading, handleSelectUpgrade }) {
               </div>
 
               <button
+                type="button"
                 disabled={isCurrent || upgrading}
                 onClick={() => handleSelectUpgrade(p.id)}
                 className={`w-full py-2.5 rounded-full text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm ${
@@ -195,10 +261,10 @@ function UsagePlansGrid({ plans, usageData, upgrading, handleSelectUpgrade }) {
   );
 }
 
-export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, onOpenPixModal }) {
+export function UsageDashboardModal({ isOpen, onClose, onUpgradeSuccess, onOpenPixModal }) {
   const [usageData, setUsageData] = useState(null);
   const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
 
   const [couponCode, setCouponCode] = useState('');
@@ -215,43 +281,20 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
     }
 
     if (validCodes.includes(cleanCode)) {
-      const freePlanData = {
-        plan: {
-          id: 'medico',
-          name: 'Plano Médico VIP (7 Dias Grátis)',
-          badgeColor: '#059669',
-          features: ['Acesso Clínico Ilimitado', 'Roteamento Multiagente', 'Calculadoras & Escalas', 'Prescrição & Fila do Dia']
-        },
-        usage: {
-          requestsUsed: 0,
-          requestsLimit: 9999,
-          requestsPercentage: 0,
-          tokensUsed: 0,
-          tokensLimit: 1000000,
-          tokensPercentage: 0,
-          highestPercentage: 0,
-          daysUntilReset: 7,
-          resetDate: 'Em 7 dias'
-        },
-        ui: {
-          colorStatus: 'green',
-          statusMessage: 'Plano Médico VIP Ativo (Cortesia Beta de 7 Dias)'
-        }
-      };
-
+      const freePlanData = createFreeVipPlanData();
       setUsageData(freePlanData);
       setCouponSuccess('🎉 Parabéns! Cupom ativado com sucesso. Seu Plano Médico foi liberado gratuitamente por 7 dias!');
       setCouponError(null);
-      if (onUpgradeSuccess) {
-        onUpgradeSuccess(freePlanData);
-      }
+      if (onUpgradeSuccess) onUpgradeSuccess(freePlanData);
     } else {
       setCouponError('Cupom inválido ou expirado. Tente o código promocional: BETA7DIAS');
       setCouponSuccess(null);
     }
   };
 
-  const fetchUsage = () => {
+  useEffect(() => {
+    if (!isOpen) return;
+
     setLoading(true);
     const token = localStorage.getItem('access_token');
     const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -266,12 +309,6 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
       })
       .catch((err) => console.error('Erro ao carregar dados de uso:', err))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchUsage();
-    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -343,6 +380,7 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="p-2 rounded-full hover:bg-[#f4f1ea] text-[#5e6c65] hover:text-[#17231f] transition"
           >
@@ -351,32 +389,7 @@ export function UsageDashboardModal({ isOpen, onClose, user, onUpgradeSuccess, o
         </div>
 
         <UsageMetricsGrid usageData={usageData} />
-
-        {usageData && (
-          <div className={`p-4 rounded-2xl border text-xs flex items-center justify-between ${
-            usageData.ui.colorStatus === 'blocked' ? 'bg-rose-50 border-rose-300 text-rose-900' :
-            usageData.ui.colorStatus === 'red' ? 'bg-rose-50 border-rose-200 text-rose-800' :
-            usageData.ui.colorStatus === 'orange' ? 'bg-orange-50 border-orange-200 text-orange-900' :
-            usageData.ui.colorStatus === 'yellow' ? 'bg-amber-50 border-amber-200 text-amber-900' :
-            'bg-emerald-50 border-emerald-200 text-emerald-900'
-          }`}>
-            <div className="flex items-center gap-2">
-              <span className="text-base">
-                {usageData.ui.colorStatus === 'blocked' ? '🚫' : usageData.ui.colorStatus === 'red' ? '🔴' : usageData.ui.colorStatus === 'orange' ? '🟠' : usageData.ui.colorStatus === 'yellow' ? '⚠️' : '✅'}
-              </span>
-              <span className="font-semibold">{usageData.ui.statusMessage}</span>
-            </div>
-            {usageData.plan.id !== 'medico' && (
-              <button
-                type="button"
-                className="font-bold text-[11px] uppercase tracking-wider underline cursor-pointer bg-transparent border-none p-0 text-inherit"
-                onClick={() => document.getElementById('plans-grid')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                Fazer Upgrade
-              </button>
-            )}
-          </div>
-        )}
+        <UsageStatusBanner usageData={usageData} />
 
         <UsageCouponBox
           couponCode={couponCode}

@@ -58,29 +58,41 @@ function detectPdfOrganization(info, fullText) {
   return null;
 }
 
+function isValidInfoTitle(title) {
+  if (!title || typeof title !== "string") return false;
+  const trimmed = title.trim().toLowerCase();
+  return trimmed.length > 4 && !trimmed.startsWith("artigo") && !trimmed.includes("untitled");
+}
+
+function isInvalidTitleLine(line) {
+  const lower = line.toLowerCase();
+  return line.includes("-- ") || /^\d+$/.test(line) || lower.includes("ministério da saúde") || lower.includes("brasília");
+}
+
+function extractTitleFromLines(lines) {
+  const candidateLines = [];
+  const limit = Math.min(25, lines.length);
+
+  for (let i = 0; i < limit; i++) {
+    const line = lines[i];
+    if (isInvalidTitleLine(line)) continue;
+    if (line.length >= 8 && line.length <= 100) {
+      candidateLines.push(line);
+      if (candidateLines.length >= 3) break;
+    }
+  }
+
+  return candidateLines.length > 0 ? candidateLines.join(" ") : null;
+}
+
 function detectPdfTitle(info, fullText) {
-  if (info?.Title && typeof info.Title === "string" && info.Title.trim().length > 4 && !info.Title.toLowerCase().startsWith("artigo") && !info.Title.toLowerCase().includes("untitled")) {
+  if (isValidInfoTitle(info?.Title)) {
     return info.Title.trim();
   }
 
   if (fullText) {
     const lines = fullText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-    const candidateLines = [];
-
-    for (let i = 0; i < Math.min(25, lines.length); i++) {
-      const line = lines[i];
-      if (line.includes("-- ") || line.match(/^\d+$/) || line.toLowerCase().includes("ministério da saúde") || line.toLowerCase().includes("brasília")) {
-        continue;
-      }
-      if (line.length >= 8 && line.length <= 100) {
-        candidateLines.push(line);
-        if (candidateLines.length >= 3) break;
-      }
-    }
-
-    if (candidateLines.length > 0) {
-      return candidateLines.join(" ");
-    }
+    return extractTitleFromLines(lines);
   }
   return null;
 }

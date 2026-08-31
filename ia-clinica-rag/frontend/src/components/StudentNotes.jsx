@@ -253,7 +253,8 @@ export function StudentNotes({ user, activeTab, onOpenTutorChat }) {
 
     const token = localStorage.getItem('access_token');
     try {
-      await fetch(`/api/student/notes/${safeTargetId}`, {
+      const endpoint = `/api/student/notes/${safeTargetId}`;
+      await fetch(endpoint, {
         method: 'DELETE',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });

@@ -45,67 +45,61 @@ export function detectRealMimeType(buffer) {
   return null;
 }
 
+function isStandaloneJpegMarker(marker) {
+  return (marker >= 0xD0 && marker <= 0xD7) || marker === 0x01;
+}
+
+function extractJpegChunksWithoutApp1(buffer) {
+  let offset = 2;
+  const chunks = [buffer.subarray(0, 2)];
+
+  while (offset < buffer.length - 1) {
+    if (buffer[offset] !== 0xFF) break;
+
+    const marker = buffer[offset + 1];
+    if (marker === 0xDA || marker === 0xD9) {
+      chunks.push(buffer.subarray(offset));
+      break;
+    }
+
+    if (isStandaloneJpegMarker(marker)) {
+      chunks.push(buffer.subarray(offset, offset + 2));
+      offset += 2;
+      continue;
+    }
+
+    if (offset + 3 >= buffer.length) {
+      chunks.push(buffer.subarray(offset));
+      break;
+    }
+
+    const length = buffer.readUInt16BE(offset + 2);
+    const nextOffset = offset + 2 + length;
+    if (nextOffset > buffer.length) {
+      chunks.push(buffer.subarray(offset));
+      break;
+    }
+
+    if (marker !== 0xE1) {
+      chunks.push(buffer.subarray(offset, nextOffset));
+    }
+    offset = nextOffset;
+  }
+  return chunks;
+}
+
 /**
  * Remove segmentos EXIF (APP1 - 0xFFE1) de buffers JPEG para conformidade com a LGPD
  */
 export function stripExifFromJpeg(buffer) {
   if (!buffer || buffer.length < 4) return buffer;
-  
-  // Garantir que é JPEG
-  if (buffer[0] !== 0xFF || buffer[1] !== 0xD8) {
-    return buffer;
-  }
+  if (buffer[0] !== 0xFF || buffer[1] !== 0xD8) return buffer;
 
   try {
-    let offset = 2;
-    const chunks = [buffer.subarray(0, 2)]; // Manter SOI (Start of Image)
-
-    while (offset < buffer.length - 1) {
-      if (buffer[offset] !== 0xFF) {
-        break;
-      }
-
-      const marker = buffer[offset + 1];
-
-      // Marker SOS (Start of Scan 0xDA) indica fim dos metadados
-      if (marker === 0xDA || marker === 0xD9) {
-        chunks.push(buffer.subarray(offset));
-        break;
-      }
-
-      // Marcadores sem tamanho de payload (RST, SOI, EOI, TEM)
-      if ((marker >= 0xD0 && marker <= 0xD7) || marker === 0x01) {
-        chunks.push(buffer.subarray(offset, offset + 2));
-        offset += 2;
-        continue;
-      }
-
-      if (offset + 3 >= buffer.length) {
-        chunks.push(buffer.subarray(offset));
-        break;
-      }
-
-      const length = buffer.readUInt16BE(offset + 2);
-      const nextOffset = offset + 2 + length;
-
-      if (nextOffset > buffer.length) {
-        chunks.push(buffer.subarray(offset));
-        break;
-      }
-
-      // Marcador APP1 (0xE1) carrega metadados EXIF e geolocalização GPS -> REMOVER
-      if (marker === 0xE1) {
-        console.log("🔒 [LGPD SANITIZER] Metadados EXIF/GPS (APP1 - 0xFFE1) removidos com sucesso da imagem.");
-      } else {
-        chunks.push(buffer.subarray(offset, nextOffset));
-      }
-
-      offset = nextOffset;
-    }
-
+    const chunks = extractJpegChunksWithoutApp1(buffer);
     return Buffer.concat(chunks);
   } catch (err) {
-    console.warn("⚠️ Aviso ao remover EXIF da imagem JPEG (usando buffer original):", err.message);
+    console.warn("⚠️ [LGPD SANITIZER] Falha ao processar EXIF:", err.message);
     return buffer;
   }
 }
