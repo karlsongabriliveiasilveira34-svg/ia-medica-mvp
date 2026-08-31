@@ -1,30 +1,35 @@
 import React from 'react';
 import { X, FileText, Bookmark, ExternalLink, ShieldCheck, Award } from 'lucide-react';
 
+function resolveCitationUrl(citation) {
+  if (!citation) return '#';
+  if (citation.url) return citation.url;
+  if (citation.doi) return `https://doi.org/${citation.doi}`;
+  if (citation.pmid) return `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/`;
+  if (citation.filename) {
+    const pageNum = citation.page || citation.pageNumber || 1;
+    return `/knowledge/${encodeURIComponent(citation.filename)}#page=${pageNum}`;
+  }
+  return '#';
+}
+
 export function CitationModal({ citation, onClose }) {
   if (!citation) return null;
 
-  const pageNum = citation.page || citation.pageNumber || 1;
-  const rawUrl = citation.url || 
-    (citation.doi ? `https://doi.org/${citation.doi}` : 
-    (citation.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${citation.pmid}/` :
-    (citation.filename ? `/knowledge/${encodeURIComponent(citation.filename)}#page=${pageNum}` : '#')));
-
+  const rawUrl = resolveCitationUrl(citation);
   const targetUrl = (typeof rawUrl === 'string' && (rawUrl.startsWith('https://') || rawUrl.startsWith('http://') || rawUrl.startsWith('/knowledge/')))
     ? rawUrl
     : '#';
 
   return (
-    <div
-      role="presentation"
-      className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden glass-panel"
-      >
+    <div className="media-chat fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+      <button
+        type="button"
+        aria-label="Fechar visualização de citação"
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default border-none p-0 w-full h-full"
+      />
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden glass-panel">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/80">
           <div className="flex items-center gap-3">

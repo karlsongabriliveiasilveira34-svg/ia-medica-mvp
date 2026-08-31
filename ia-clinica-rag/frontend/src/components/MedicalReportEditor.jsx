@@ -20,6 +20,13 @@ import {
 } from 'lucide-react';
 import { ConsultationMediaManager } from './ConsultationMediaManager';
 
+function getInteractionAlertBadgeClass(alerts) {
+  if (!alerts) return '';
+  if (alerts.severityLevel === 'GRAVE') return 'bg-rose-950/40 border-rose-500/40 text-rose-200';
+  if (alerts.hasInteractions) return 'bg-amber-950/40 border-amber-500/40 text-amber-200';
+  return 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200';
+}
+
 export function MedicalReportEditor({ consultation, initialReportData, onSave, onClose }) {
   const [report, setReport] = useState(initialReportData || {});
   const [images, setImages] = useState(consultation?.images || []);
@@ -329,7 +336,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
               </button>
             </div>
             {(report.pastMedicalHistory || []).map((item, idx) => (
-              <div key={idx} className="flex items-center gap-1.5">
+              <div key={item ? `${item}-${idx}` : `pmh-${idx}`} className="flex items-center gap-1.5">
                 <input
                   type="text"
                   value={item}
@@ -361,7 +368,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
               </button>
             </div>
             {(report.currentMedications || []).map((item, idx) => (
-              <div key={idx} className="flex items-center gap-1.5">
+              <div key={item ? `${item}-${idx}` : `med-${idx}`} className="flex items-center gap-1.5">
                 <input
                   type="text"
                   value={item}
@@ -402,7 +409,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
           </div>
           <div className="space-y-2">
             {(report.diagnosticHypotheses || []).map((diag, idx) => (
-              <div key={idx} className="p-3 bg-slate-900 print:bg-transparent border border-slate-800 print:border-b print:border-gray-200 rounded-xl flex items-center justify-between gap-3">
+              <div key={diag.cid ? `${diag.cid}-${idx}` : (diag.disease ? `${diag.disease}-${idx}` : `diag-${idx}`)} className="p-3 bg-slate-900 print:bg-transparent border border-slate-800 print:border-b print:border-gray-200 rounded-xl flex items-center justify-between gap-3">
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input
                     type="text"
@@ -460,11 +467,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
 
           {/* Banner de Interações Medicamentosas */}
           {interactionAlerts && (
-            <div className={`p-3 rounded-xl border print:hidden text-xs space-y-1.5 ${
-              interactionAlerts.severityLevel === 'GRAVE'
-                ? 'bg-rose-950/40 border-rose-500/40 text-rose-200'
-                : (interactionAlerts.hasInteractions ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200')
-            }`}>
+            <div className={`p-3 rounded-xl border print:hidden text-xs space-y-1.5 ${getInteractionAlertBadgeClass(interactionAlerts)}`}>
               <div className="flex items-center justify-between font-bold">
                 <span className="flex items-center gap-1.5">
                   <AlertTriangle className="w-4 h-4" />
@@ -473,7 +476,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
                 <button type="button" onClick={() => setInteractionAlerts(null)} className="text-[10px] text-slate-400 hover:text-white">✕ Fechar</button>
               </div>
               {interactionAlerts.interactions?.map((inter, i) => (
-                <div key={i} className="pl-5 border-l-2 border-rose-500/50 py-1 space-y-0.5">
+                <div key={inter.title || inter.pair?.join('-') || `interaction-${i}`} className="pl-5 border-l-2 border-rose-500/50 py-1 space-y-0.5">
                   <p className="font-bold text-rose-300">🚨 {inter.pair.join(' + ')}: {inter.title}</p>
                   <p className="text-[11px] opacity-90">{inter.mechanism}</p>
                   <p className="text-[11px] font-semibold text-amber-300">💡 Conduta: {inter.recommendation}</p>
@@ -484,7 +487,7 @@ export function MedicalReportEditor({ consultation, initialReportData, onSave, o
 
           <div className="space-y-2">
             {(report.prescriptions || []).map((rx, idx) => (
-              <div key={idx} className="p-3 bg-slate-900 print:bg-transparent border border-slate-800 print:border-b print:border-gray-300 rounded-xl space-y-2 print:break-inside-avoid">
+              <div key={rx.medication ? `${rx.medication}-${idx}` : `rx-${idx}`} className="p-3 bg-slate-900 print:bg-transparent border border-slate-800 print:border-b print:border-gray-300 rounded-xl space-y-2 print:break-inside-avoid">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-300 print:text-black text-xs">Item #{idx + 1}</span>
                   <button

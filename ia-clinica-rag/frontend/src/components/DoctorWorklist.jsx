@@ -12,7 +12,6 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
   const [newPatientName, setNewPatientName] = useState('');
   const [newPatientAge, setNewPatientAge] = useState('');
   const [newIsPediatric, setNewIsPediatric] = useState(false);
-  const [newPhone, setNewPhone] = useState('');
   const [newScheduledTime, setNewScheduledTime] = useState('10:00');
   const [generatedLink, setGeneratedLink] = useState(null);
 
@@ -127,18 +126,11 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
               const isDone = c.status === 'CONCLUIDO';
 
               return (
-                <div
+                <button
+                  type="button"
                   key={c.id}
-                  role="button"
-                  tabIndex={0}
                   onClick={() => setSelectedCase(c)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedCase(c);
-                    }
-                  }}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                  className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer space-y-2 ${
                     isSelected
                       ? 'bg-white border-[#213f34] shadow-md ring-2 ring-[#213f34]/15'
                       : 'bg-white/80 hover:bg-white border-[#17231f]/10 hover:border-[#17231f]/20'
@@ -167,7 +159,7 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                       {isDone ? '✅ Ficha Sintetizada com IA' : '⏳ Anamnese Pendente'}
                     </span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -251,8 +243,8 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                         Cálculo Probabilístico de Diagnósticos Diferenciais:
                       </span>
                       <div className="space-y-2">
-                        {selectedCase.aiSummary.hipotesesDiagnosticas.map((hip, idx) => (
-                          <div key={idx} className="p-3 bg-[#faf8f5] rounded-xl border border-[#17231f]/10 flex items-start justify-between gap-3 text-xs">
+                        {selectedCase.aiSummary.hipotesesDiagnosticas.map((hip) => (
+                          <div key={hip.doenca || hip.justificativa} className="p-3 bg-[#faf8f5] rounded-xl border border-[#17231f]/10 flex items-start justify-between gap-3 text-xs">
                             <div>
                               <strong className="text-[#17231f] text-sm block">{hip.doenca}</strong>
                               <span className="text-[#5e6c65]">{hip.justificativa}</span>
@@ -273,8 +265,8 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
                         Exames Complementares Sugeridos para Triagem:
                       </span>
                       <ul className="list-disc list-inside text-teal-800 space-y-1">
-                        {selectedCase.aiSummary.examesSugeridos.map((ex, i) => (
-                          <li key={i}>{ex}</li>
+                        {selectedCase.aiSummary.examesSugeridos.map((ex) => (
+                          <li key={ex}>{ex}</li>
                         ))}
                       </ul>
                     </div>
@@ -329,16 +321,14 @@ export function DoctorWorklist({ onStartConsultationWithPatient, onOpenPediatric
 
       {/* Modal de Criação de Novo Agendamento */}
       {showNewScheduleModal && (
-        <div
-          role="presentation"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#17231f]/60 p-4 backdrop-blur-sm animate-fadeIn"
-          onMouseDown={(e) => e.target === e.currentTarget && setShowNewScheduleModal(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="relative w-full max-w-lg rounded-3xl bg-white p-7 sm:p-8 shadow-2xl border border-[#17231f]/10 space-y-5"
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <button
+            type="button"
+            aria-label="Fechar agendamento"
+            onClick={() => setShowNewScheduleModal(false)}
+            className="fixed inset-0 bg-[#17231f]/60 backdrop-blur-sm cursor-default border-none p-0 w-full h-full"
+          />
+          <div className="relative w-full max-w-lg rounded-3xl bg-white p-7 sm:p-8 shadow-2xl border border-[#17231f]/10 space-y-5">
             <h3 className="font-editorial text-2xl font-bold text-[#17231f]">
               Gerar Novo Link de Anamnese Prévia
             </h3>

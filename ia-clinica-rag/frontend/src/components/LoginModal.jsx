@@ -209,16 +209,14 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
   };
 
   return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#17231f]/70 p-4 backdrop-blur-md animate-fadeIn"
-      onMouseDown={(e) => closable && e.target === e.currentTarget && onClose?.()}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto"
-      >
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 animate-fadeIn">
+      <button
+        type="button"
+        aria-label="Fechar"
+        onClick={() => closable && onClose?.()}
+        className="fixed inset-0 bg-[#17231f]/70 backdrop-blur-md cursor-default border-none p-0 w-full h-full"
+      />
+      <div className="relative grid w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[#fffdf8] shadow-2xl border border-[#17231f]/10 md:grid-cols-[0.85fr_1.15fr] max-h-[95vh] overflow-y-auto">
         {closable && (
           <button
             onClick={onClose}
@@ -486,17 +484,10 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
                 )}
 
                 {/* reCAPTCHA Checkbox Box */}
-                <div 
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   onClick={handleRecaptchaToggle}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleRecaptchaToggle();
-                    }
-                  }}
-                  className="flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition"
+                  className="w-full flex items-center justify-between rounded-xl border border-[#17231f]/15 bg-[#faf8f5] p-3 cursor-pointer hover:border-[#213f34]/40 transition text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${recaptchaChecked ? 'bg-emerald-700 border-emerald-700 text-white' : 'border-[#17231f]/30 bg-white'}`}>
@@ -505,7 +496,7 @@ export function LoginModal({ onLoginSuccess, onClose, closable = true, initialTa
                     <span className="text-xs font-bold text-[#17231f]">Não sou um robô</span>
                   </div>
                   <span className="text-[9px] font-bold text-[#5e6c65] uppercase">reCAPTCHA</span>
-                </div>
+                </button>
               </div>
 
               <button

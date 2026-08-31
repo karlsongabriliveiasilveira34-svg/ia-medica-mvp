@@ -97,6 +97,7 @@ export function KnowledgeManager() {
     formData.append('title', docTitle || file.name);
     formData.append('organization', docOrg);
     formData.append('authorityLevel', docAuthLevel);
+    formData.append('category', docCategory);
     formData.append('version', docVersion);
     formData.append('url', docUrl);
 
@@ -324,88 +325,7 @@ export function KnowledgeManager() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {loading ? (
-                    <tr>
-                      <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
-                        Carregando catálogo de fontes oficiais...
-                      </td>
-                    </tr>
-                  ) : filteredSources.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="px-6 py-8 text-center text-slate-500">
-                        Nenhuma fonte encontrada com os filtros selecionados.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredSources.map((src) => {
-                      const authStyle = AUTHORITY_LEVEL_LABELS[src.authority_level] || AUTHORITY_LEVEL_LABELS[4];
-                      const statusStyle = STATUS_BADGES[src.validation_status] || STATUS_BADGES.approved;
-
-                      return (
-                        <tr key={src.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-start gap-2.5">
-                              <BookOpen className="w-4 h-4 text-clinical-400 shrink-0 mt-0.5" />
-                              <div>
-                                <h4 className="font-semibold text-slate-100">{src.title}</h4>
-                                {src.condition && (
-                                  <span className="text-[10px] text-clinical-400 font-medium">
-                                    Condição: {src.condition}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="px-6 py-4">
-                            <span className="text-slate-300 font-medium">{src.organization}</span>
-                          </td>
-
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${authStyle.color}`}>
-                              Nível {src.authority_level}
-                            </span>
-                          </td>
-
-                          <td className="px-6 py-4 text-slate-400">
-                            <div className="font-mono text-[11px] text-slate-300">v{src.version || '1.0'}</div>
-                            <div className="text-[10px] text-slate-500">
-                              {src.effective_date ? new Date(src.effective_date).toLocaleDateString('pt-BR') : '2024'}
-                            </div>
-                          </td>
-
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${statusStyle.color}`}>
-                              {statusStyle.label}
-                            </span>
-                          </td>
-
-                          <td className="px-6 py-4 font-mono text-slate-300">
-                            {src.chunks_count || 1}
-                          </td>
-
-                          <td className="px-6 py-4 text-right">
-                            {src.url && typeof src.url === 'string' ? (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (src.url && (src.url.startsWith('http://') || src.url.startsWith('https://'))) {
-                                    window.open(encodeURI(src.url), '_blank', 'noopener,noreferrer');
-                                  }
-                                }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-clinical-300 hover:text-clinical-200 transition-colors text-[11px] cursor-pointer"
-                              >
-                                <span>Acessar</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </button>
-                            ) : (
-                              <span className="text-slate-500 text-[11px]">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
+                  {renderSourcesBody()}
                 </tbody>
               </table>
             </div>
@@ -435,57 +355,7 @@ export function KnowledgeManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
-                      Carregando documentos...
-                    </td>
-                  </tr>
-                ) : documents.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
-                      Nenhum documento encontrado.
-                    </td>
-                  </tr>
-                ) : (
-                  documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-4 h-4 text-clinical-400 shrink-0" />
-                          <div>
-                            <h4 className="font-semibold text-slate-200">{doc.title}</h4>
-                            <span className="text-[10px] text-slate-500 font-mono">{doc.filename}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-clinical-300 border border-slate-700">
-                          {doc.category}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 font-mono text-slate-200">
-                        {doc.chunks_count} trechos
-                      </td>
-
-                      <td className="px-6 py-4 text-slate-400">
-                        {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                      </td>
-
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleDeleteDoc(doc.id, doc.title)}
-                          className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                          title="Excluir documento e vetores"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                {renderDocumentsBody()}
               </tbody>
             </table>
           </div>

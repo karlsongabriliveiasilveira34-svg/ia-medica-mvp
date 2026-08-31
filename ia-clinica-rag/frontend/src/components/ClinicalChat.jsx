@@ -62,25 +62,33 @@ async function fetchClinicalQuery(payload, signal) {
   };
 }
 
-export function ClinicalChat({
-  onSelectCitation,
-  onSelectDiagnosis,
-  onOpenReportEditor,
-  onQueryProcessed,
-  initialAttachedContext,
-  onOpenUsageModal,
-  onOpenPixModal,
-  userPlan = 'medico'
-}) {
+function getMaxCharactersForPlan(plan) {
+  if (plan === 'free') return 500;
+  if (plan === 'estudante') return 2000;
+  if (plan === 'clinica') return 5000;
+  return Infinity;
+}
+
+function getMaxUploadMbForPlan(plan) {
+  if (plan === 'estudante') return 2;
+  if (plan === 'clinica') return 50;
+  return 500;
+}
+
+function getInputPlaceholder(selectedImage, isStudent) {
+  if (selectedImage) return 'Observações sobre a imagem clínica anexada...';
+  if (isStudent) return 'Digite uma dúvida fisiopatológica ou caso para explorar...';
+  return 'Descreva a queixa, exame físico ou hipótese clínica...';
+}
+
+export function ClinicalChat({ onOpenCitationModal, onOpenPediatricModule, onOpenUsageModal, userPlan = 'free' }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedSpecialty, setSelectedSpecialty] = useState('auto');
-  const [userMode, setUserMode] = useState(userPlan === 'estudante' ? 'student' : 'doctor');
   const [deepResearch, setDeepResearch] = useState(false); // Padrão vs Pesquisa Profunda
   const [currentSessionId, setCurrentSessionId] = useState(null);
-  const [recordedDecisions, setRecordedDecisions] = useState({});
   const [pastSessions, setPastSessions] = useState([]);
   const [showSessionDrawer, setShowSessionDrawer] = useState(false);
   const [caseResumeSummary, setCaseResumeSummary] = useState(null);
@@ -150,35 +158,6 @@ export function ClinicalChat({
       console.error('Erro ao reabrir sessão clínica:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleRecordPhysicianDecision = async (messageId, chosenConduct, citations = []) => {
-    if (!currentSessionId) return;
-
-    try {
-      const res = await fetch(`/api/sessions/${currentSessionId}/decision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chosenConduct,
-          supportingSources: citations,
-          rationale: 'Conduta selecionada pelo médico assistente durante a consulta baseada nas evidências apresentadas.'
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.status === 'success') {
-        setRecordedDecisions(prev => ({
-          ...prev,
-          [messageId]: {
-            conduct: chosenConduct,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        }));
-      }
-    } catch (err) {
-      console.error('Falha ao registrar decisão médico-legal:', err);
     }
   };
 
@@ -310,7 +289,7 @@ export function ClinicalChat({
       return;
     }
 
-    const maxMb = userPlan === 'estudante' ? 2 : (userPlan === 'clinica' ? 50 : 500);
+    const maxMb = getMaxUploadMbForPlan(userPlan);
     const maxSizeBytes = maxMb * 1024 * 1024;
 
     if (file.size > maxSizeBytes) {
@@ -836,7 +815,7 @@ export function ClinicalChat({
         {/* Status de Modo & Contador de Caracteres */}
         <div className="flex items-center justify-between text-[11px] px-1 text-[#5e6c65]">
           <span className="flex items-center gap-1.5">
-            {userMode === 'student' ? (
+            {userPlan === 'estudante' ? (
               <span className="text-amber-900 font-semibold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[10px]">
                 <GraduationCap className="w-3 h-3 text-amber-700" /> Modo Acadêmico
               </span>
@@ -848,7 +827,7 @@ export function ClinicalChat({
           </span>
 
           {(() => {
-            const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
+            const maxChars = getMaxCharactersForPlan(userPlan);
             const isOver = maxChars !== Infinity && input.length > maxChars;
 
             return (
@@ -864,7 +843,7 @@ export function ClinicalChat({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            const maxChars = userPlan === 'free' ? 500 : (userPlan === 'estudante' ? 2000 : (userPlan === 'clinica' ? 5000 : Infinity));
+            const maxChars = getMaxCharactersForPlan(userPlan);
             if (maxChars !== Infinity && input.length > maxChars) {
               alert(`Sua mensagem excedeu o limite de ${maxChars} caracteres do Plano ${userPlan.toUpperCase()}.`);
               return;
@@ -922,13 +901,7 @@ export function ClinicalChat({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              selectedImage
-                ? 'Observações sobre a imagem clínica anexada...'
-                : (userMode === 'student'
-                    ? 'Digite uma dúvida fisiopatológica ou caso para explorar...'
-                    : 'Descreva a queixa, exame físico ou hipótese clínica...')
-            }
+            placeholder={getInputPlaceholder(selectedImage, userPlan === 'estudante')}
             disabled={loading}
             className="min-w-0 flex-1 bg-[#faf8f5] border border-[#17231f]/10 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-[#17231f] placeholder-[#5e6c65] focus:outline-none focus:ring-2 focus:ring-[#213f34]/20 transition disabled:opacity-50"
           />
